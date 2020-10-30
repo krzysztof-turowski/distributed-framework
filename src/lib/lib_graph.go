@@ -5,6 +5,43 @@ import (
   "math/rand"
 )
 
+func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
+  vertices := make([]Node, n)
+  inConfirm := make([]chan counterMessage, n)
+  outConfirm := make([]chan bool, n)
+  for i := range inConfirm {
+    inConfirm[i] = make(chan counterMessage)
+    outConfirm[i] = make(chan bool)
+  }
+  for i := range vertices {
+    vertices[i] = &oneWayNode{
+      index: i,
+      inNeighbors: make([]<-chan []byte, 0),
+      outNeighbors: make([]chan<- []byte, 0),
+      stats: statsNode{
+        inConfirm: outConfirm[i],
+        outConfirm: inConfirm[i],
+      },
+    }
+    log.Println("Node", vertices[i].GetIndex(), "built")
+  }
+  return vertices, Synchronizer{n: n, inConfirm: inConfirm, outConfirm: outConfirm,}
+}
+
+func BuildSynchronizedDirectedRing(n int) ([]Node, Synchronizer) {
+  vertices, synchronizer := BuildSynchronizedEmptyDirectedGraph(n)
+  chans := getTwoWayChannels(n)
+  for i := 0; i < n; i++ {
+    addOneWayConnection(
+        vertices[i].(*oneWayNode), vertices[(i + 1) % n].(*oneWayNode), chans[i])
+    log.Println("Channel", i, "->", (i + 1) % n, "set up")
+  }
+  for _, vertex := range vertices {
+    vertex.(*oneWayNode).shuffleTopology()
+  }
+  return vertices, synchronizer
+}
+
 func BuildSynchronizedEmptyGraph(n int) ([]Node, Synchronizer) {
   vertices := make([]Node, n)
   inConfirm := make([]chan counterMessage, n)

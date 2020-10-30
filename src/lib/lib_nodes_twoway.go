@@ -41,7 +41,11 @@ func (v *twoWayNode) SendMessage(index int, message []byte) {
   }
 }
 
-func (v *twoWayNode) GetChannelsCount() int {
+func (v *twoWayNode) GetInChannelsCount() int {
+  return len(v.neighbors)
+}
+
+func (v *twoWayNode) GetOutChannelsCount() int {
   return len(v.neighbors)
 }
 

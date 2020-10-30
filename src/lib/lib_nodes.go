@@ -3,7 +3,8 @@ package lib
 type Node interface {
   ReceiveMessage(index int) []byte
   SendMessage(index int, message []byte)
-  GetChannelsCount() int
+  GetInChannelsCount() int
+  GetOutChannelsCount() int
   GetIndex() int
   GetState() []byte
   SetState(state []byte)

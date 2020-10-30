@@ -25,7 +25,7 @@ func (s *Synchronizer) Synchronize() {
     for _, i := range rand.Perm(s.n) {
       message := <- s.inConfirm[i]
       finish = (finish || message.finish)
-      s.messages += message.sentMessages
+      s.messages += message.receivedMessages
       log.Println(
           "Node", i, "sent", message.sentMessages,
           "and received", message.receivedMessages, "messages")
