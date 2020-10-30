@@ -3,6 +3,7 @@ package main
 import (
   "log"
   "math/rand"
+  // "reflect"
 )
 
 type synchronizer struct {
@@ -14,12 +15,13 @@ type synchronizer struct {
 }
 
 func (s *synchronizer) synchronize() {
-  for s.round = 1; ; s.round++ {
+  finish := false
+  for s.round = 1; !finish; s.round++ {
     log.Println("Round", s.round, "started")
     for _, i := range rand.Perm(s.n) {
       s.outConfirm[i] <- true
     }
-    finish := false
+    finish = false
     for _, i := range rand.Perm(s.n) {
       message := <- s.inConfirm[i]
       finish = (finish || message.finish)
@@ -29,9 +31,6 @@ func (s *synchronizer) synchronize() {
           "and received", message.receivedMessages, "messages")
     }
     log.Println("Round", s.round, "finished")
-    if finish {
-      break
-    }
   }
 }
 
