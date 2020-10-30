@@ -35,7 +35,7 @@ func process(v lib.Node, _ interface{}, round int) bool {
   for i := v.GetOutChannelsCount() / 2; i < v.GetOutChannelsCount(); i++ {
     v.SendMessage(i, outMessageB)
   }
-  return round == 3 && v.GetIndex() == 3
+  return round == 3
 }
 
 func run(v lib.Node) {

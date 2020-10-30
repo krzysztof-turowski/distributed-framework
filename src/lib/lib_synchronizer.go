@@ -14,17 +14,18 @@ type Synchronizer struct {
 }
 
 func (s *Synchronizer) Synchronize() {
-  finish := false
-  for s.round = 0; !finish; s.round++ {
+  finish := 0
+  for s.round = 0; finish < s.n; s.round++ {
     log.Println("Round", s.round, "initialized")
     for _, i := range rand.Perm(s.n) {
       s.outConfirm[i] <- true
     }
     log.Println("Round", s.round, "started")
-    finish = false
     for _, i := range rand.Perm(s.n) {
       message := <- s.inConfirm[i]
-      finish = (finish || message.finish)
+      if message.finish {
+        finish++
+      }
       s.messages += message.receivedMessages
       log.Println(
           "Node", i, "sent", message.sentMessages,
