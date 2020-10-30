@@ -4,12 +4,12 @@ import (
   "encoding/json"
   "lib"
   "log"
+  "os"
+  "strconv"
+  "time"
 )
 
-type state struct {
-}
-
-func initialize(v lib.Node, s state) bool {
+func initialize(v lib.Node, _ interface{}) bool {
   outMessageA, _ := json.Marshal(0)
   outMessageB := []byte(nil)
   for i := 0; i < v.GetOutChannelsCount() / 2; i++ {
@@ -21,7 +21,7 @@ func initialize(v lib.Node, s state) bool {
   return false
 }
 
-func process(v lib.Node, s state, round int) bool {
+func process(v lib.Node, _ interface{}, round int) bool {
   outMessageA, _ := json.Marshal(round)
   outMessageB := []byte(nil)
   receivedMessages := [][]byte(nil)
@@ -36,4 +36,34 @@ func process(v lib.Node, s state, round int) bool {
     v.SendMessage(i, outMessageB)
   }
   return round == 3 && v.GetIndex() == 3
+}
+
+func run(v lib.Node) {
+  var s int
+  v.StartProcessing()
+  finish := initialize(v, s)
+  data, _ := json.Marshal(s)
+  v.SetState(data)
+  v.FinishProcessing(finish)
+  
+  for round := 1; ; round++ {
+    v.StartProcessing()
+    json.Unmarshal(v.GetState(), &s)
+    finish := process(v, s, round)
+    data, _ := json.Marshal(s)
+    v.SetState(data)
+    v.FinishProcessing(finish)
+  }
+}
+
+func main() {
+  n, _ := strconv.Atoi(os.Args[len(os.Args) - 1])
+  vertices, synchronizer := lib.BuildSynchronizedCompleteGraph(n)
+  for _, v := range vertices {
+    log.Println("Node", v.GetIndex(), "about to run")
+    go run(v)
+  }
+  synchronizer.Synchronize()
+  time.Sleep(5 * time.Millisecond)
+  synchronizer.GetStats()
 }
