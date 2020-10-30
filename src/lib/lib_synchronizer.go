@@ -1,12 +1,11 @@
-package main
+package lib
 
 import (
   "log"
   "math/rand"
-  // "reflect"
 )
 
-type synchronizer struct {
+type Synchronizer struct {
   n int
   round int
   messages int
@@ -14,13 +13,14 @@ type synchronizer struct {
   outConfirm []chan bool
 }
 
-func (s *synchronizer) synchronize() {
+func (s *Synchronizer) Synchronize() {
   finish := false
-  for s.round = 1; !finish; s.round++ {
-    log.Println("Round", s.round, "started")
+  for s.round = 0; !finish; s.round++ {
+    log.Println("Round", s.round, "initialized")
     for _, i := range rand.Perm(s.n) {
       s.outConfirm[i] <- true
     }
+    log.Println("Round", s.round, "started")
     finish = false
     for _, i := range rand.Perm(s.n) {
       message := <- s.inConfirm[i]
@@ -34,7 +34,7 @@ func (s *synchronizer) synchronize() {
   }
 }
 
-func (s *synchronizer) getStats() {
+func (s *Synchronizer) GetStats() {
   log.Println("Total messages: ", s.messages)
   log.Println("Total rounds: ", s.round)
 }

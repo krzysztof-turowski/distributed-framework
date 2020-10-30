@@ -1,7 +1,8 @@
 all: check
 
 example:
-	go run src/example_simulator.go src/lib_*.go src/example_client.go 5
+	go run src/example/example_simulator.go src/example/example_client.go 5
 
 check:
-	golint src/*.go
+	@for DIR in ./src/*/ ; do echo "Directory: $$DIR"; golint $$DIR | grep -v "should have comment or be unexported" || true; done
+	
