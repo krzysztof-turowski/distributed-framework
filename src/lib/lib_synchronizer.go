@@ -3,6 +3,7 @@ package lib
 import (
   "log"
   "math/rand"
+  "time"
 )
 
 type Synchronizer struct {
@@ -13,18 +14,23 @@ type Synchronizer struct {
   outConfirm []chan bool
 }
 
-func (s *Synchronizer) Synchronize() {
-  finish := 0
-  for s.round = 0; finish < s.n; s.round++ {
+func (s *Synchronizer) Synchronize(interval time.Duration) {
+  for finish := 0; finish < s.n; s.round++ {
     log.Println("Round", s.round, "initialized")
     for _, i := range rand.Perm(s.n) {
-      s.outConfirm[i] <- true
+      if s.outConfirm[i] != nil {
+        s.outConfirm[i] <- true
+      }
     }
     log.Println("Round", s.round, "started")
     for _, i := range rand.Perm(s.n) {
+      if s.inConfirm[i] == nil {
+        continue
+      }
       message := <- s.inConfirm[i]
       if message.finish {
         finish++
+        s.inConfirm[i], s.outConfirm[i] = nil, nil
       }
       s.messages += message.receivedMessages
       log.Println(
@@ -32,6 +38,7 @@ func (s *Synchronizer) Synchronize() {
           "and received", message.receivedMessages, "messages")
     }
     log.Println("Round", s.round, "finished")
+    time.Sleep(interval)
   }
 }
 

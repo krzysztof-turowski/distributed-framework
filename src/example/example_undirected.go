@@ -9,7 +9,7 @@ import (
   "time"
 )
 
-func initialize(v lib.Node, _ interface{}) bool {
+func initialize(v lib.Node) bool {
   outMessageA, _ := json.Marshal(0)
   outMessageB := []byte(nil)
   for i := 0; i < v.GetOutChannelsCount() / 2; i++ {
@@ -21,7 +21,7 @@ func initialize(v lib.Node, _ interface{}) bool {
   return false
 }
 
-func process(v lib.Node, _ interface{}, round int) bool {
+func process(v lib.Node, round int) bool {
   outMessageA, _ := json.Marshal(round)
   outMessageB := []byte(nil)
   receivedMessages := [][]byte(nil)
@@ -39,19 +39,13 @@ func process(v lib.Node, _ interface{}, round int) bool {
 }
 
 func run(v lib.Node) {
-  var s int
   v.StartProcessing()
-  finish := initialize(v, s)
-  data, _ := json.Marshal(s)
-  v.SetState(data)
+  finish := initialize(v)
   v.FinishProcessing(finish)
   
-  for round := 1; ; round++ {
+  for round := 1; !finish; round++ {
     v.StartProcessing()
-    json.Unmarshal(v.GetState(), &s)
-    finish := process(v, s, round)
-    data, _ := json.Marshal(s)
-    v.SetState(data)
+    finish = process(v, round)
     v.FinishProcessing(finish)
   }
 }
@@ -63,7 +57,6 @@ func main() {
     log.Println("Node", v.GetIndex(), "about to run")
     go run(v)
   }
-  synchronizer.Synchronize()
-  time.Sleep(5 * time.Millisecond)
+  synchronizer.Synchronize(5 * time.Millisecond)
   synchronizer.GetStats()
 }

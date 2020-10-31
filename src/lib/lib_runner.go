@@ -2,7 +2,6 @@ package lib
 
 import (
   "log"
-  "math/rand"
   "reflect"
 )
 
@@ -19,19 +18,18 @@ func (r *Runner) Run() {
     cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)}
     r.outConfirm[i] <- true
   }
-  finish := 0
-  for finish < r.n {
+  for finish := 0; finish < r.n; {
     index, value, _ := reflect.Select(cases)
     message := value.Interface().(*counterMessage)
     if message.finish {
       finish++
-      cases[index].Chan = reflect.ValueOf(nil)
+      cases[index].Chan, r.outConfirm[index] = reflect.ValueOf(nil), nil
     }
     r.messages += message.receivedMessages
-    for _, i := range rand.Perm(r.n) {
-      log.Println("Node", i, "sent a message")
+    log.Println("Node", index, "sent a message")
+    if r.outConfirm[index] != nil {
+      r.outConfirm[index] <- true
     }
-    r.outConfirm[index] <- true
   }
 }
 
