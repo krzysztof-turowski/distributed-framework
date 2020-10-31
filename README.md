@@ -3,8 +3,10 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 
 ## Algorithms
 
-### Leader election on synchronized rings
-1. ~~Chang-Roberts algorithm~~
+### Leader election
+
+#### Synchronized directed ring
+1. Chang-Roberts algorithm
 
 ## Running
 

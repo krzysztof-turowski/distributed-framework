@@ -3,6 +3,7 @@ package lib
 import (
   "log"
   "math/rand"
+  "time"
 )
 
 func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
@@ -13,9 +14,10 @@ func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
     inConfirm[i] = make(chan counterMessage)
     outConfirm[i] = make(chan bool)
   }
+  rng := rand.New(rand.NewSource(time.Now().UnixNano()))
   for i := range vertices {
     vertices[i] = &oneWayNode{
-      index: i,
+      index: rng.Int(),
       inNeighbors: make([]<-chan []byte, 0),
       outNeighbors: make([]chan<- []byte, 0),
       stats: statsNode{
@@ -50,9 +52,10 @@ func BuildSynchronizedEmptyGraph(n int) ([]Node, Synchronizer) {
     inConfirm[i] = make(chan counterMessage)
     outConfirm[i] = make(chan bool)
   }
+  rng := rand.New(rand.NewSource(time.Now().UnixNano()))
   for i := range vertices {
     vertices[i] = &twoWayNode{
-      index: i,
+      index: rng.Int(),
       neighbors: make([]twoWaySynchronousChannel, 0),
       stats: statsNode{
         inConfirm: outConfirm[i],
