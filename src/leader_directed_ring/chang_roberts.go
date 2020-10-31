@@ -34,6 +34,15 @@ func send(v lib.Node, s state, mode modeType) {
   v.SetState(data)
 }
 
+func receive(v lib.Node) (state, message) {
+  var s state
+  json.Unmarshal(v.GetState(), &s)
+  inMessage := v.ReceiveMessage(0)
+  var m message
+  json.Unmarshal(inMessage, &m)
+  return s, m
+}
+
 func initialize(v lib.Node) bool {
   s := state{Min: v.GetIndex(), Status: unknown}
   send(v, s, unknown)
@@ -41,14 +50,8 @@ func initialize(v lib.Node) bool {
 }
 
 func process(v lib.Node, round int) bool {
-  var s state
-  json.Unmarshal(v.GetState(), &s)
-  inMessage := v.ReceiveMessage(0)
-  var m message
-  json.Unmarshal(inMessage, &m)
-  if s.Status == leader && m.Mode == leader {
-    return true
-  } else if s.Status == unknown {
+  s, m := receive(v)
+  if s.Status == unknown {
     if m.Mode == leader {
       s.Status = nonleader
       send(v, s, leader)
@@ -62,7 +65,7 @@ func process(v lib.Node, round int) bool {
       send(v, s, unknown)
     }
   }
-  return s.Status == nonleader
+  return (s.Status == leader && m.Mode == leader) || s.Status == nonleader
 }
 
 func run(v lib.Node) {
