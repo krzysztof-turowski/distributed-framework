@@ -25,6 +25,18 @@ func getTwoWayChannels(n int) []chan []byte {
   return chans
 }
 
+func (v *twoWayNode) ReceiveMessageOrNil(index int) []byte {
+  select {
+    case message := <- v.neighbors[index].input:
+      if message != nil {
+        v.stats.receivedMessages++
+      }
+      return message
+    default:
+      return nil
+  }
+}
+
 func (v *twoWayNode) ReceiveMessage(index int) []byte {
   message := <- v.neighbors[index].input
   if message != nil {
