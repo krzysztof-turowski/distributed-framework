@@ -17,6 +17,7 @@ func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
   for i := range vertices {
     vertices[i] = &oneWayNode{
       index: rng.Int(),
+      size: n,
       inNeighbors: make([]<-chan []byte, 0),
       outNeighbors: make([]chan<- []byte, 0),
       stats: statsNode{
@@ -56,6 +57,7 @@ func BuildSynchronizedEmptyGraph(n int) ([]Node, Synchronizer) {
   for i := range vertices {
     vertices[i] = &twoWayNode{
       index: rng.Int(),
+      size: n,
       neighbors: make([]twoWaySynchronousChannel, 0),
       stats: statsNode{
         inConfirm: outConfirm[i],

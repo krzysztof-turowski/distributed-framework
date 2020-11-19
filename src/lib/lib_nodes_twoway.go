@@ -11,7 +11,7 @@ type twoWaySynchronousChannel struct {
 }
 
 type twoWayNode struct {
-  index int
+  index, size int
   state []byte
   neighbors []twoWaySynchronousChannel
   stats statsNode
@@ -23,18 +23,6 @@ func getTwoWayChannels(n int) []chan []byte {
     chans[i] = make(chan []byte, 1)
   }
   return chans
-}
-
-func (v *twoWayNode) ReceiveMessageOrNil(index int) []byte {
-  select {
-    case message := <- v.neighbors[index].input:
-      if message != nil {
-        v.stats.receivedMessages++
-      }
-      return message
-    default:
-      return nil
-  }
 }
 
 func (v *twoWayNode) ReceiveMessage(index int) []byte {
@@ -71,6 +59,10 @@ func (v *twoWayNode) GetState() []byte {
 
 func (v *twoWayNode) SetState(state []byte) {
   v.state = state
+}
+
+func (v *twoWayNode) GetSize() int {
+  return v.size
 }
 
 func (v *twoWayNode) StartProcessing() {

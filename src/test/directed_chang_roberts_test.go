@@ -16,14 +16,26 @@ func checkLogOutput() {
   }
 }
 
-func TestDirectedChangRoberts(t *testing.T) {
+func TestDirectedRingChangRoberts(t *testing.T) {
   checkLogOutput()
   directed_ring.RunChangRoberts(1000)
 }
 
-func BenchmarkDirectedChangRoberts(b *testing.B) {
+func TestDirectedRingItaiRodeh(t *testing.T) {
+  checkLogOutput()
+  directed_ring.RunItaiRodeh(1000)
+}
+
+func BenchmarkDirectedRingChangRoberts(b *testing.B) {
   log.SetOutput(ioutil.Discard)
   for iteration := 0; iteration < b.N; iteration++ {
     directed_ring.RunChangRoberts(1000)
+  }
+}
+
+func BenchmarkDirectedRingItaiRodeh(b *testing.B) {
+  log.SetOutput(ioutil.Discard)
+  for iteration := 0; iteration < b.N; iteration++ {
+    directed_ring.RunItaiRodeh(1000)
   }
 }

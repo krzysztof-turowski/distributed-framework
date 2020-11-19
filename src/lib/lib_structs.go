@@ -14,10 +14,10 @@ type generator struct {
 }
 
 func GetGenerator() Generator {
-  return generator{state: 0}
+  return &generator{state: 0}
 }
 
-func (r generator) Int() int {
+func (r *generator) Int() int {
   r.state++
   return r.state
 }
@@ -27,9 +27,9 @@ type randomGenerator struct {
 }
 
 func GetRandomGenerator() Generator {
-  return randomGenerator{state: rand.New(rand.NewSource(time.Now().UnixNano()))}
+  return &randomGenerator{state: rand.New(rand.NewSource(time.Now().UnixNano()))}
 }
 
-func (r randomGenerator) Int() int {
+func (r *randomGenerator) Int() int {
   return r.state.Int()
 }

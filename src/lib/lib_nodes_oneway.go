@@ -6,7 +6,7 @@ import (
 )
 
 type oneWayNode struct {
-  index int
+  index, size int
   state []byte
   inNeighbors []<-chan []byte
   outNeighbors []chan<- []byte
@@ -19,18 +19,6 @@ func getOneWayChannels(n int) []chan []byte {
     channels[i] = make(chan []byte)
   }
   return channels
-}
-
-func (v *oneWayNode) ReceiveMessageOrNil(index int) []byte {
-  select {
-    case message := <- v.inNeighbors[index]:
-      if message != nil {
-        v.stats.receivedMessages++
-      }
-      return message
-    default:
-      return nil
-  }
 }
 
 func (v *oneWayNode) ReceiveMessage(index int) []byte {
@@ -67,6 +55,10 @@ func (v *oneWayNode) GetState() []byte {
 
 func (v *oneWayNode) SetState(state []byte) {
   v.state = state
+}
+
+func (v *oneWayNode) GetSize() int {
+  return v.size
 }
 
 func (v *oneWayNode) StartProcessing() {
