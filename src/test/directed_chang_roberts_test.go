@@ -18,12 +18,12 @@ func checkLogOutput() {
 
 func TestDirectedChangRoberts(t *testing.T) {
   checkLogOutput()
-  directed_ring.RunChangRoberts(5)
+  directed_ring.RunChangRoberts(1000)
 }
 
 func BenchmarkDirectedChangRoberts(b *testing.B) {
   log.SetOutput(ioutil.Discard)
   for iteration := 0; iteration < b.N; iteration++ {
-    directed_ring.RunChangRoberts(100)
+    directed_ring.RunChangRoberts(1000)
   }
 }

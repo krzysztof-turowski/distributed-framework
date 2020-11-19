@@ -10,7 +10,7 @@ test:
 	go test test -run . -v
 
 benchmark:
-	go test test -bench . -run Benchmark -v
+	go test test -bench . -benchtime 10x -run Benchmark -v
 
 check:
 	@for DIR in ./src/*/ ; do echo "Directory: $$DIR"; golint $$DIR | grep -v "should have comment or be unexported" || true; done
