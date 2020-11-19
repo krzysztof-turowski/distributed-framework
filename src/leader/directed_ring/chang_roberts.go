@@ -1,20 +1,18 @@
-package main
+package directed_ring
 
 import (
   "encoding/json"
   "lib"
   "log"
-  "os"
-  "strconv"
   "time"
 )
 
 type modeType string
 
 const (
-	unknown modeType = "unknown"
+  unknown modeType = "unknown"
   nonleader = "nonleader"
-	leader = "leader"
+  leader = "leader"
 )
 
 type state struct {
@@ -80,8 +78,7 @@ func run(v lib.Node) {
   }
 }
 
-func main() {
-  n, _ := strconv.Atoi(os.Args[len(os.Args) - 1])
+func RunChangRoberts(n int) {
   vertices, synchronizer := lib.BuildSynchronizedDirectedRing(n)
   for _, v := range vertices {
     log.Println("Node", v.GetIndex(), "about to run")
