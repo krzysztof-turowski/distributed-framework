@@ -34,8 +34,8 @@ func (s *Synchronizer) Synchronize(interval time.Duration) {
       }
       s.messages += message.receivedMessages
       log.Println(
-          "Node", i, "sent", message.sentMessages,
-          "and received", message.receivedMessages, "messages")
+          "Node", i, "received", message.receivedMessages,
+          "and sent", message.sentMessages, "messages")
     }
     log.Println("Round", s.round, "finished")
     time.Sleep(interval)
