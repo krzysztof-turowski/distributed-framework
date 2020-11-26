@@ -7,6 +7,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 
 #### Synchronized directed ring
 1. Chang-Roberts algorithm
+2. Itai-Rodeh algorithm
 
 ## Running
 

@@ -3,7 +3,6 @@ package lib
 import (
   "log"
   "math/rand"
-  "time"
 )
 
 func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
@@ -14,10 +13,11 @@ func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
     inConfirm[i] = make(chan counterMessage)
     outConfirm[i] = make(chan bool)
   }
-  rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+  rng := GetRandomGenerator()
   for i := range vertices {
     vertices[i] = &oneWayNode{
       index: rng.Int(),
+      size: n,
       inNeighbors: make([]<-chan []byte, 0),
       outNeighbors: make([]chan<- []byte, 0),
       stats: statsNode{
@@ -36,7 +36,8 @@ func BuildSynchronizedDirectedRing(n int) ([]Node, Synchronizer) {
   for i := 0; i < n; i++ {
     addOneWayConnection(
         vertices[i].(*oneWayNode), vertices[(i + 1) % n].(*oneWayNode), chans[i])
-    log.Println("Channel", i, "->", (i + 1) % n, "set up")
+    log.Println(
+        "Channel", vertices[i].GetIndex(), "->", vertices[(i + 1) % n].GetIndex(), "set up")
   }
   for _, vertex := range vertices {
     vertex.(*oneWayNode).shuffleTopology()
@@ -52,10 +53,11 @@ func BuildSynchronizedEmptyGraph(n int) ([]Node, Synchronizer) {
     inConfirm[i] = make(chan counterMessage)
     outConfirm[i] = make(chan bool)
   }
-  rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+  rng := GetRandomGenerator()
   for i := range vertices {
     vertices[i] = &twoWayNode{
       index: rng.Int(),
+      size: n,
       neighbors: make([]twoWaySynchronousChannel, 0),
       stats: statsNode{
         inConfirm: outConfirm[i],
@@ -74,8 +76,8 @@ func BuildSynchronizedRing(n int) ([]Node, Synchronizer) {
     addTwoWayConnection(
         vertices[i].(*twoWayNode), vertices[(i + 1) % n].(*twoWayNode),
         chans[2 * i], chans[(2 * i + 1) % (2 * n)])
-    log.Println("Channel", i, "->", (i + 1) % n, "set up")
-    log.Println("Channel", (i + 1) % n, "->", i, "set up")
+    log.Println("Channel", vertices[i].GetIndex(), "->", vertices[(i + 1) % n].GetIndex(), "set up")
+    log.Println("Channel", vertices[(i + 1) % n].GetIndex(), "->", vertices[i].GetIndex(), "set up")
   }
   for _, vertex := range vertices {
     vertex.(*twoWayNode).shuffleTopology()
@@ -93,8 +95,8 @@ func BuildSynchronizedCompleteGraph(n int) ([]Node, Synchronizer) {
           vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
           chans[counter], chans[counter + 1])
       counter += 2
-      log.Println("Channel", i, "->", j, "set up")
-      log.Println("Channel", j, "->", i, "set up")
+      log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
+      log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
     }
   }
   for _, vertex := range vertices {
@@ -112,8 +114,8 @@ func BuildSynchronizedRandomGraph(n int, p float64) ([]Node, Synchronizer) {
         addTwoWayConnection(
             vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
             chans[0], chans[1])
-        log.Println("Channel", i, "->", j, "set up")
-        log.Println("Channel", j, "->", i, "set up")
+        log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
+        log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
       }
     }
   }
@@ -133,8 +135,8 @@ func BuildSynchronizedRandomTree(n int) ([]Node, Synchronizer) {
         vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
         chans[counter], chans[counter + 1])
     counter += 2
-    log.Println("Channel", i, "->", j, "set up")
-    log.Println("Channel", j, "->", i, "set up")
+    log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
+    log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
   }
   for _, vertex := range vertices {
     vertex.(*twoWayNode).shuffleTopology()

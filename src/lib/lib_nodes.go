@@ -8,6 +8,7 @@ type Node interface {
   GetIndex() int
   GetState() []byte
   SetState(state []byte)
+  GetSize() int
   StartProcessing()
   FinishProcessing(finish bool)
 }

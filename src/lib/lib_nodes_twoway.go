@@ -11,7 +11,7 @@ type twoWaySynchronousChannel struct {
 }
 
 type twoWayNode struct {
-  index int
+  index, size int
   state []byte
   neighbors []twoWaySynchronousChannel
   stats statsNode
@@ -59,6 +59,10 @@ func (v *twoWayNode) GetState() []byte {
 
 func (v *twoWayNode) SetState(state []byte) {
   v.state = state
+}
+
+func (v *twoWayNode) GetSize() int {
+  return v.size
 }
 
 func (v *twoWayNode) StartProcessing() {

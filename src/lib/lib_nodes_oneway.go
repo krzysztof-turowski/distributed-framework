@@ -6,7 +6,7 @@ import (
 )
 
 type oneWayNode struct {
-  index int
+  index, size int
   state []byte
   inNeighbors []<-chan []byte
   outNeighbors []chan<- []byte
@@ -16,7 +16,7 @@ type oneWayNode struct {
 func getOneWayChannels(n int) []chan []byte {
   channels := make([]chan []byte, n)
   for i := range channels {
-    channels[i] = make(chan []byte, 1)
+    channels[i] = make(chan []byte)
   }
   return channels
 }
@@ -55,6 +55,10 @@ func (v *oneWayNode) GetState() []byte {
 
 func (v *oneWayNode) SetState(state []byte) {
   v.state = state
+}
+
+func (v *oneWayNode) GetSize() int {
+  return v.size
 }
 
 func (v *oneWayNode) StartProcessing() {

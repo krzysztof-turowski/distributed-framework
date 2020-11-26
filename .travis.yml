@@ -13,9 +13,11 @@ before_script:
   - go get -u golang.org/x/lint/golint
   - GOLINT=`go list -f {{.Target}} golang.org/x/lint/golint`
   - PATH=$PATH:$GOLINT
+  - GOPATH=$GOPATH:`pwd`
 
 script:
   - make check
+  - make test
 
 after_success:
   - echo "success"
