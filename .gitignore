@@ -1,3 +1,7 @@
 backup*/*
 profiler/*
 *.exe
+
+bin/
+pkg/
+*.code-workspace
