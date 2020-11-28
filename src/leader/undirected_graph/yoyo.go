@@ -1,103 +1,147 @@
 package undirected_graph
 
 import (
-	"encoding/json"
 	"lib"
 	"log"
 )
 
-type phaseType string
-
-const (
-	setup  phaseType = "setup"
-	yoDown           = "yoDown"
-	yoUp             = "yoUp"
-)
-
-type statusType string
-
-const (
-	source   statusType = "source"
-	sink                = "sink"
-	internal            = "internal"
-)
-
-type stateYoYo struct {
-	// Orientation[i] == 0 if edge to the i-th neighbour is ingoing, 1 if outgoing. Maybe enum instead of bool
-	Orientation []bool
-	Phase       phaseType
-	Status      statusType
+func receiveMessageYoDown(v lib.Node, s *stateYoYo, index int) int {
+	message := receiveMessageYoYo(v, index)
+	s.LastMessages[index] = message.Content
+	return message.Content
 }
 
-type messageYoYo struct {
-	Source int
+func receiveMessageYoUp(v lib.Node, s *stateYoYo, index int) (bool, bool) {
+	message := receiveMessageYoYo(v, index)
+	vote, pruneRequested := toBools(message.Content)
+
+	if pruneRequested == 1 {
+		s.EdgeStates[index] = pruned
+	}
+
+	return vote == 1, pruneRequested == 1
 }
 
-func getState(v lib.Node) stateYoYo {
-	var s stateYoYo
-	json.Unmarshal(v.GetState(), &s)
-	return s
-}
-
-func setState(v lib.Node, s stateYoYo) {
-	data, _ := json.Marshal(s)
-	v.SetState(data)
-}
-
-func receiveYoYo(v lib.Node, i int) messageYoYo {
-	var m messageYoYo
-	inMessage := v.ReceiveMessage(i)
-	json.Unmarshal(inMessage, &m)
-	return m
+func sendMessageYoUp(v lib.Node, index int, answer bool, pruneRequested bool) {
+	outMessage := messageYoYo{Content: toInt(answer, pruneRequested)}
+	sendMessageYoYo(v, index, outMessage)
 }
 
 func initializeYoYo(v lib.Node) bool {
-	s := stateYoYo{Orientation: make([]bool, v.GetOutChannelsCount()), Phase: setup}
-	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		outMessage, _ := json.Marshal(messageYoYo{Source: v.GetIndex()})
-		v.SendMessage(i, outMessage)
+	if v.GetOutChannelsCount() == 0 {
+		log.Panic("Graph contains a node adjacent to 0 edges")
 	}
-	setState(v, s)
+
+	s := newStateYoYo(v.GetOutChannelsCount())
+	for i := 0; i < v.GetOutChannelsCount(); i++ {
+		sendMessageYoYo(v, i, messageYoYo{Content: v.GetIndex()})
+	}
+	setStateYoYo(v, s)
 	return false
 }
 
 func processSetup(v lib.Node, s *stateYoYo) {
+	log.Printf("Vertex %d processing setup phase\n", v.GetIndex())
 	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		m := receiveYoYo(v, i)
-		s.Orientation[i] = v.GetIndex() < m.Source
-	}
-
-	hasOutEdge, hasInEdge := false, false
-	for i := 0; i < v.GetOutChannelsCount() && !(hasOutEdge && hasInEdge); i++ {
-		if s.Orientation[i] {
-			hasOutEdge = true
+		m := receiveMessageYoYo(v, i)
+		if v.GetIndex() == m.Content {
+			log.Panic("Graph contains adjacent vertices with equal ID")
+		}
+		b := v.GetIndex() < m.Content
+		if b {
+			log.Printf("Vertex %d orienting its edge %d as outgoing\n", v.GetIndex(), i)
+			s.EdgeStates[i] = out
 		} else {
-			hasInEdge = true
+			log.Printf("Vertex %d orienting its edge %d as ingoing\n", v.GetIndex(), i)
+			s.EdgeStates[i] = in
 		}
 	}
 
-	if hasInEdge && hasOutEdge {
-		s.Status = internal
-	} else if hasInEdge {
-		s.Status = sink
-	} else if hasOutEdge {
-		s.Status = source
-	} else {
-		log.Panic("Graph contains a detached vertex")
+	s.UpdateStatus()
+	log.Printf("Vertex %d updated status is %s\n", v.GetIndex(), s.Status)
+}
+
+func processYoDown(v lib.Node, s *stateYoYo) {
+	log.Printf("Vertex %d (%s) processing YO- phase\n", v.GetIndex(), s.Status)
+	s.Min = v.GetIndex()
+	for i := 0; i < v.GetOutChannelsCount(); i++ {
+		if s.EdgeStates[i] == in {
+			value := receiveMessageYoDown(v, s, i)
+			if value < s.Min {
+				s.Min = value
+			}
+		}
+	}
+
+	outMessage := messageYoYo{Content: s.Min}
+	log.Printf("Vertex %d (%s) passing its minimum %d to neighbors\n", v.GetIndex(), s.Status, s.Min)
+	for i := 0; i < v.GetOutChannelsCount(); i++ {
+		if s.EdgeStates[i] == out {
+			sendMessageYoYo(v, i, outMessage)
+		}
 	}
 }
 
+func processYoUp(v lib.Node, s *stateYoYo) bool {
+	log.Printf("Vertex %d (%s) processing -YO phase\n", v.GetIndex(), s.Status)
+	finalVote := true
+	needsFlipping := make([]bool, v.GetOutChannelsCount())
+	outEdgesLeft := 0
+	for i := 0; i < v.GetOutChannelsCount(); i++ {
+		if s.EdgeStates[i] == out {
+			vote, pruned := receiveMessageYoUp(v, s, i)
+			finalVote = finalVote && vote
+			needsFlipping[i] = !vote
+			if !pruned {
+				outEdgesLeft++
+			}
+		}
+	}
+
+	requestPrune, pruneDefault := s.PreprocessPruning(outEdgesLeft)
+	for i := 0; i < v.GetOutChannelsCount(); i++ {
+		if s.EdgeStates[i] == in {
+			vote := finalVote && (s.Min == s.LastMessages[i])
+			if pruneDefault || requestPrune[i] {
+				log.Printf("Vertex %d (%s) at edge %d votes %t and request pruning\n", v.GetIndex(), s.Status, i, vote)
+			} else {
+				log.Printf("Vertex %d (%s) at edge %d votes %t\n", v.GetIndex(), s.Status, i, vote)
+			}
+			sendMessageYoUp(v, i, vote, pruneDefault || requestPrune[i])
+			needsFlipping[i] = !vote
+			if pruneDefault || requestPrune[i] {
+				s.EdgeStates[i] = pruned
+			}
+		}
+	}
+
+	for i := 0; i < v.GetOutChannelsCount(); i++ {
+		if needsFlipping[i] {
+			s.FlipEdge(i)
+		}
+	}
+
+	isLeader := s.UpdateStatus()
+	log.Printf("Vertex %d updated status is %s\n", v.GetIndex(), s.Status)
+	return isLeader
+}
+
 func processYoYo(v lib.Node, round int) bool {
-	s := getState(v)
+	s := getStateYoYo(v)
+	finish := false
 	switch s.Phase {
 	case setup:
-		processSetup(v, &s)
-	case yoUp:
-
+		processSetup(v, s)
+		s.Phase = yoDown
 	case yoDown:
+		processYoDown(v, s)
+		s.Phase = yoUp
+	case yoUp:
+		finish = processYoUp(v, s)
+		s.Phase = yoDown
 	}
-	setState(v, s)
-	return true
+	setStateYoYo(v, s)
+	return finish || s.Status == detached
 }
 
 func runYoYo(v lib.Node) {
@@ -113,17 +157,25 @@ func runYoYo(v lib.Node) {
 }
 
 func checkYoYo(vertices []lib.Node) {
+	min := vertices[0].GetIndex()
+	leader := -1
 	for _, v := range vertices {
-		s := getState(v)
-		for i := 0; i < v.GetOutChannelsCount(); i++ {
-			log.Printf("(vertex %d) orientation of edge %d is %t\n", v.GetIndex(), i, s.Orientation[i])
+		s := getStateYoYo(v)
+		if s.Status != detached {
+			log.Printf("Leader is %d\n", v.GetIndex())
+			leader = v.GetIndex()
 		}
-		log.Printf("(vertex %d) %s\n", v.GetIndex(), s.Status)
+		if min > v.GetIndex() {
+			min = v.GetIndex()
+		}
+	}
+	log.Printf("Minimum ID was %d\n", min)
+	if min != leader {
+		panic("Algorithm's output is wrong")
 	}
 }
 
-func RunYoYo(n int) {
-	vertices, synchronizer := lib.BuildSynchronizedRandomGraph(n, float64(0.25))
+func RunYoYo(vertices []lib.Node, synchronizer lib.Synchronizer) {
 	for _, v := range vertices {
 		log.Println("Node", v.GetIndex(), "about to run")
 		go runYoYo(v)
@@ -131,4 +183,8 @@ func RunYoYo(n int) {
 	synchronizer.Synchronize(0)
 	synchronizer.GetStats()
 	checkYoYo(vertices)
+}
+
+func RunYoYoRandom(n int, p float64) {
+	RunYoYo(lib.BuildSynchronizedRandomGraph(n, p))
 }

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"testing"
 )
 
 var isLogOn = flag.Bool("log", false, "Log output to screen")
@@ -15,7 +14,9 @@ func checkLogOutput() {
 	}
 }
 
+/*
 func TestYoYo(t *testing.T) {
 	checkLogOutput()
 	RunYoYo(1000)
 }
+*/
