@@ -13,5 +13,5 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 
 Run example:
 ```bash
-  go run src/example/example_undirected.go 5
+  go run src/example/synchronized_ring_example.go 5
 ```
