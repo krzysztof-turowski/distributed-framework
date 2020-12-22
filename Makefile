@@ -14,3 +14,6 @@ benchmark:
 
 check:
 	@for DIR in ./src/*/ ; do echo "Directory: $$DIR"; golint $$DIR | grep -v "should have comment or be unexported" || true; done
+
+format:
+	gofmt -l -s -w .
