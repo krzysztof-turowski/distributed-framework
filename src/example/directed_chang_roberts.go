@@ -1,12 +1,12 @@
 package main
 
 import (
-  "os"
-  "strconv"
-  "leader/directed_ring"
+	"leader/directed_ring"
+	"os"
+	"strconv"
 )
 
 func main() {
-  n, _ := strconv.Atoi(os.Args[len(os.Args) - 1])
-  directed_ring.RunChangRoberts(n)
+	n, _ := strconv.Atoi(os.Args[len(os.Args)-1])
+	directed_ring.RunChangRoberts(n)
 }
