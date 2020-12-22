@@ -13,7 +13,7 @@ func receiveMessageYoDown(v lib.Node, s *stateYoYo, index int) int {
 
 func receiveMessageYoUp(v lib.Node, s *stateYoYo, index int) (bool, bool) {
 	message := receiveMessageYoYo(v, index)
-	vote, pruneRequested := toBools(message.Content)
+	vote, pruneRequested := toBits(message.Content)
 
 	if pruneRequested == 1 {
 		s.EdgeStates[index] = pruned
@@ -33,8 +33,9 @@ func initializeYoYo(v lib.Node) bool {
 	}
 
 	s := newStateYoYo(v.GetOutChannelsCount())
+	msg := messageYoYo{Content: v.GetIndex()}
 	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		sendMessageYoYo(v, i, messageYoYo{Content: v.GetIndex()})
+		sendMessageYoYo(v, i, msg)
 	}
 	setStateYoYo(v, s)
 	return false

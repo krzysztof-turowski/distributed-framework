@@ -17,10 +17,10 @@ func toInt(b1 bool, b2 bool) int {
 	return value
 }
 
-func toBools(value int) (int, int) {
-	b1 := value & 2
+func toBits(value int) (int, int) {
+	b1 := (value & 2) >> 1
 	b2 := value & 1
-	return b1 >> 1, b2
+	return b1, b2
 }
 
 type messageYoYo struct {
@@ -40,10 +40,10 @@ const (
 type statusType int
 
 const (
-	source   statusType = 1
+	detached statusType = 0
+	source              = 1
 	sink                = 2
 	internal            = 3
-	detached            = 0
 )
 
 func (status statusType) String() string {
