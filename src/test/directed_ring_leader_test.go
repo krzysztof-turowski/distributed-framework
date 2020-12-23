@@ -1,20 +1,11 @@
-package main
+package test
 
 import (
-	"flag"
 	"io/ioutil"
 	"leader/directed_ring"
 	"log"
 	"testing"
 )
-
-var isLogOn = flag.Bool("log", false, "Log output to screen")
-
-func checkLogOutput() {
-	if !*isLogOn {
-    log.SetOutput(ioutil.Discard)
-	}
-}
 
 func TestDirectedRingChangRoberts(t *testing.T) {
 	checkLogOutput()

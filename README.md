@@ -9,6 +9,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 1. Chang-Roberts algorithm
 2. Itai-Rodeh algorithm
 
+#### Synchronized undirected graph
+1. YO-YO algorithm
+
 ## Running
 
 Run example:
