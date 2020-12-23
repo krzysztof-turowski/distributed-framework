@@ -4,7 +4,7 @@ synchronized_example:
 	go run src/example/synchronized_ring_example.go 5
 
 directed_chang_roberts_example:
-	go run src/example/directed_chang_roberts_example.go 5
+	go run src/example/directed_chang_roberts.go 5
 
 test:
 	go test test -run . -v

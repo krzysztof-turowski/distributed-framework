@@ -18,8 +18,7 @@ func toInt(b1 bool, b2 bool) int {
 }
 
 func toBits(value int) (int, int) {
-	b1 := (value & 2) >> 1
-	b2 := value & 1
+	b1, b2 := (value & 2) >> 1, value & 1
 	return b1, b2
 }
 
