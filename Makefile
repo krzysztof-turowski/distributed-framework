@@ -15,6 +15,9 @@ undirected_yoyo_example_random:
 undirected_unit_test:
 	go test leader/undirected_graph -v
 
+independent_set_luby_random:
+	go run src/example/independent_set_luby_random.go 20 0.25
+
 test:
 	go test test -run . -v
 
