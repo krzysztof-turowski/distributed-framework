@@ -2,6 +2,7 @@ package graphs
 
 import (
 	"encoding/json"
+	"fmt"
 	"lib"
 	"log"
 	"math/rand"
@@ -160,6 +161,37 @@ func runLubyMIS(v lib.Node) {
 }
 
 func checkLubyMIS(vertices []lib.Node) {
+	// build indices mapping
+	indexToID := make(map[int]int)
+	for i, v := range vertices {
+		indexToID[v.GetIndex()] = i
+	}
+
+	// check statuses and neighborhoods
+	for _, v := range vertices {
+		state := getLubyMISState(v)
+		if state.Status != winner && state.Status != looser {
+			panic(fmt.Sprint("Node ", v.GetIndex(), " has incorrect status"))
+		}
+
+		loosers, winners := 0, 0
+		for i := 0; i < v.GetInChannelsCount(); i++ {
+			nei := vertices[indexToID[v.GetInNeighborIndex(i)]]
+			neiState := getLubyMISState(nei)
+			if neiState.Status == looser {
+				loosers++
+			} else {
+				winners++
+			}
+		}
+
+		if state.Status == winner && winners > 0 {
+			panic(fmt.Sprint("Node ", v.GetIndex(), " won together with its neighbor"))
+		}
+		if state.Status == looser && winners == 0 {
+			panic(fmt.Sprint("Node ", v.GetIndex(), " lost together with all its neighbors"))
+		}
+	}
 }
 
 func RunLubyMIS(n int, p float64) {
