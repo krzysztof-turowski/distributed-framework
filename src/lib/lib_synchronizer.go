@@ -16,7 +16,7 @@ type Synchronizer struct {
 
 type AlgorithmStats struct {
 	MessagesCount int
-	RoundsCount int
+	RoundsCount   int
 }
 
 func (s *Synchronizer) Synchronize(interval time.Duration) {

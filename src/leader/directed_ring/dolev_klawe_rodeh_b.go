@@ -17,6 +17,9 @@ type stateDovelKlaweRodehB struct {
 	Status statusDovelKlaweRodeh
 }
 
+const (
+	empty messageTypeDovelKlaweRodeh = 0 //util type
+)
 
 type messageDovelKlaweRodehB struct {
 	MessageType messageTypeDovelKlaweRodeh
@@ -29,7 +32,7 @@ func sendDovelKlaweRodehB(v lib.Node, message interface{}) {
 	if message != nil {
 		messageBytes, _ := json.Marshal(message)
 		v.SendMessage(0, messageBytes)
-	}else {
+	} else {
 		v.SendMessage(0, nil)
 	}
 }
@@ -41,6 +44,7 @@ func receiveDovelKlaweRodehB(v lib.Node) (stateDovelKlaweRodehB, messageDovelKla
 	var m messageDovelKlaweRodehB
 	message := v.ReceiveMessage(0)
 	json.Unmarshal(message, &m)
+
 	return s, m
 }
 
@@ -54,11 +58,10 @@ func initializeDovelKlaweRodehB(v lib.Node) bool {
 	return false
 }
 
-
 func processDovelKlaweRodehB(v lib.Node, round int) bool {
 	s, m := receiveDovelKlaweRodehB(v)
 
-	if m.MessageType == 0 {
+	if m.MessageType == empty {
 		if s.Status != maximum {
 			sendDovelKlaweRodehB(v, nil)
 		}
@@ -69,11 +72,11 @@ func processDovelKlaweRodehB(v lib.Node, round int) bool {
 		s.Status = maximum
 		data, _ := json.Marshal(s)
 		v.SetState(data)
-		sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{3, 0, 0,0})
+		sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{terminate, 0, 0, 0})
 		return false
 	}
 
-	if m.MessageType == 3 {
+	if m.MessageType == terminate {
 		if s.Status == maximum {
 			return true
 		}
@@ -82,76 +85,60 @@ func processDovelKlaweRodehB(v lib.Node, round int) bool {
 	}
 
 	if s.Status == active {
-
-		if m.MessageType == 1 {
-
+		if m.MessageType == m1 {
 			if m.Value > s.MaxV {
 				s.MaxV = m.Value
 				s.Status = waiting
 				sendDovelKlaweRodehB(v, nil) // nil
 			} else {
 				s.Status = passive
-				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{2, s.MaxV, 0,0})
+				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m2, s.MaxV, 0, 0})
 			}
-
-		} else if m.MessageType == 2 {
+		} else if m.MessageType == m2 {
 			//never receive
 		}
-
-	}  else if s.Status == waiting {
-
-		if m.MessageType == 1 {
+	} else if s.Status == waiting {
+		if m.MessageType == m1 {
 			s.Status = passive
-
 			if m.Value >= s.MaxV && m.Counter >= 1 {
 				s.MaxV = m.Value
-
 				if m.Counter > 1 {
-					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, m.Value, m.Phase,m.Counter-1})
+					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, m.Value, m.Phase, m.Counter - 1})
 				} else if m.Counter == 1 {
 					s.Status = waiting
-					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, m.Value, m.Phase,0})
+					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, m.Value, m.Phase, 0})
 					s.PhaseV = m.Phase
 				}
-
 			} else {
-				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, m.Value, m.Phase,0})
+				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, m.Value, m.Phase, 0})
 			}
-
-
-		} else if m.MessageType == 2 {
+		} else if m.MessageType == m2 {
 			s.PhaseV = s.PhaseV + 1
 			s.Status = active
-			sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, s.MaxV, s.PhaseV, 1})
+			sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, s.MaxV, s.PhaseV, 1})
 
 		}
 	} else if s.Status == passive {
-
-		if m.MessageType == 1 {
-
+		if m.MessageType == m1 {
 			if m.Value >= s.MaxV && m.Counter >= 1 {
 				s.MaxV = m.Value
-
 				if m.Counter > 1 {
-					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, m.Value, m.Phase,m.Counter-1})
+					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, m.Value, m.Phase, m.Counter - 1})
 				} else if m.Counter == 1 {
 					s.Status = waiting
-					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, m.Value, m.Phase,0})
+					sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, m.Value, m.Phase, 0})
 					s.PhaseV = m.Phase
 				}
-
 			} else {
-				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{1, m.Value, m.Phase,0})
+				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m1, m.Value, m.Phase, 0})
 			}
 		} else if m.MessageType == 2 {
-
 			if m.Value < s.MaxV {
 				sendDovelKlaweRodehB(v, nil)
-			}  else {
-				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{2, m.Value, 0,0})
+			} else {
+				sendDovelKlaweRodehB(v, messageDovelKlaweRodehB{m2, m.Value, 0, 0})
 			}
 		}
-
 	}
 
 	data, _ := json.Marshal(s)
@@ -172,10 +159,9 @@ func runDovelKlaweRodehB(v lib.Node) {
 	}
 }
 
-
 func checkDovelKlaweRodehB(vertices []lib.Node) {
 	var lead_node lib.Node
-	var s stateDovelKlaweRodeh
+	var s stateDovelKlaweRodehA
 
 	for _, v := range vertices {
 		json.Unmarshal(v.GetState(), &s)

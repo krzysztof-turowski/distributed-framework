@@ -17,9 +17,9 @@ func TestDirectedRingItaiRodeh(t *testing.T) {
 	directed_ring.RunItaiRodeh(1000)
 }
 
-func TestDirectedRingRunDovelKlaweRodeh(t *testing.T) {
+func TestDirectedRingRunDovelKlaweRodehA(t *testing.T) {
 	checkLogOutput()
-	directed_ring.RunDovelKlaweRodeh(1000)
+	directed_ring.RunDovelKlaweRodehA(1000)
 }
 
 func TestDirectedRingRunDovelKlaweRodehB(t *testing.T) {
@@ -41,10 +41,10 @@ func BenchmarkDirectedRingItaiRodeh(b *testing.B) {
 	}
 }
 
-func BenchmarkDirectedRingRunDovelKlaweRodeh(b *testing.B) {
+func BenchmarkDirectedRingRunDovelKlaweRodehA(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-		directed_ring.RunDovelKlaweRodeh(1000)
+		directed_ring.RunDovelKlaweRodehA(1000)
 	}
 }
 

@@ -6,6 +6,9 @@ synchronized_example:
 directed_chang_roberts_example:
 	go run src/example/directed_chang_roberts.go 5
 
+directed_dolev_klawe_rodeh_example:
+	go run src/example/directed_dolev_klawe_rodeh.go a 5
+
 undirected_yoyo_example_book:
 	go run src/example/undirected_yoyo_example_book.go
 

@@ -18,9 +18,8 @@ func main() {
 	var results [4][2]int
 	results[0][0], results[0][1] = directed_ring.RunItaiRodeh(n)
 	results[1][0], results[1][1] = directed_ring.RunChangRoberts(n)
-	results[2][0], results[2][1] = directed_ring.RunDovelKlaweRodeh(n)
+	results[2][0], results[2][1] = directed_ring.RunDovelKlaweRodehA(n)
 	results[3][0], results[3][1] = directed_ring.RunDovelKlaweRodehB(n)
-
 
 	fmt.Println("Results")
 
