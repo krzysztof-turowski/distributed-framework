@@ -4,3 +4,5 @@ profiler/*
 
 bin/
 pkg/
+
+.vscode
