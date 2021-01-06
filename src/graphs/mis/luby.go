@@ -1,4 +1,4 @@
-package graphs
+package mis
 
 import (
 	"encoding/json"
@@ -16,62 +16,62 @@ const (
 	loser
 )
 
-type stateLubyMIS struct {
+type stateLuby struct {
 	Status             statusType
 	Value              int
 	RemainingNeighbors []bool
 }
 
-type messageLubyMIS struct {
+type messageLuby struct {
 	Value int
 }
 
-func setLubyMISState(v lib.Node, s stateLubyMIS) {
+func setLubyState(v lib.Node, s stateLuby) {
 	data, _ := json.Marshal(s)
 	v.SetState(data)
 }
 
-func getLubyMISState(v lib.Node) stateLubyMIS {
+func getLubyState(v lib.Node) stateLuby {
 	data := v.GetState()
-	var s stateLubyMIS
+	var s stateLuby
 	s.RemainingNeighbors = make([]bool, v.GetInChannelsCount())
 	json.Unmarshal(data, &s)
 	return s
 }
 
-func sendLubyMISMessage(v lib.Node, target int, msg messageLubyMIS) {
+func sendLubyMessage(v lib.Node, target int, msg messageLuby) {
 	data, _ := json.Marshal(msg)
 	v.SendMessage(target, data)
 }
 
-func sendLubyMISNullMessage(v lib.Node, target int) {
+func sendLubyNullMessage(v lib.Node, target int) {
 	v.SendMessage(target, nil)
 }
 
-func receiveLubyMISMessage(v lib.Node, source int) (messageLubyMIS, bool) {
+func receiveLubyMessage(v lib.Node, source int) (messageLuby, bool) {
 	data := v.ReceiveMessage(source)
 	if data == nil {
-		return messageLubyMIS{}, false
+		return messageLuby{}, false
 	}
-	var msg messageLubyMIS
+	var msg messageLuby
 	json.Unmarshal(data, &msg)
 	return msg, true
 }
 
-func initializeLubyMIS(v lib.Node) bool {
+func initializeLuby(v lib.Node) bool {
 	neighbors := make([]bool, v.GetInChannelsCount())
 	for i := range neighbors {
 		neighbors[i] = true
 	}
-	setLubyMISState(v, stateLubyMIS{Status: unknown, RemainingNeighbors: neighbors})
+	setLubyState(v, stateLuby{Status: unknown, RemainingNeighbors: neighbors})
 	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		sendLubyMISNullMessage(v, i)
+		sendLubyNullMessage(v, i)
 	}
 	return false
 }
 
-func processLubyMIS(v lib.Node, round int) bool {
-	state := getLubyMISState(v)
+func processLuby(v lib.Node, round int) bool {
+	state := getLubyState(v)
 
 	// react to messages from previous round
 	switch (round + 2) % 3 {
@@ -79,7 +79,7 @@ func processLubyMIS(v lib.Node, round int) bool {
 		highestValue := true
 		for i := 0; i < v.GetInChannelsCount(); i++ {
 			if state.RemainingNeighbors[i] {
-				msg, _ := receiveLubyMISMessage(v, i)
+				msg, _ := receiveLubyMessage(v, i)
 				if msg.Value >= state.Value {
 					highestValue = false
 				}
@@ -91,7 +91,7 @@ func processLubyMIS(v lib.Node, round int) bool {
 	case 1: // after winner-broadcast phase
 		for i := 0; i < v.GetInChannelsCount(); i++ {
 			if state.RemainingNeighbors[i] {
-				_, real := receiveLubyMISMessage(v, i)
+				_, real := receiveLubyMessage(v, i)
 				if real {
 					state.Status = loser
 				}
@@ -100,14 +100,14 @@ func processLubyMIS(v lib.Node, round int) bool {
 	case 2: // after loser-broadcast phase
 		for i := 0; i < v.GetInChannelsCount(); i++ {
 			if state.RemainingNeighbors[i] {
-				_, real := receiveLubyMISMessage(v, i)
+				_, real := receiveLubyMessage(v, i)
 				if real {
 					state.RemainingNeighbors[i] = false
 				}
 			}
 		}
 		if state.Status != unknown {
-			setLubyMISState(v, state)
+			setLubyState(v, state)
 			return true
 		}
 	}
@@ -119,16 +119,16 @@ func processLubyMIS(v lib.Node, round int) bool {
 		state.Value = rand.Intn(n * n * n * n)
 		for i := 0; i < v.GetOutChannelsCount(); i++ {
 			if state.RemainingNeighbors[i] {
-				sendLubyMISMessage(v, i, messageLubyMIS{Value: state.Value})
+				sendLubyMessage(v, i, messageLuby{Value: state.Value})
 			}
 		}
 	case 1: // winner-broadcast phase
 		for i := 0; i < v.GetOutChannelsCount(); i++ {
 			if state.RemainingNeighbors[i] {
 				if state.Status == winner {
-					sendLubyMISMessage(v, i, messageLubyMIS{})
+					sendLubyMessage(v, i, messageLuby{})
 				} else {
-					sendLubyMISNullMessage(v, i)
+					sendLubyNullMessage(v, i)
 				}
 			}
 		}
@@ -136,41 +136,41 @@ func processLubyMIS(v lib.Node, round int) bool {
 		for i := 0; i < v.GetOutChannelsCount(); i++ {
 			if state.RemainingNeighbors[i] {
 				if state.Status == loser {
-					sendLubyMISMessage(v, i, messageLubyMIS{})
+					sendLubyMessage(v, i, messageLuby{})
 				} else {
-					sendLubyMISNullMessage(v, i)
+					sendLubyNullMessage(v, i)
 				}
 			}
 		}
 	}
 
-	setLubyMISState(v, state)
+	setLubyState(v, state)
 	return false
 }
 
-func runLubyMIS(v lib.Node) {
+func runLuby(v lib.Node) {
 	v.StartProcessing()
-	finish := initializeLubyMIS(v)
+	finish := initializeLuby(v)
 	v.FinishProcessing(finish)
 
 	for round := 0; !finish; round++ {
 		v.StartProcessing()
-		finish = processLubyMIS(v, round)
+		finish = processLuby(v, round)
 		v.FinishProcessing(finish)
 	}
 }
 
-func checkLubyMIS(vertices []lib.Node) {
+func checkLuby(vertices []lib.Node) {
 	// check statuses and neighborhoods
 	for _, v := range vertices {
-		state := getLubyMISState(v)
+		state := getLubyState(v)
 		if state.Status != winner && state.Status != loser {
 			panic(fmt.Sprint("Node ", v.GetIndex(), " has incorrect status"))
 		}
 
 		losers, winners := 0, 0
 		for _, neighbor := range v.GetInNeighbors() {
-			if getLubyMISState(neighbor).Status == loser {
+			if getLubyState(neighbor).Status == loser {
 				losers++
 			} else {
 				winners++
@@ -186,14 +186,14 @@ func checkLubyMIS(vertices []lib.Node) {
 	}
 }
 
-func RunLubyMIS(n int, p float64) (int, int) {
+func RunLuby(n int, p float64) (int, int) {
 	vertices, synchronizer := lib.BuildSynchronizedRandomGraph(n, p)
 	for _, v := range vertices {
 		log.Println("Node", v.GetIndex(), "about to run")
-		go runLubyMIS(v)
+		go runLuby(v)
 	}
 
 	synchronizer.Synchronize(0)
-	checkLubyMIS(vertices)
+	checkLuby(vertices)
 	return synchronizer.GetStats()
 }

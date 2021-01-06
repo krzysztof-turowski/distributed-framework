@@ -1,20 +1,20 @@
 package test
 
 import (
-	"graphs"
+	"graphs/mis"
 	"io/ioutil"
 	"log"
 	"testing"
 )
 
-func TestLubyMIS(t *testing.T) {
+func TestLuby(t *testing.T) {
 	checkLogOutput()
-	graphs.RunLubyMIS(1000, 0.75)
+	mis.RunLuby(1000, 0.75)
 }
 
-func BenchmarkLubyMIS(b *testing.B) {
+func BenchmarkLuby(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-		graphs.RunLubyMIS(1000, 0.75)
+		mis.RunLuby(1000, 0.75)
 	}
 }
