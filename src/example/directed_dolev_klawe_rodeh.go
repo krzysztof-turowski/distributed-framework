@@ -9,13 +9,10 @@ import (
 
 func main() {
 	n, _ := strconv.Atoi(os.Args[len(os.Args)-1])
-	alg := os.Args[len(os.Args)-2]
-
-	alg = strings.ToLower(alg)
-
-	if alg == "a" {
+	switch algorithm = strings.ToLower(os.Args[len(os.Args)-2]); algorithm {
+	case "a":
 		directed_ring.RunDovelKlaweRodehA(n)
-	} else if alg == "b" {
+	case "b":
 		directed_ring.RunDovelKlaweRodehB(n)
 	}
 }
