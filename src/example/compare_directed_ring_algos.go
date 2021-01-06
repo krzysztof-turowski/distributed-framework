@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"leader/directed_ring"
+	"log"
 	"os"
 	"strconv"
 	"text/tabwriter"
@@ -11,8 +13,9 @@ import (
 func main() {
 	n, _ := strconv.Atoi(os.Args[len(os.Args)-1])
 
-	var results [4][2]int
+	log.SetOutput(ioutil.Discard)
 
+	var results [4][2]int
 	results[0][0], results[0][1] = directed_ring.RunItaiRodeh(n)
 	results[1][0], results[1][1] = directed_ring.RunChangRoberts(n)
 	results[2][0], results[2][1] = directed_ring.RunDovelKlaweRodeh(n)
