@@ -186,7 +186,7 @@ func checkLubyMIS(vertices []lib.Node) {
 	}
 }
 
-func RunLubyMIS(n int, p float64) {
+func RunLubyMIS(n int, p float64) (int, int) {
 	vertices, synchronizer := lib.BuildSynchronizedRandomGraph(n, p)
 	for _, v := range vertices {
 		log.Println("Node", v.GetIndex(), "about to run")
@@ -194,6 +194,6 @@ func RunLubyMIS(n int, p float64) {
 	}
 
 	synchronizer.Synchronize(0)
-	synchronizer.GetStats()
 	checkLubyMIS(vertices)
+	return synchronizer.GetStats()
 }
