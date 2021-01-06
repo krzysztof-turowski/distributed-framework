@@ -1,18 +1,20 @@
 all: check
 
 synchronized_example:
-	go run src/example/synchronized_ring_example.go 5
+	go run src/example/synchronized.go 5
 
 directed_chang_roberts_example:
 	go run src/example/directed_chang_roberts.go 5
 
-undirected_yoyo_example_book:
-	go run src/example/undirected_yoyo_example_book.go
+directed_dolev_klawe_rodeh_example:
+	go run src/example/directed_dolev_klawe_rodeh.go a 5
+	go run src/example/directed_dolev_klawe_rodeh.go b 5
 
-undirected_yoyo_example_random:
+undirected_yoyo_example:
+	go run src/example/undirected_yoyo_example_book.go
 	go run src/example/undirected_yoyo_example_random.go 20 0.25
 
-undirected_unit_test:
+unit_test:
 	go test leader/undirected_graph -v
 
 test:

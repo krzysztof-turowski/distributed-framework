@@ -8,6 +8,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 #### Synchronized directed ring
 1. Chang-Roberts algorithm
 2. Itai-Rodeh algorithm
+3. Dolev-Klawe-Rodeh algorithm A and B
 
 #### Synchronized undirected graph
 1. YO-YO algorithm
