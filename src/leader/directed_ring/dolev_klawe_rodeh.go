@@ -15,8 +15,8 @@ const (
 )
 
 type stateDovelKlaweRodeh struct {
-	MaxV   int64
-	LeftV  int64
+	MaxV   int
+	LeftV  int
 	Status statusDovelKlaweRodeh
 }
 
@@ -24,7 +24,7 @@ type messageTypeDovelKlaweRodeh int
 
 type messageDovelKlaweRodeh struct {
 	MessageType messageTypeDovelKlaweRodeh
-	Value       int64
+	Value       int
 }
 
 func sendDovelKlaweRodeh(v lib.Node, message messageDovelKlaweRodeh) {
@@ -43,7 +43,7 @@ func receiveDovelKlaweRodeh(v lib.Node) (stateDovelKlaweRodeh, messageDovelKlawe
 }
 
 func initializeDovelKlaweRodeh(v lib.Node) bool {
-	s := stateDovelKlaweRodeh{int64(v.GetIndex()), -1, active}
+	s := stateDovelKlaweRodeh{v.GetIndex(), -1, active}
 
 	data, _ := json.Marshal(s)
 	v.SetState(data)
@@ -56,7 +56,7 @@ func initializeDovelKlaweRodeh(v lib.Node) bool {
 func processDovelKlaweRodeh(v lib.Node, round int) bool {
 	s, m := receiveDovelKlaweRodeh(v)
 
-	if m.MessageType == 0 {
+	if m.MessageType == 3 {
 		if s.Status == maximum {
 			return true
 		}
@@ -75,7 +75,7 @@ func processDovelKlaweRodeh(v lib.Node, round int) bool {
 				s.LeftV = m.Value
 			} else {
 				s.Status = maximum
-				sendDovelKlaweRodeh(v, messageDovelKlaweRodeh{0,0}) // stop message
+				sendDovelKlaweRodeh(v, messageDovelKlaweRodeh{3,0}) // stop message
 			}
 		} else if m.MessageType == 2 {
 
