@@ -43,6 +43,14 @@ func (v *testNode) GetIndex() int {
 	return v.index
 }
 
+func (v *testNode) GetInNeighborIndex(index int) int {
+	return 0
+}
+
+func (v *testNode) GetOutNeighborIndex(index int) int {
+	return 0
+}
+
 func (v *testNode) GetState() []byte {
 	return v.state
 }
