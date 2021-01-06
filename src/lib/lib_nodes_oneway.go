@@ -6,11 +6,13 @@ import (
 )
 
 type oneWayNode struct {
-	index, size  int
-	state        []byte
-	inNeighbors  []<-chan []byte
-	outNeighbors []chan<- []byte
-	stats        statsNode
+	index, size         int
+	state               []byte
+	inNeighbors         []<-chan []byte
+	outNeighbors        []chan<- []byte
+	inNeighborsIndices  []int
+	outNeighborsIndices []int
+	stats               statsNode
 }
 
 func getOneWayChannels(n int) []chan []byte {
@@ -49,6 +51,14 @@ func (v *oneWayNode) GetIndex() int {
 	return v.index
 }
 
+func (v *oneWayNode) GetInNeighborIndex(index int) int {
+	return v.inNeighborsIndices[index]
+}
+
+func (v *oneWayNode) GetOutNeighborIndex(index int) int {
+	return v.outNeighborsIndices[index]
+}
+
 func (v *oneWayNode) GetState() []byte {
 	return v.state
 }
@@ -79,14 +89,18 @@ func (v *oneWayNode) FinishProcessing(finish bool) {
 func (v *oneWayNode) shuffleTopology() {
 	rand.Shuffle(len(v.inNeighbors), func(i, j int) {
 		v.inNeighbors[i], v.inNeighbors[j] = v.inNeighbors[j], v.inNeighbors[i]
+		v.inNeighborsIndices[i], v.inNeighborsIndices[j] = v.inNeighborsIndices[j], v.inNeighborsIndices[i]
 	})
 	rand.Shuffle(len(v.outNeighbors), func(i, j int) {
 		v.outNeighbors[i], v.outNeighbors[j] = v.outNeighbors[j], v.outNeighbors[i]
+		v.outNeighborsIndices[i], v.outNeighborsIndices[j] = v.outNeighborsIndices[j], v.outNeighborsIndices[i]
 	})
 }
 
 func addOneWayConnection(
 	firstNode *oneWayNode, secondNode *oneWayNode, channel chan []byte) {
 	firstNode.outNeighbors = append(firstNode.outNeighbors, channel)
+	firstNode.outNeighborsIndices = append(firstNode.outNeighborsIndices, secondNode.index)
 	secondNode.inNeighbors = append(secondNode.inNeighbors, channel)
+	secondNode.inNeighborsIndices = append(secondNode.inNeighborsIndices, firstNode.index)
 }

@@ -11,10 +11,11 @@ type twoWaySynchronousChannel struct {
 }
 
 type twoWayNode struct {
-	index, size int
-	state       []byte
-	neighbors   []twoWaySynchronousChannel
-	stats       statsNode
+	index, size      int
+	state            []byte
+	neighbors        []twoWaySynchronousChannel
+	neighborsIndices []int
+	stats            statsNode
 }
 
 func getTwoWayChannels(n int) []chan []byte {
@@ -53,6 +54,14 @@ func (v *twoWayNode) GetIndex() int {
 	return v.index
 }
 
+func (v *twoWayNode) GetInNeighborIndex(index int) int {
+	return v.neighborsIndices[index]
+}
+
+func (v *twoWayNode) GetOutNeighborIndex(index int) int {
+	return v.neighborsIndices[index]
+}
+
 func (v *twoWayNode) GetState() []byte {
 	return v.state
 }
@@ -83,6 +92,7 @@ func (v *twoWayNode) FinishProcessing(finish bool) {
 func (v *twoWayNode) shuffleTopology() {
 	rand.Shuffle(len(v.neighbors), func(i, j int) {
 		v.neighbors[i], v.neighbors[j] = v.neighbors[j], v.neighbors[i]
+		v.neighborsIndices[i], v.neighborsIndices[j] = v.neighborsIndices[j], v.neighborsIndices[i]
 	})
 }
 
@@ -92,7 +102,9 @@ func addTwoWayConnection(
 	firstNode.neighbors = append(
 		firstNode.neighbors,
 		twoWaySynchronousChannel{input: secondChan, output: firstChan})
+	firstNode.neighborsIndices = append(firstNode.neighborsIndices, secondNode.index)
 	secondNode.neighbors = append(
 		secondNode.neighbors,
 		twoWaySynchronousChannel{input: firstChan, output: secondChan})
+	secondNode.neighborsIndices = append(secondNode.neighborsIndices, firstNode.index)
 }

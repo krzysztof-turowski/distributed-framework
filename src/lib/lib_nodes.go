@@ -6,6 +6,8 @@ type Node interface {
 	GetInChannelsCount() int
 	GetOutChannelsCount() int
 	GetIndex() int
+	GetInNeighborIndex(index int) int
+	GetOutNeighborIndex(index int) int
 	GetState() []byte
 	SetState(state []byte)
 	GetSize() int
