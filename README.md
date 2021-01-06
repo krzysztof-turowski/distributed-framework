@@ -12,6 +12,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 #### Synchronized undirected graph
 1. YO-YO algorithm
 
+### Graph algorithms
+1. LubyMIS algorithm
+
 ## Running
 
 Run example:
