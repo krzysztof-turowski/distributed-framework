@@ -118,13 +118,14 @@ func checkChangRoberts(vertices []lib.Node) {
 	}
 }
 
-func RunChangRoberts(n int) {
+func RunChangRoberts(n int) (int, int) {
 	vertices, synchronizer := lib.BuildSynchronizedDirectedRing(n)
 	for _, v := range vertices {
 		log.Println("Node", v.GetIndex(), "about to run")
 		go runChangRoberts(v)
 	}
 	synchronizer.Synchronize(0)
-	synchronizer.GetStats()
 	checkChangRoberts(vertices)
+
+	return synchronizer.GetStats()
 }

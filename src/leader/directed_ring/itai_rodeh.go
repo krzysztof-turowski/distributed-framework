@@ -138,13 +138,13 @@ func checkItaiRodeh(vertices []lib.Node) {
 	}
 }
 
-func RunItaiRodeh(n int) {
+func RunItaiRodeh(n int) (int, int) {
 	vertices, synchronizer := lib.BuildSynchronizedDirectedRing(n)
 	for _, v := range vertices {
 		log.Println("Node", v.GetIndex(), "about to run")
 		go runItaiRodeh(v)
 	}
 	synchronizer.Synchronize(0 * time.Millisecond)
-	synchronizer.GetStats()
 	checkItaiRodeh(vertices)
+	return synchronizer.GetStats()
 }

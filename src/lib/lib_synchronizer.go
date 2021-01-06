@@ -14,6 +14,11 @@ type Synchronizer struct {
 	outConfirm []chan bool
 }
 
+type AlgorithmStats struct {
+	MessagesCount int
+	RoundsCount int
+}
+
 func (s *Synchronizer) Synchronize(interval time.Duration) {
 	for finish := 0; finish < s.n; s.round++ {
 		log.Println("Round", s.round, "initialized")
@@ -42,7 +47,8 @@ func (s *Synchronizer) Synchronize(interval time.Duration) {
 	}
 }
 
-func (s *Synchronizer) GetStats() {
+func (s *Synchronizer) GetStats() (int, int) {
 	log.Println("Total messages: ", s.messages)
 	log.Println("Total rounds: ", s.round)
+	return s.messages, s.round
 }

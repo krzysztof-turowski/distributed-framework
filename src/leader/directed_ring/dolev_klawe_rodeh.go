@@ -140,7 +140,7 @@ func checkDovelKlaweRodeh(vertices []lib.Node) {
 
 }
 
-func RunDovelKlaweRodeh(n int)  {
+func RunDovelKlaweRodeh(n int) (int, int) {
 	vertices, synchronizer := lib.BuildSynchronizedDirectedRing(n)
 
 	for _, v := range vertices {
@@ -148,8 +148,9 @@ func RunDovelKlaweRodeh(n int)  {
 		go runDovelKlaweRodeh(v)
 	}
 	synchronizer.Synchronize(0)
-	synchronizer.GetStats()
 	checkDovelKlaweRodeh(vertices)
+
+	return synchronizer.GetStats()
 }
 
 
