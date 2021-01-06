@@ -16,12 +16,12 @@ func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
 	rng := GetRandomGenerator()
 	for i := range vertices {
 		vertices[i] = &oneWayNode{
-			index:               rng.Int(),
-			size:                n,
-			inNeighbors:         make([]<-chan []byte, 0),
-			outNeighbors:        make([]chan<- []byte, 0),
-			inNeighborsIndices:  make([]int, 0),
-			outNeighborsIndices: make([]int, 0),
+			index:                rng.Int(),
+			size:                 n,
+			inNeighborsChannels:  make([]<-chan []byte, 0),
+			inNeighbors:          make([]Node, 0),
+			outNeighborsChannels: make([]chan<- []byte, 0),
+			outNeighbors:         make([]Node, 0),
 			stats: statsNode{
 				inConfirm:  outConfirm[i],
 				outConfirm: inConfirm[i],
@@ -57,10 +57,10 @@ func BuildSynchronizedEmptyGraph(n int, indexGenerator Generator) ([]Node, Synch
 	}
 	for i := range vertices {
 		vertices[i] = &twoWayNode{
-			index:            indexGenerator.Int(),
-			size:             n,
-			neighbors:        make([]twoWaySynchronousChannel, 0),
-			neighborsIndices: make([]int, 0),
+			index:             indexGenerator.Int(),
+			size:              n,
+			neighborsChannels: make([]twoWaySynchronousChannel, 0),
+			neighbors:         make([]Node, 0),
 			stats: statsNode{
 				inConfirm:  outConfirm[i],
 				outConfirm: inConfirm[i],

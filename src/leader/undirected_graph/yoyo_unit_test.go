@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
+	"lib"
 	"log"
 	"testing"
 )
@@ -39,16 +40,16 @@ func (v *testNode) GetOutChannelsCount() int {
 	return 1
 }
 
+func (v *testNode) GetInNeighbors() []lib.Node {
+	return nil
+}
+
+func (v *testNode) GetOutNeighbors() []lib.Node {
+	return nil
+}
+
 func (v *testNode) GetIndex() int {
 	return v.index
-}
-
-func (v *testNode) GetInNeighborIndex(index int) int {
-	return 0
-}
-
-func (v *testNode) GetOutNeighborIndex(index int) int {
-	return 0
 }
 
 func (v *testNode) GetState() []byte {
