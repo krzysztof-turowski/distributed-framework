@@ -5,6 +5,8 @@ type Node interface {
 	SendMessage(index int, message []byte)
 	GetInChannelsCount() int
 	GetOutChannelsCount() int
+	GetInNeighbors() []Node
+	GetOutNeighbors() []Node
 	GetIndex() int
 	GetState() []byte
 	SetState(state []byte)

@@ -14,6 +14,9 @@ undirected_yoyo_example:
 	go run src/example/undirected_yoyo_example_book.go
 	go run src/example/undirected_yoyo_example_random.go 20 0.25
 
+maximal_independent_set_luby_example:
+	go run src/example/maximal_independent_set_luby.go 20 0.25
+
 unit_test:
 	go test leader/undirected_graph -v
 

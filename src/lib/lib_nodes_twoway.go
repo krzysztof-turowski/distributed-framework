@@ -11,10 +11,11 @@ type twoWaySynchronousChannel struct {
 }
 
 type twoWayNode struct {
-	index, size int
-	state       []byte
-	neighbors   []twoWaySynchronousChannel
-	stats       statsNode
+	index, size       int
+	state             []byte
+	neighborsChannels []twoWaySynchronousChannel
+	neighbors         []Node
+	stats             statsNode
 }
 
 func getTwoWayChannels(n int) []chan []byte {
@@ -26,7 +27,7 @@ func getTwoWayChannels(n int) []chan []byte {
 }
 
 func (v *twoWayNode) ReceiveMessage(index int) []byte {
-	message := <-v.neighbors[index].input
+	message := <-v.neighborsChannels[index].input
 	if message != nil {
 		v.stats.receivedMessages++
 	}
@@ -35,18 +36,26 @@ func (v *twoWayNode) ReceiveMessage(index int) []byte {
 
 func (v *twoWayNode) SendMessage(index int, message []byte) {
 	log.Println("Node", v.GetIndex(), "sends message to neighbor", index)
-	v.neighbors[index].output <- message
+	v.neighborsChannels[index].output <- message
 	if message != nil {
 		v.stats.sentMessages++
 	}
 }
 
 func (v *twoWayNode) GetInChannelsCount() int {
-	return len(v.neighbors)
+	return len(v.neighborsChannels)
 }
 
 func (v *twoWayNode) GetOutChannelsCount() int {
-	return len(v.neighbors)
+	return len(v.neighborsChannels)
+}
+
+func (v *twoWayNode) GetInNeighbors() []Node {
+	return v.neighbors
+}
+
+func (v *twoWayNode) GetOutNeighbors() []Node {
+	return v.neighbors
 }
 
 func (v *twoWayNode) GetIndex() int {
@@ -81,7 +90,8 @@ func (v *twoWayNode) FinishProcessing(finish bool) {
 }
 
 func (v *twoWayNode) shuffleTopology() {
-	rand.Shuffle(len(v.neighbors), func(i, j int) {
+	rand.Shuffle(len(v.neighborsChannels), func(i, j int) {
+		v.neighborsChannels[i], v.neighborsChannels[j] = v.neighborsChannels[j], v.neighborsChannels[i]
 		v.neighbors[i], v.neighbors[j] = v.neighbors[j], v.neighbors[i]
 	})
 }
@@ -89,10 +99,12 @@ func (v *twoWayNode) shuffleTopology() {
 func addTwoWayConnection(
 	firstNode *twoWayNode, secondNode *twoWayNode,
 	firstChan chan []byte, secondChan chan []byte) {
-	firstNode.neighbors = append(
-		firstNode.neighbors,
+	firstNode.neighborsChannels = append(
+		firstNode.neighborsChannels,
 		twoWaySynchronousChannel{input: secondChan, output: firstChan})
-	secondNode.neighbors = append(
-		secondNode.neighbors,
+	firstNode.neighbors = append(firstNode.neighbors, secondNode)
+	secondNode.neighborsChannels = append(
+		secondNode.neighborsChannels,
 		twoWaySynchronousChannel{input: firstChan, output: secondChan})
+	secondNode.neighbors = append(secondNode.neighbors, firstNode)
 }
