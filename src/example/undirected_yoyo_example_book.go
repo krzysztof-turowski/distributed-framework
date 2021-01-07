@@ -28,5 +28,5 @@ func main() {
 		{14, 17},
 		{14, 17},
 	}
-	undirected_graph.RunYoYo(lib.BuildSynchronizedGraphFromAdjacencyList(adjacencyList))
+	undirected_graph.RunYoYo(lib.BuildSynchronizedGraphFromAdjacencyList(adjacencyList, lib.GetGenerator()))
 }
