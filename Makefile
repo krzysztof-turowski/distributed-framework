@@ -15,7 +15,7 @@ undirected_yoyo_example:
 	go run src/example/undirected_yoyo_example_random.go 20 0.25
 
 undirected_mesh_leader_example:
-	go run src/example/undirected_mesh.go 6 9
+	go run src/example/undirected_mesh_leader.go 6 9
 
 maximal_independent_set_luby_example:
 	go run src/example/maximal_independent_set_luby.go 20 0.25

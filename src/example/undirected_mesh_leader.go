@@ -17,6 +17,6 @@ func main() {
 	}
 
 	g, n := lib.BuildSynchronizedUndirectedMesh(a, b)
-	undirected_mesh.RunMeshLeader(g, n, (a+b-2)*2)
+	undirected_mesh.RunPeterson(g, n, (a+b-2)*2)
 
 }

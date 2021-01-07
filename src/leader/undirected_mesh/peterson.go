@@ -38,23 +38,17 @@ func processMesh(v lib.Node, round int, rounds int) bool {
 	s := getStateMesh(v)
 	//broadcast phase
 	if round > rounds {
-		done := false
 		for _, i := range s.NeighboursToBroadcast {
 			sendMessageMesh(v, i, s.Broadcast)
-			if s.Broadcast != nil {
-			}
 		}
-		if s.Broadcast != nil {
-			done = true
-		}
+    done := (s.Broadcast != nil)
 		NewNeighboursToBroadcast := make([]int, 0)
 		for _, i := range s.NeighboursToBroadcast {
 			msg := receiveMessageMesh(v, i)
 			if msg != nil {
 				s.Broadcast = msg
 				if msg.Mode == leader {
-					s.Leader = msg.Id
-					s.Status = passive
+					s.Leader, s.Status = msg.Id, passive
 				}
 			} else {
 				NewNeighboursToBroadcast = append(NewNeighboursToBroadcast, i)
@@ -73,8 +67,7 @@ func processMesh(v lib.Node, round int, rounds int) bool {
 		msg1 := receiveMessageMesh(v, 0)
 		if msg1 != nil {
 			if msg1.Id <= s.Min {
-				s.Min = msg1.Id
-				s.PassRight = msg1
+				s.Min, s.PassRight = msg1.Id, msg1
 			} else {
 				s.PassRight = nil
 			}
@@ -85,8 +78,7 @@ func processMesh(v lib.Node, round int, rounds int) bool {
 		s.PassLeft = msg2
 		if msg2 != nil {
 			if msg2.Id <= s.Min {
-				s.Min = msg2.Id
-				s.PassLeft = msg2
+				s.Min, s.PassLeft = msg2.Id, msg2
 			} else {
 				s.PassLeft = nil
 			}
@@ -101,37 +93,30 @@ func processMesh(v lib.Node, round int, rounds int) bool {
 		case 2:
 			sendMessageMesh(v, s.Candidates[0], s.PassLeft)
 			sendMessageMesh(v, s.Candidates[1], s.PassRight)
-			msg1 := receiveMessageMesh(v, s.Candidates[0])
-			s.PassRight = msg1
-			msg2 := receiveMessageMesh(v, s.Candidates[1])
-			s.PassLeft = msg2
+			s.PassRight = receiveMessageMesh(v, s.Candidates[0])
+			s.PassLeft = receiveMessageMesh(v, s.Candidates[1])
 		case 1:
 			if len(s.Forwarders) == 1 {
 				sendMessageMesh(v, s.Candidates[0], s.PassLeft)
 				sendMessageMesh(v, s.Forwarders[0], s.PassRight)
-				msg1 := receiveMessageMesh(v, s.Candidates[0])
-				s.PassRight = msg1
-				msg2 := receiveMessageMesh(v, s.Forwarders[0])
-				s.PassLeft = msg2
+				s.PassRight = receiveMessageMesh(v, s.Candidates[0])
+				s.PassLeft = receiveMessageMesh(v, s.Forwarders[0])
 			}
 		case 0:
 			sendMessageMesh(v, s.Forwarders[0], s.PassLeft)
 			sendMessageMesh(v, s.Forwarders[1], s.PassRight)
-			msg1 := receiveMessageMesh(v, s.Forwarders[0])
-			s.PassRight = msg1
-			msg2 := receiveMessageMesh(v, s.Forwarders[1])
-			s.PassLeft = msg2
+			s.PassRight = receiveMessageMesh(v, s.Forwarders[0])
+			s.PassLeft = receiveMessageMesh(v, s.Forwarders[1])
 		}
 	}
 	if round == rounds && s.Min == v.GetIndex() && s.Status == candidate {
-		s.Status = leader
-		msg := messageMesh{s.Min, leader}
-		s.Broadcast = &msg
-		s.Leader = v.GetIndex()
+		s.Status, s.Leader = leader, v.GetIndex()
+		s.Broadcast = &messageMesh{s.Min, leader}
 	}
 	setStateMesh(v, &s)
 	return false
 }
+
 func newMeshState(Id int, State modeType, Neighbours []modeType, Candidates []int, Forwarders []int, Passives []int, PassRight *messageMesh, PassLeft *messageMesh, NeighbourCount []int) *stateMesh {
 	return &stateMesh{
 		Min:                   Id,
@@ -238,7 +223,7 @@ func sendMessageMesh(v lib.Node, index int, msg *messageMesh) {
 	}
 }
 
-func runMeshLeader(v lib.Node, rounds int) {
+func runPeterson(v lib.Node, rounds int) {
 	v.StartProcessing()
 	finish := initializeMesh(v)
 	v.FinishProcessing(finish)
@@ -248,7 +233,8 @@ func runMeshLeader(v lib.Node, rounds int) {
 		v.FinishProcessing(finish)
 	}
 }
-func checkMeshLeader(vertices []lib.Node) {
+
+func checkPeterson(vertices []lib.Node) {
 	var lead_node lib.Node
 	for _, v := range vertices {
 		s := getStateMesh(v)
@@ -271,13 +257,12 @@ func checkMeshLeader(vertices []lib.Node) {
 	log.Println("all good, leader id is: ", lead_node.GetIndex())
 }
 
-func RunMeshLeader(vertices []lib.Node, synchronizer lib.Synchronizer, rounds int) {
-	log.Println("running mesh leader")
+func RunPeterson(vertices []lib.Node, synchronizer lib.Synchronizer, rounds int) {
 	for _, v := range vertices {
 		log.Println("Node", v.GetIndex(), "about to run")
-		go runMeshLeader(v, rounds)
+		go runPeterson(v, rounds)
 	}
 	synchronizer.Synchronize(0)
 	synchronizer.GetStats()
-	checkMeshLeader(vertices)
+	checkPeterson(vertices)
 }
