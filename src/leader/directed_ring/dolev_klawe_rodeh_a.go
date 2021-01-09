@@ -129,12 +129,12 @@ func checkDovelKlaweRodehA(vertices []lib.Node) {
 		if v != lead_node {
 
 			if s.Status == maximum {
-				panic(fmt.Sprintf(
-					"Multiple leaders on the directed ring:", lead_node.GetIndex(), v.GetIndex()))
+				panic(fmt.Sprint(
+					"Multiple leaders on the directed ring: ", lead_node.GetIndex(), v.GetIndex()))
 			}
 
 			if s.Status != passive {
-				panic(fmt.Sprintf("Node", v.GetIndex(), "has state", s.Status))
+				panic(fmt.Sprint("Node ", v.GetIndex(), " has state ", s.Status))
 			}
 		}
 	}

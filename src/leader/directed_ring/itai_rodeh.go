@@ -129,11 +129,11 @@ func checkItaiRodeh(vertices []lib.Node) {
 					"Multiple leaders on the directed ring: %d, %d", lead_node.GetIndex(), v.GetIndex()))
 			}
 			if s.Status != nonleader {
-				panic(fmt.Sprintf("Node %u has state %s", v.GetIndex(), s.Status))
+				panic(fmt.Sprintf("Node %d has state %s", v.GetIndex(), s.Status))
 			}
 		}
 		if s.Active != 1 {
-			panic(fmt.Sprintf("Node %u has %d active nodes", v.GetIndex(), s.Active))
+			panic(fmt.Sprintf("Node %d has %d active nodes", v.GetIndex(), s.Active))
 		}
 	}
 }

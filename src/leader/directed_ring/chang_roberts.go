@@ -99,20 +99,20 @@ func checkChangRoberts(vertices []lib.Node) {
 		json.Unmarshal(v.GetState(), &s)
 		if v == lead_node {
 			if v.GetIndex() != s.Min {
-				panic(fmt.Sprintf("Leader has index", v.GetIndex(), "but minimum", s.Min))
+				panic(fmt.Sprint("Leader has index ", v.GetIndex(), " but minimum ", s.Min))
 			}
 		} else {
 			if s.Status == leader {
-				panic(fmt.Sprintf(
-					"Multiple leaders on the directed ring:", lead_node.GetIndex(), v.GetIndex()))
+				panic(fmt.Sprint(
+					"Multiple leaders on the directed ring: ", lead_node.GetIndex(), v.GetIndex()))
 			}
 			if s.Status != nonleader {
-				panic(fmt.Sprintf("Node", v.GetIndex(), "has state", s.Status))
+				panic(fmt.Sprint("Node ", v.GetIndex(), " has state ", s.Status))
 			}
 			if lead_node.GetIndex() != s.Min {
-				panic(fmt.Sprintf(
-					"Leader has index", lead_node.GetIndex(), "but node", v.GetIndex(),
-					"has minimum", s.Min))
+				panic(fmt.Sprint(
+					"Leader has index ", lead_node.GetIndex(), " but node ", v.GetIndex(),
+					" has minimum ", s.Min))
 			}
 		}
 	}
