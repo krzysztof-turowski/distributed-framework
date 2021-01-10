@@ -18,7 +18,7 @@ type oneWayNode struct {
 func getOneWayChannels(n int) []chan []byte {
 	channels := make([]chan []byte, n)
 	for i := range channels {
-		channels[i] = make(chan []byte)
+		channels[i] = make(chan []byte, 1)
 	}
 	return channels
 }
