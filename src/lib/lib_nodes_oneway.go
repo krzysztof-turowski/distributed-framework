@@ -15,14 +15,6 @@ type oneWayNode struct {
 	stats                statsNode
 }
 
-func getOneWayChannels(n int) []chan []byte {
-	channels := make([]chan []byte, n)
-	for i := range channels {
-		channels[i] = make(chan []byte)
-	}
-	return channels
-}
-
 func (v *oneWayNode) ReceiveMessage(index int) []byte {
 	message := <-v.inNeighborsChannels[index]
 	if message != nil {

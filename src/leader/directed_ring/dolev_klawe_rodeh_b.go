@@ -179,8 +179,8 @@ func checkDovelKlaweRodehB(vertices []lib.Node) {
 		json.Unmarshal(v.GetState(), &s)
 		if v != lead_node {
 			if s.Status == maximum {
-				panic(fmt.Sprintf(
-					"Multiple leaders on the directed ring:", lead_node.GetIndex(), v.GetIndex()))
+				panic(fmt.Sprint(
+					"Multiple leaders on the directed ring: ", lead_node.GetIndex(), v.GetIndex()))
 			}
 		}
 	}

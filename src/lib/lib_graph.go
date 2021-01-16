@@ -34,7 +34,7 @@ func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
 
 func BuildSynchronizedDirectedRing(n int) ([]Node, Synchronizer) {
 	vertices, synchronizer := BuildSynchronizedEmptyDirectedGraph(n)
-	chans := getTwoWayChannels(n)
+	chans := getSynchronousChannels(n)
 	for i := 0; i < n; i++ {
 		addOneWayConnection(
 			vertices[i].(*oneWayNode), vertices[(i+1)%n].(*oneWayNode), chans[i])
@@ -73,7 +73,7 @@ func BuildSynchronizedEmptyGraph(n int, indexGenerator Generator) ([]Node, Synch
 
 func BuildSynchronizedRing(n int) ([]Node, Synchronizer) {
 	vertices, synchronizer := BuildSynchronizedEmptyGraph(n, GetRandomGenerator())
-	chans := getTwoWayChannels(2 * n)
+	chans := getSynchronousChannels(2 * n)
 	for i := 0; i < n; i++ {
 		addTwoWayConnection(
 			vertices[i].(*twoWayNode), vertices[(i+1)%n].(*twoWayNode),
@@ -89,7 +89,7 @@ func BuildSynchronizedRing(n int) ([]Node, Synchronizer) {
 
 func BuildSynchronizedCompleteGraph(n int) ([]Node, Synchronizer) {
 	vertices, synchronizer := BuildSynchronizedEmptyGraph(n, GetRandomGenerator())
-	chans := getTwoWayChannels(n * (n - 1))
+	chans := getSynchronousChannels(n * (n - 1))
 	counter := 0
 	for i := 0; i < n; i++ {
 		for j := i + 1; j < n; j++ {
@@ -112,7 +112,7 @@ func BuildSynchronizedRandomGraph(n int, p float64) ([]Node, Synchronizer) {
 	for i := 0; i < n; i++ {
 		for j := i + 1; j < n; j++ {
 			if p < rand.Float64() {
-				chans := getTwoWayChannels(2)
+				chans := getSynchronousChannels(2)
 				addTwoWayConnection(
 					vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
 					chans[0], chans[1])
@@ -129,7 +129,7 @@ func BuildSynchronizedRandomGraph(n int, p float64) ([]Node, Synchronizer) {
 
 func BuildSynchronizedRandomTree(n int) ([]Node, Synchronizer) {
 	vertices, synchronizer := BuildSynchronizedEmptyGraph(n, GetRandomGenerator())
-	chans := getTwoWayChannels(2 * n)
+	chans := getSynchronousChannels(2*n - 2)
 	counter := 0
 	for i := 1; i < n; i++ {
 		j := rand.Intn(i)
@@ -151,7 +151,7 @@ func BuildSynchronizedGraphFromAdjacencyList(adjacencyList [][]int, generator Ge
 	for i, l := range adjacencyList {
 		for _, j := range l {
 			if i < j-1 {
-				chans := getTwoWayChannels(2)
+				chans := getSynchronousChannels(2)
 				addTwoWayConnection(
 					vertices[i].(*twoWayNode), vertices[j-1].(*twoWayNode),
 					chans[0], chans[1])

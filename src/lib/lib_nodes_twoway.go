@@ -18,14 +18,6 @@ type twoWayNode struct {
 	stats             statsNode
 }
 
-func getTwoWayChannels(n int) []chan []byte {
-	chans := make([]chan []byte, 2*n)
-	for i := range chans {
-		chans[i] = make(chan []byte, 1)
-	}
-	return chans
-}
-
 func (v *twoWayNode) ReceiveMessage(index int) []byte {
 	message := <-v.neighborsChannels[index].input
 	if message != nil {
