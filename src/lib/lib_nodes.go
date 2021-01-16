@@ -27,3 +27,11 @@ type statsNode struct {
 	inConfirm        <-chan bool
 	outConfirm       chan<- counterMessage
 }
+
+func getSynchronousChannels(n int) []chan []byte {
+	channels := make([]chan []byte, n)
+	for i := range channels {
+		channels[i] = make(chan []byte, 1)
+	}
+	return channels
+}
