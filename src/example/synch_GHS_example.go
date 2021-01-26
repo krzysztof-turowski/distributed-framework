@@ -18,5 +18,5 @@ func main() {
 		{{6, 6}, {8, 3}, {10, 9}},
 		{{2, 18}, {5, 8}, {8, 9}, {9, 9}},
 	}
-	mst.RunSynchGHS(lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator()))
+	mst.RunSynchGHS(lib.BuildSynchronizedWeightedGraphFromAdjencyList(weightedAdjencyList, lib.GetGenerator()))
 }
