@@ -11,7 +11,7 @@ import (
 
 func compareTreeEdges(expectedTree [][]int, vertices []lib.WeightedGraphNode, t *testing.T) {
 	for i, v := range vertices {
-		l := getTreeEdges(readState(v).Edges, v)
+		l := getTreeEdges(v)
 		sort.Ints(l)
 		if !reflect.DeepEqual(expectedTree[i], l) {
 			t.Fatalf("For %d expected tree edges %v but got %v\n", i, expectedTree[i], l)

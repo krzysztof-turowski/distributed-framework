@@ -116,7 +116,7 @@ func verifySynchSHS(vertices []lib.WeightedGraphNode) bool {
 	expected := findMST(vertices)
 	correct := true
 	for i, v := range vertices {
-		r := getTreeEdges(readState(v).Edges, v)
+		r := getTreeEdges(v)
 		sort.Ints(r)
 		sort.Ints(expected[i])
 		if !reflect.DeepEqual(r, expected[i]) {
@@ -132,9 +132,9 @@ func verifySynchSHS(vertices []lib.WeightedGraphNode) bool {
 	return correct
 }
 
-func getTreeEdges(edges []edgeStatus, v lib.WeightedGraphNode) []int {
+func getTreeEdges(v lib.WeightedGraphNode) []int {
 	tree := make([]int, 0)
-	for i, status := range edges {
+	for i, status := range readState(v).Edges {
 		if status == treeEdge {
 			tree = append(tree, v.GetOutNeighbors()[i].GetIndex())
 		}
