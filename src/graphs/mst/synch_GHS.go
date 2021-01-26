@@ -105,7 +105,7 @@ func (s *stateSynchGHS) propagateUpProposedMWOE(v lib.WeightedGraphNode, e *edge
 		if e != nil {
 			sendMessageSynchGHS(v, s.TreeParent, &messageSynchGHS{Type: msgProposeEdge, MWOE: e})
 		} else {
-			v.SendMessage(s.TreeParent, []byte(nil))
+			v.SendMessage(s.TreeParent, nil)
 		}
 	}
 }
@@ -179,7 +179,7 @@ func (s *stateSynchGHS) sendConnectComponents(v lib.WeightedGraphNode) {
 			sendMessageSynchGHS(v, i, &messageSynchGHS{Type: msgConnectEdge})
 			log.Printf("Adding edge (%d, %d) with weight %d to MST\n", s.ProposedEdge.LargerV, s.ProposedEdge.SmallerV, s.ProposedEdge.Weight)
 		} else {
-			v.SendMessage(i, []byte(nil))
+			v.SendMessage(i, nil)
 		}
 	})
 }
@@ -230,14 +230,14 @@ func (s *stateSynchGHS) receiveNewRoot(v lib.WeightedGraphNode) *int {
 func initializeSynchGHS(v lib.WeightedGraphNode) bool {
 	s := &stateSynchGHS{
 		TreeRoot:          v.GetIndex(),
-		Edges:             make([]edgeStatus, 0),
+		Edges:             make([]edgeStatus, len(v.GetOutNeighbors())),
 		TreeParent:        nilParent,
 		ProposedEdge:      nil,
 		ProposedEdgeIndex: -1,
 		SelectedEdge:      false,
 	}
-	for range v.GetOutNeighbors() {
-		s.Edges = append(s.Edges, outgoingEdge)
+	for i := range v.GetOutNeighbors() {
+		s.Edges[i] = outgoingEdge
 	}
 	s.sendVerifyEdges(v)
 	s.Status = stateVerifyOutgoingEdges
@@ -245,7 +245,7 @@ func initializeSynchGHS(v lib.WeightedGraphNode) bool {
 	return false
 }
 
-// The algorithm requires each node to now the number of nodes in network
+// The algorithm requires each node to know the number of nodes in the network
 func processSynchGHS(v lib.WeightedGraphNode, n int) bool {
 	s := readState(v)
 	finished := false
@@ -287,15 +287,15 @@ func processSynchGHS(v lib.WeightedGraphNode, n int) bool {
 		finished = msg == msgCompleated
 
 	// Electing new root. For every new tree there is a single edge e which was a MWOE for
-	// two tree in the previous round. The vertice with larger index connected to e becomes new root.
+	// two trees in the previous round. The vertice with the larger index connected to e becomes new root.
 	case stateElectNewRoot:
 		root := s.electNewRoot(v)
 		s.propagateDownNewRoot(v, root)
 		s.Status = stateBroadcaseNewRoot
 		s.BroadcastRound = 0
 
-	// Broadcasting information about new root. After n rounds all vertices in tree have received
-	// information about new root. Then verify every outgoing edge if it points to different tree.
+	// Broadcasting information about new root. After n rounds all vertices in tree have received it.
+	// Then verify every outgoing edge if it points to a different tree.
 	case stateBroadcaseNewRoot:
 		root := s.receiveNewRoot(v)
 		s.BroadcastRound++
