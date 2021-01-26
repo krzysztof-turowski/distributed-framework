@@ -18,6 +18,8 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 
 ### Graph algorithms
 
+#### Minimum spanning tree
+1. Synchronized Gallager, Humblet, and Spira algorithm
 #### Maximal independent set
 1. Luby algorithm
 
