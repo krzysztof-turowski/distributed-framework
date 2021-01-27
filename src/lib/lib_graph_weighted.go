@@ -11,8 +11,8 @@ func addSynchronizedWeightedConnection(vertices []WeightedGraphNode, i, j, weigh
 		vertices[i].(*twoWayWeightedGraphNode), vertices[j].(*twoWayWeightedGraphNode),
 		chans[0], chans[1],
 		weight)
-	log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
-	log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
+	log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up with weight ", weight)
+	log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up with weight ", weight)
 }
 
 func BuildSynchronizedEmptyWeightedGraph(n int, indexGenerator Generator) ([]WeightedGraphNode, Synchronizer) {
@@ -33,13 +33,7 @@ func BuildSynchronizedWeightedGraphFromAdjencyList(adjacencyList [][][2]int, gen
 	for i, l := range adjacencyList {
 		for _, e := range l {
 			if j := e[0]; i < j-1 {
-				chans := getSynchronousChannels(2)
-				addTwoWayWeightedConnection(
-					vertices[i].(*twoWayWeightedGraphNode), vertices[j-1].(*twoWayWeightedGraphNode),
-					chans[0], chans[1],
-					e[1])
-				log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j-1].GetIndex(), "set up")
-				log.Println("Channel", vertices[j-1].GetIndex(), "->", vertices[i].GetIndex(), "set up")
+				addSynchronizedWeightedConnection(vertices, i, j-1, e[1])
 			}
 		}
 	}
