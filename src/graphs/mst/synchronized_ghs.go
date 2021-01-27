@@ -2,8 +2,11 @@ package mst
 
 import (
 	"encoding/json"
+	"fmt"
 	"lib"
 	"log"
+	"reflect"
+	"sort"
 )
 
 //  EDGES
@@ -411,4 +414,29 @@ func RunSynchronizedGHS(vertices []lib.WeightedGraphNode, synchronizer lib.Synch
 func RunSynchronizedGHSRandom(n, m, maxWeight int) {
 	vertices, synchronizer := lib.BuildSynchronizedRandomConnectedWeightedGraph(n, m, maxWeight, lib.GetGenerator())
 	RunSynchronizedGHS(vertices, synchronizer)
+}
+
+//  VERIFICATION
+// assuming all edges have unique weights than there is single MST
+func verifySynchronizedGHS(vertices []lib.WeightedGraphNode) {
+	expected := findMST(vertices)
+	for i, v := range vertices {
+		r := getTreeEdges(v)
+		sort.Ints(r)
+		sort.Ints(expected[i])
+		if !reflect.DeepEqual(r, expected[i]) {
+			panic(fmt.Sprintf("Node %d has tree neighbors %v but should have %v", v.GetIndex(), r, expected[i]))
+		}
+	}
+	log.Printf("Algorithm output is correct\n")
+}
+
+func getTreeEdges(v lib.WeightedGraphNode) []int {
+	tree := make([]int, 0)
+	for i, status := range readState(v).Edges {
+		if status == treeEdge {
+			tree = append(tree, v.GetOutNeighbors()[i].GetIndex())
+		}
+	}
+	return tree
 }

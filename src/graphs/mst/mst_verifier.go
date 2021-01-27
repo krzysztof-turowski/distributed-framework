@@ -2,42 +2,8 @@ package mst
 
 import (
 	"container/heap"
-	"fmt"
 	"lib"
-	"log"
-	"reflect"
-	"sort"
 )
-
-// Priority Queue for sequential MST algorithm
-
-// type priorityQueue []*edge
-
-// func (pq priorityQueue) Len() int { return len(pq) }
-
-// func (pq priorityQueue) Empty() bool { return len(pq) == 0 }
-
-// func (pq priorityQueue) Less(i, j int) bool {
-// 	return pq[i].isLess(pq[j])
-// }
-
-// func (pq *priorityQueue) Push(x interface{}) {
-// 	item := x.(*edge)
-// 	*pq = append(*pq, item)
-// }
-
-// func (pq priorityQueue) Swap(i, j int) {
-// 	pq[i], pq[j] = pq[j], pq[i]
-// }
-
-// func (pq *priorityQueue) Pop() interface{} {
-// 	old := *pq
-// 	n := len(old)
-// 	item := old[n-1]
-// 	old[n-1] = nil // avoid memory leak
-// 	*pq = old[0 : n-1]
-// 	return item
-// }
 
 // helper functions for Adjacency List type
 
@@ -110,28 +76,4 @@ func findMST(vertices []lib.WeightedGraphNode) adjacencyList {
 		}
 	}
 	return al
-}
-
-// assuming all edges have unique weights than there is single MST
-func verifySynchronizedGHS(vertices []lib.WeightedGraphNode) {
-	expected := findMST(vertices)
-	for i, v := range vertices {
-		r := getTreeEdges(v)
-		sort.Ints(r)
-		sort.Ints(expected[i])
-		if !reflect.DeepEqual(r, expected[i]) {
-			panic(fmt.Sprintf("Node %d has tree neighbors %v but should have %v", v.GetIndex(), r, expected[i]))
-		}
-	}
-	log.Printf("Algorithm output is correct\n")
-}
-
-func getTreeEdges(v lib.WeightedGraphNode) []int {
-	tree := make([]int, 0)
-	for i, status := range readState(v).Edges {
-		if status == treeEdge {
-			tree = append(tree, v.GetOutNeighbors()[i].GetIndex())
-		}
-	}
-	return tree
 }
