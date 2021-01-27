@@ -9,18 +9,18 @@ import (
 )
 
 func TestRunSynchGHSTriangle(t *testing.T) {
+	checkLogOutput()
 	adjencyList := [][][2]int{
 		{{2, 10}, {3, 10}},
 		{{1, 10}, {3, 20}},
 		{{1, 10}, {2, 20}},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if mst.RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	mst.RunSynchGHS(graph, synchronizer)
 }
 
 func TestRunSynchGHSSimplePath4(t *testing.T) {
+	checkLogOutput()
 	adjencyList := [][][2]int{
 		{{2, 10}},
 		{{1, 10}, {3, 20}},
@@ -28,12 +28,11 @@ func TestRunSynchGHSSimplePath4(t *testing.T) {
 		{{3, 10}},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if mst.RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	mst.RunSynchGHS(graph, synchronizer)
 }
 
 func TestRunSynchGHSSimplePath8(t *testing.T) {
+	checkLogOutput()
 	adjencyList := [][][2]int{
 		{{2, 10}},
 		{{1, 10}, {3, 20}},
@@ -45,12 +44,11 @@ func TestRunSynchGHSSimplePath8(t *testing.T) {
 		{{7, 10}},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if mst.RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	mst.RunSynchGHS(graph, synchronizer)
 }
 
 func TestRunSynchGHSWikipediaExample(t *testing.T) {
+	checkLogOutput()
 	adjencyList := [][][2]int{
 		{{2, 4}, {3, 1}, {4, 4}},
 		{{1, 4}, {3, 3}, {5, 10}, {10, 18}},
@@ -64,15 +62,12 @@ func TestRunSynchGHSWikipediaExample(t *testing.T) {
 		{{2, 18}, {5, 8}, {8, 9}, {9, 9}},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if mst.RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	mst.RunSynchGHS(graph, synchronizer)
 }
 
 func TestRunSynchGHSRandom(t *testing.T) {
-	if mst.RunSynchGHSRandom(25, 100, 25) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	checkLogOutput()
+	mst.RunSynchGHSRandom(25, 100, 25)
 }
 
 func BenchmarkSynchGHSRandom(b *testing.B) {

@@ -2,6 +2,7 @@ package mst
 
 import (
 	"container/heap"
+	"fmt"
 	"lib"
 	"log"
 	"reflect"
@@ -111,25 +112,18 @@ func findMST(vertices []lib.WeightedGraphNode) adjencyList {
 	return al
 }
 
-// assuming all edges have unique edges than there is single MST
-func verifySynchSHS(vertices []lib.WeightedGraphNode) bool {
+// assuming all edges have unique weights than there is single MST
+func verifySynchSHS(vertices []lib.WeightedGraphNode) {
 	expected := findMST(vertices)
-	correct := true
 	for i, v := range vertices {
 		r := getTreeEdges(v)
 		sort.Ints(r)
 		sort.Ints(expected[i])
 		if !reflect.DeepEqual(r, expected[i]) {
-			log.Printf("Node %d has tree neighbors %v but should have %v\n", v.GetIndex(), r, expected[i])
-			correct = false
+			panic(fmt.Sprintf("Node %d has tree neighbors %v but should have %v", v.GetIndex(), r, expected[i]))
 		}
 	}
-	if correct {
-		log.Printf("Algorithm output is correct\n")
-	} else {
-		log.Printf("Algorithm output is wrong\n")
-	}
-	return correct
+	log.Printf("Algorithm output is correct\n")
 }
 
 func getTreeEdges(v lib.WeightedGraphNode) []int {

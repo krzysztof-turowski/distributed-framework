@@ -31,9 +31,7 @@ func TestRunSynchGHSTriangle(t *testing.T) {
 		{1},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	RunSynchGHS(graph, synchronizer)
 	compareTreeEdges(expectedTree, graph, t)
 }
 
@@ -51,9 +49,7 @@ func TestRunSynchGHSSimplePath4(t *testing.T) {
 		{3},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	RunSynchGHS(graph, synchronizer)
 	compareTreeEdges(expectedTree, graph, t)
 }
 
@@ -79,9 +75,7 @@ func TestRunSynchGHSSimplePath8(t *testing.T) {
 		{7},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	RunSynchGHS(graph, synchronizer)
 	compareTreeEdges(expectedTree, graph, t)
 }
 
@@ -111,16 +105,12 @@ func TestRunSynchGHSWikipediaExample(t *testing.T) {
 		{5},
 	}
 	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	if RunSynchGHS(graph, synchronizer) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	RunSynchGHS(graph, synchronizer)
 	compareTreeEdges(expectedTree, graph, t)
 }
 
 func TestRunSynchGHSRandom(t *testing.T) {
-	if RunSynchGHSRandom(25, 100, 25) == false {
-		t.Fatalf("Verification failed\n")
-	}
+	RunSynchGHSRandom(25, 100, 25)
 }
 
 func BenchmarkSynchGHSRandom(b *testing.B) {
