@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 )
@@ -44,37 +45,46 @@ func BuildSynchronizedWeightedGraphFromAdjencyList(adjacencyList [][][2]int, gen
 	return vertices, synchronizer
 }
 
-func BuildSynchronizedRandomConnectedWeightedGraph(n, m, maxWeight int, generator Generator) ([]WeightedGraphNode, Synchronizer) {
+func buildSynchronizedWeightedRandomTree(n, maxWeight int, generator Generator) ([]WeightedGraphNode, Synchronizer, map[[2]int]bool) {
 	vertices, synchronizer := BuildSynchronizedEmptyWeightedGraph(n, generator)
-	possibleEdges := make(map[[2]int]bool)
-
-	for i := 0; i < n; i++ {
-		for j := i + 1; j < n; j++ {
-			possibleEdges[[2]int{i, j}] = true
-		}
-	}
-
+	edgesSet := make(map[[2]int]bool)
 	for j := 1; j < n; j++ {
 		i := rand.Intn(j)
-		delete(possibleEdges, [2]int{i, j})
 		addSynchronizedWeightedConnection(vertices, i, j, rand.Intn(maxWeight))
-		m--
+		edgesSet[[2]int{i, j}] = true
+		edgesSet[[2]int{j, i}] = true
+	}
+	return vertices, synchronizer, edgesSet
+}
+
+func BuildSynchronizedWeightedRandomTree(n, maxWeight int, generator Generator) ([]WeightedGraphNode, Synchronizer) {
+	vertices, synchronizer, _ := buildSynchronizedWeightedRandomTree(n, maxWeight, generator)
+	for _, v := range vertices {
+		v.(*twoWayWeightedGraphNode).shuffleTopology()
+	}
+	return vertices, synchronizer
+}
+
+func BuildSynchronizedRandomConnectedWeightedGraph(n, m, maxWeight int, generator Generator) ([]WeightedGraphNode, Synchronizer) {
+	if maxM := n * (n - 1) / 2; m < n-1 || m > maxM {
+		panic(fmt.Sprintf("Number of edges should be within range [%d, %d]", n-1, maxM))
 	}
 
-	leftEdges := make([][2]int, 0)
-	for e := range possibleEdges {
-		leftEdges = append(leftEdges, e)
+	vertices, synchronizer, edgesSet := buildSynchronizedWeightedRandomTree(n, maxWeight, generator)
+	possibleEdges := make([][2]int, 0)
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			if _, usedEdge := edgesSet[[2]int{i, j}]; !usedEdge {
+				possibleEdges = append(possibleEdges, [2]int{i, j})
+			}
+		}
 	}
-
-	for m > 0 && len(leftEdges) > 0 {
-		r := rand.Intn(len(leftEdges))
-		e := leftEdges[r]
+	rand.Shuffle(len(possibleEdges), func(i, j int) {
+		possibleEdges[i], possibleEdges[j] = possibleEdges[j], possibleEdges[i]
+	})
+	m = m - n + 1
+	for _, e := range possibleEdges[:m] {
 		addSynchronizedWeightedConnection(vertices, e[0], e[1], rand.Intn(maxWeight))
-		l := len(leftEdges)
-		leftEdges[r], leftEdges[l-1] = leftEdges[l-1], leftEdges[r]
-		leftEdges = leftEdges[:l-1]
-		m--
 	}
-
 	return vertices, synchronizer
 }
