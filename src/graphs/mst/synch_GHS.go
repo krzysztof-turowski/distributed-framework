@@ -92,7 +92,7 @@ func (s *stateSynchronizedGHS) proposeMWOE(v lib.WeightedGraphNode) *edge {
 		e := newEdge(v.GetInWeights()[i], v.GetIndex(), message.Index)
 		if s.TreeRoot == message.Root {
 			s.Edges[i] = rejectedEdge
-		} else if s.ProposedEdge == nil || e.isLess(s.ProposedEdge) {
+		} else if s.ProposedEdge == nil || e.Less(s.ProposedEdge) {
 			s.ProposedEdge = e
 			s.ProposedEdgeIndex = i
 		}
@@ -114,7 +114,7 @@ func (s *stateSynchronizedGHS) receiveProposedMWOE(v lib.WeightedGraphNode) *edg
 	foundBetterProposedEdge := false
 	s.foreachChildEdge(func(i int) {
 		message := receiveMessageSynchronizedGHS(v, i)
-		if message != nil && (s.ProposedEdge == nil || message.MWOE.isLess(s.ProposedEdge)) {
+		if message != nil && (s.ProposedEdge == nil || message.MWOE.Less(s.ProposedEdge)) {
 			s.ProposedEdge = message.MWOE
 			s.ProposedEdgeIndex = i
 			foundBetterProposedEdge = true

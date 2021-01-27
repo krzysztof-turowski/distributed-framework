@@ -11,33 +11,33 @@ import (
 
 // Priority Queue for sequential MST algorithm
 
-type priorityQueue []*edge
+// type priorityQueue []*edge
 
-func (pq priorityQueue) Len() int { return len(pq) }
+// func (pq priorityQueue) Len() int { return len(pq) }
 
-func (pq priorityQueue) Empty() bool { return len(pq) == 0 }
+// func (pq priorityQueue) Empty() bool { return len(pq) == 0 }
 
-func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].isLess(pq[j])
-}
+// func (pq priorityQueue) Less(i, j int) bool {
+// 	return pq[i].isLess(pq[j])
+// }
 
-func (pq *priorityQueue) Push(x interface{}) {
-	item := x.(*edge)
-	*pq = append(*pq, item)
-}
+// func (pq *priorityQueue) Push(x interface{}) {
+// 	item := x.(*edge)
+// 	*pq = append(*pq, item)
+// }
 
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
+// func (pq priorityQueue) Swap(i, j int) {
+// 	pq[i], pq[j] = pq[j], pq[i]
+// }
 
-func (pq *priorityQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	old[n-1] = nil // avoid memory leak
-	*pq = old[0 : n-1]
-	return item
-}
+// func (pq *priorityQueue) Pop() interface{} {
+// 	old := *pq
+// 	n := len(old)
+// 	item := old[n-1]
+// 	old[n-1] = nil // avoid memory leak
+// 	*pq = old[0 : n-1]
+// 	return item
+// }
 
 // helper functions for Adjacency List type
 
@@ -62,7 +62,7 @@ type sequentialMst struct {
 	vertices []lib.WeightedGraphNode
 	indexes  map[int]int
 	visited  []bool
-	pq       priorityQueue
+	pq       lib.PriorityQueue
 }
 
 func newSequentialMst(vertices []lib.WeightedGraphNode) *sequentialMst {
@@ -70,7 +70,7 @@ func newSequentialMst(vertices []lib.WeightedGraphNode) *sequentialMst {
 		vertices: vertices,
 		indexes:  make(map[int]int),
 		visited:  make([]bool, len(vertices)),
-		pq:       make(priorityQueue, 0),
+		pq:       make(lib.PriorityQueue, 0),
 	}
 	heap.Init(&m.pq)
 	for i, v := range vertices {

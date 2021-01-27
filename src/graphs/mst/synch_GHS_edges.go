@@ -1,5 +1,7 @@
 package mst
 
+import "lib"
+
 /*  EDGES
  * Synchronized GHS algorithm for finding Minimal Spanning Tree requires every edge to have a unique weight.
  * To achieve that for every u,v in E we define new edge weight as a triple (w, v, u) where w is the original
@@ -18,7 +20,8 @@ func newEdge(weight, u, v int) *edge {
 	return &edge{Weight: weight, SmallerV: u, LargerV: v}
 }
 
-func (e *edge) isLess(f *edge) bool {
+func (e *edge) Less(otherEdge lib.Comparable) bool {
+	f := otherEdge.(*edge)
 	if e.Weight != f.Weight {
 		return e.Weight < f.Weight
 	}
