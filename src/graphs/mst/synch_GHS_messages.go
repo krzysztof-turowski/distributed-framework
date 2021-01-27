@@ -8,13 +8,13 @@ import (
 type messageType int
 
 const (
-	nilMessage      messageType = 0
-	msgVerifyEdge   messageType = 1
-	msgProposeEdge  messageType = 2
-	msgChooseEdge   messageType = 3
-	msgConnectEdge  messageType = 4
-	msgElectNewRoot messageType = 5
-	msgCompleated   messageType = 6
+	nilMessage messageType = iota
+	msgVerifyEdge
+	msgProposeEdge
+	msgChooseEdge
+	msgConnectEdge
+	msgElectNewRoot
+	msgCompleated
 )
 
 type messageSynchronizedGHS struct {

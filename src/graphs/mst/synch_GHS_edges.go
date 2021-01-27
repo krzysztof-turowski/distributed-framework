@@ -35,7 +35,7 @@ func (e *edge) isConnected(v int) bool {
 type edgeStatus int
 
 const (
-	outgoingEdge edgeStatus = 1
-	treeEdge     edgeStatus = 2
-	rejectedEdge edgeStatus = 0
+	outgoingEdge edgeStatus = iota
+	treeEdge
+	rejectedEdge
 )

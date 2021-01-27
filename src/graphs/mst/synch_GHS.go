@@ -13,12 +13,12 @@ import (
 type stateSynchGHSType int
 
 const (
-	stateVerifyOutgoingEdges     stateSynchGHSType = 0
-	statePropagateUpMWOE         stateSynchGHSType = 1
-	statePropagateDownChosenMWOE stateSynchGHSType = 2
-	stateElectNewRoot            stateSynchGHSType = 3
-	stateBroadcaseNewRoot        stateSynchGHSType = 4
-	nilParent                    int               = -1
+	stateVerifyOutgoingEdges stateSynchGHSType = iota
+	statePropagateUpMWOE
+	statePropagateDownChosenMWOE
+	stateElectNewRoot
+	stateBroadcaseNewRoot
+	nilParent int = -1
 )
 
 type stateSynchGHS struct {
