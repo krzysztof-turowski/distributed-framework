@@ -17,7 +17,7 @@ undirected_yoyo_example:
 undirected_mesh_leader_example:
 	go run src/example/undirected_mesh_leader.go 6 9
 
-synchronized_GHS_example:
+synchronized_ghs_example:
 	go run src/example/synch_GHS_example.go
 	go run src/example/synch_GHS_example_random.go 10 30 100
 

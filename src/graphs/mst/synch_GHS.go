@@ -7,22 +7,22 @@ import (
 )
 
 /*  Vertice state in Synchronized GHS algorithm
- * State contain statuses for every edge adn information about the current tree.
+ * State contains statuses for every edge and information about the current tree.
  */
 
-type stateSynchGHSType int
+type stateSynchronizedGHSType int
 
 const (
-	stateVerifyOutgoingEdges stateSynchGHSType = iota
+	stateVerifyOutgoingEdges stateSynchronizedGHSType = iota
 	statePropagateUpMWOE
 	statePropagateDownChosenMWOE
 	stateElectNewRoot
-	stateBroadcaseNewRoot
+	stateBroadcastNewRoot
 	nilParent int = -1
 )
 
-type stateSynchGHS struct {
-	Status            stateSynchGHSType
+type stateSynchronizedGHS struct {
+	Status            stateSynchronizedGHSType
 	BroadcastRound    int
 	Edges             []edgeStatus
 	TreeRoot          int
@@ -34,8 +34,8 @@ type stateSynchGHS struct {
 
 // State encoding functions:
 
-func readState(v lib.WeightedGraphNode) *stateSynchGHS {
-	var state stateSynchGHS
+func readState(v lib.WeightedGraphNode) *stateSynchronizedGHS {
+	var state stateSynchronizedGHS
 	data := v.GetState()
 	if err := json.Unmarshal(data, &state); err == nil {
 		return &state
@@ -43,14 +43,14 @@ func readState(v lib.WeightedGraphNode) *stateSynchGHS {
 	return nil
 }
 
-func (s *stateSynchGHS) saveState(v lib.WeightedGraphNode) {
+func (s *stateSynchronizedGHS) saveState(v lib.WeightedGraphNode) {
 	data, _ := json.Marshal(s)
 	v.SetState(data)
 }
 
 // Helper functions for iterating over children/tree edges/outgoing edges
 
-func (s *stateSynchGHS) foreachChildEdge(f func(i int)) {
+func (s *stateSynchronizedGHS) foreachChildEdge(f func(i int)) {
 	for i, eStatus := range s.Edges {
 		if eStatus == treeEdge && i != s.TreeParent {
 			f(i)
@@ -58,7 +58,7 @@ func (s *stateSynchGHS) foreachChildEdge(f func(i int)) {
 	}
 }
 
-func (s *stateSynchGHS) foreachOutgoingEdge(f func(i int)) {
+func (s *stateSynchronizedGHS) foreachOutgoingEdge(f func(i int)) {
 	for i, eStatus := range s.Edges {
 		if eStatus == outgoingEdge {
 			f(i)
@@ -66,7 +66,7 @@ func (s *stateSynchGHS) foreachOutgoingEdge(f func(i int)) {
 	}
 }
 
-func (s *stateSynchGHS) foreachTreeEdge(f func(i int)) {
+func (s *stateSynchronizedGHS) foreachTreeEdge(f func(i int)) {
 	for i, eStatus := range s.Edges {
 		if eStatus == treeEdge {
 			f(i)
@@ -76,19 +76,19 @@ func (s *stateSynchGHS) foreachTreeEdge(f func(i int)) {
 
 // functions for processing round
 
-func (s *stateSynchGHS) sendVerifyEdges(v lib.WeightedGraphNode) {
+func (s *stateSynchronizedGHS) sendVerifyEdges(v lib.WeightedGraphNode) {
 	msgTest := &messageSynchronizedGHS{Type: msgVerifyEdge, Index: v.GetIndex(), Root: s.TreeRoot}
 	s.foreachOutgoingEdge(func(i int) {
-		sendMessageSynchGHS(v, i, msgTest)
+		sendMessageSynchronizedGHS(v, i, msgTest)
 	})
 }
 
-func (s *stateSynchGHS) proposeMWOE(v lib.WeightedGraphNode) *edge {
+func (s *stateSynchronizedGHS) proposeMWOE(v lib.WeightedGraphNode) *edge {
 	s.ProposedEdge = nil
 	s.ProposedEdgeIndex = -1
 	s.SelectedEdge = false
 	s.foreachOutgoingEdge(func(i int) {
-		message := receiveMessageSynchGHS(v, i)
+		message := receiveMessageSynchronizedGHS(v, i)
 		e := newEdge(v.GetInWeights()[i], v.GetIndex(), message.Index)
 		if s.TreeRoot == message.Root {
 			s.Edges[i] = rejectedEdge
@@ -100,20 +100,20 @@ func (s *stateSynchGHS) proposeMWOE(v lib.WeightedGraphNode) *edge {
 	return s.ProposedEdge
 }
 
-func (s *stateSynchGHS) propagateUpProposedMWOE(v lib.WeightedGraphNode, e *edge) {
+func (s *stateSynchronizedGHS) propagateUpProposedMWOE(v lib.WeightedGraphNode, e *edge) {
 	if s.TreeParent != nilParent {
 		if e != nil {
-			sendMessageSynchGHS(v, s.TreeParent, &messageSynchronizedGHS{Type: msgProposeEdge, MWOE: e})
+			sendMessageSynchronizedGHS(v, s.TreeParent, &messageSynchronizedGHS{Type: msgProposeEdge, MWOE: e})
 		} else {
 			v.SendMessage(s.TreeParent, nil)
 		}
 	}
 }
 
-func (s *stateSynchGHS) receiveProposedMWOE(v lib.WeightedGraphNode) *edge {
+func (s *stateSynchronizedGHS) receiveProposedMWOE(v lib.WeightedGraphNode) *edge {
 	foundBetterProposedEdge := false
 	s.foreachChildEdge(func(i int) {
-		message := receiveMessageSynchGHS(v, i)
+		message := receiveMessageSynchronizedGHS(v, i)
 		if message != nil && (s.ProposedEdge == nil || message.MWOE.isLess(s.ProposedEdge)) {
 			s.ProposedEdge = message.MWOE
 			s.ProposedEdgeIndex = i
@@ -126,31 +126,31 @@ func (s *stateSynchGHS) receiveProposedMWOE(v lib.WeightedGraphNode) *edge {
 	return nil
 }
 
-func (s *stateSynchGHS) choseMWOE(v lib.WeightedGraphNode) messageType {
+func (s *stateSynchronizedGHS) choseMWOE(v lib.WeightedGraphNode) messageType {
 	if s.TreeRoot == v.GetIndex() {
 		if s.ProposedEdge != nil {
 			s.SelectedEdge = s.ProposedEdge.isConnected(v.GetIndex())
 			return msgChooseEdge
 		} else {
-			return msgCompleated
+			return msgCompleted
 		}
 	}
 	return nilMessage
 }
 
-func (s *stateSynchGHS) propagateDownChosenMWOE(v lib.WeightedGraphNode, message messageType) {
+func (s *stateSynchronizedGHS) propagateDownChosenMWOE(v lib.WeightedGraphNode, message messageType) {
 	switch message {
 	case msgChooseEdge:
 		s.foreachChildEdge(func(i int) {
 			if i == s.ProposedEdgeIndex {
-				sendMessageSynchGHS(v, s.ProposedEdgeIndex, &messageSynchronizedGHS{Type: msgChooseEdge})
+				sendMessageSynchronizedGHS(v, s.ProposedEdgeIndex, &messageSynchronizedGHS{Type: msgChooseEdge})
 			} else {
 				v.SendMessage(i, nil)
 			}
 		})
-	case msgCompleated:
+	case msgCompleted:
 		s.foreachChildEdge(func(i int) {
-			sendMessageSynchGHS(v, i, &messageSynchronizedGHS{Type: msgCompleated})
+			sendMessageSynchronizedGHS(v, i, &messageSynchronizedGHS{Type: msgCompleted})
 		})
 	default:
 		s.foreachChildEdge(func(i int) {
@@ -159,9 +159,9 @@ func (s *stateSynchGHS) propagateDownChosenMWOE(v lib.WeightedGraphNode, message
 	}
 }
 
-func (s *stateSynchGHS) receiveChosenMWOE(v lib.WeightedGraphNode) messageType {
+func (s *stateSynchronizedGHS) receiveChosenMWOE(v lib.WeightedGraphNode) messageType {
 	if s.TreeParent != nilParent {
-		message := receiveMessageSynchGHS(v, s.TreeParent)
+		message := receiveMessageSynchronizedGHS(v, s.TreeParent)
 		if message != nil && message.Type == msgChooseEdge {
 			s.SelectedEdge = s.ProposedEdge.isConnected(v.GetIndex())
 		}
@@ -172,11 +172,11 @@ func (s *stateSynchGHS) receiveChosenMWOE(v lib.WeightedGraphNode) messageType {
 	return nilMessage
 }
 
-func (s *stateSynchGHS) sendConnectComponents(v lib.WeightedGraphNode) {
+func (s *stateSynchronizedGHS) sendConnectComponents(v lib.WeightedGraphNode) {
 	s.foreachOutgoingEdge(func(i int) {
 		if s.SelectedEdge && i == s.ProposedEdgeIndex {
 			s.Edges[i] = treeEdge
-			sendMessageSynchGHS(v, i, &messageSynchronizedGHS{Type: msgConnectEdge})
+			sendMessageSynchronizedGHS(v, i, &messageSynchronizedGHS{Type: msgConnectEdge})
 			log.Printf("Adding edge (%d, %d) with weight %d to MST\n", s.ProposedEdge.LargerV, s.ProposedEdge.SmallerV, s.ProposedEdge.Weight)
 		} else {
 			v.SendMessage(i, nil)
@@ -184,10 +184,10 @@ func (s *stateSynchGHS) sendConnectComponents(v lib.WeightedGraphNode) {
 	})
 }
 
-func (s *stateSynchGHS) electNewRoot(v lib.WeightedGraphNode) *int {
+func (s *stateSynchronizedGHS) electNewRoot(v lib.WeightedGraphNode) *int {
 	var newRoot *int = nil
 	if s.SelectedEdge {
-		msg := receiveMessageSynchGHS(v, s.ProposedEdgeIndex)
+		msg := receiveMessageSynchronizedGHS(v, s.ProposedEdgeIndex)
 		if msg != nil && msg.Type == msgConnectEdge && v.GetIndex() == s.ProposedEdge.LargerV {
 			s.TreeParent = nilParent
 			s.TreeRoot = v.GetIndex()
@@ -195,7 +195,7 @@ func (s *stateSynchGHS) electNewRoot(v lib.WeightedGraphNode) *int {
 		}
 	}
 	s.foreachOutgoingEdge(func(i int) {
-		msg := receiveMessageSynchGHS(v, i)
+		msg := receiveMessageSynchronizedGHS(v, i)
 		if msg != nil && msg.Type == msgConnectEdge {
 			s.Edges[i] = treeEdge
 		}
@@ -203,20 +203,20 @@ func (s *stateSynchGHS) electNewRoot(v lib.WeightedGraphNode) *int {
 	return newRoot
 }
 
-func (s *stateSynchGHS) propagateDownNewRoot(v lib.WeightedGraphNode, newRoot *int) {
+func (s *stateSynchronizedGHS) propagateDownNewRoot(v lib.WeightedGraphNode, newRoot *int) {
 	s.foreachTreeEdge(func(i int) {
 		if newRoot != nil && i != s.TreeParent {
-			sendMessageSynchGHS(v, i, &messageSynchronizedGHS{Type: msgElectNewRoot, Root: *newRoot})
+			sendMessageSynchronizedGHS(v, i, &messageSynchronizedGHS{Type: msgElectNewRoot, Root: *newRoot})
 		} else {
 			v.SendMessage(i, nil)
 		}
 	})
 }
 
-func (s *stateSynchGHS) receiveNewRoot(v lib.WeightedGraphNode) *int {
+func (s *stateSynchronizedGHS) receiveNewRoot(v lib.WeightedGraphNode) *int {
 	var newRoot *int = nil
 	s.foreachTreeEdge(func(i int) {
-		message := receiveMessageSynchGHS(v, i)
+		message := receiveMessageSynchronizedGHS(v, i)
 		if message != nil {
 			s.TreeRoot = message.Root
 			s.TreeParent = i
@@ -227,8 +227,8 @@ func (s *stateSynchGHS) receiveNewRoot(v lib.WeightedGraphNode) *int {
 }
 
 // Initialize state and send verification messages for outgoing edges
-func initializeSynchGHS(v lib.WeightedGraphNode) bool {
-	s := &stateSynchGHS{
+func initializeSynchronizedGHS(v lib.WeightedGraphNode) bool {
+	s := &stateSynchronizedGHS{
 		TreeRoot:          v.GetIndex(),
 		Edges:             make([]edgeStatus, len(v.GetOutNeighbors())),
 		TreeParent:        nilParent,
@@ -246,7 +246,7 @@ func initializeSynchGHS(v lib.WeightedGraphNode) bool {
 }
 
 // The algorithm requires each node to know the number of nodes in the network
-func processSynchGHS(v lib.WeightedGraphNode, n int) bool {
+func processSynchronizedGHS(v lib.WeightedGraphNode, n int) bool {
 	s := readState(v)
 	finished := false
 	switch s.Status {
@@ -271,7 +271,7 @@ func processSynchGHS(v lib.WeightedGraphNode, n int) bool {
 			s.propagateDownChosenMWOE(v, msg)
 			s.Status = statePropagateDownChosenMWOE
 			s.BroadcastRound = 0
-			finished = msg == msgCompleated
+			finished = msg == msgCompleted
 		}
 
 	// Sending elected node to original proposer or broadcasting information about completed MST.
@@ -284,19 +284,19 @@ func processSynchGHS(v lib.WeightedGraphNode, n int) bool {
 			s.sendConnectComponents(v)
 			s.Status = stateElectNewRoot
 		}
-		finished = msg == msgCompleated
+		finished = msg == msgCompleted
 
 	// Electing new root. For every new tree there is a single edge e which was a MWOE for
 	// two trees in the previous round. The vertice with the larger index connected to e becomes new root.
 	case stateElectNewRoot:
 		root := s.electNewRoot(v)
 		s.propagateDownNewRoot(v, root)
-		s.Status = stateBroadcaseNewRoot
+		s.Status = stateBroadcastNewRoot
 		s.BroadcastRound = 0
 
 	// Broadcasting information about new root. After n rounds all vertices in tree have received it.
 	// Then verify every outgoing edge if it points to a different tree.
-	case stateBroadcaseNewRoot:
+	case stateBroadcastNewRoot:
 		root := s.receiveNewRoot(v)
 		s.BroadcastRound++
 		if s.BroadcastRound < n {
@@ -310,28 +310,28 @@ func processSynchGHS(v lib.WeightedGraphNode, n int) bool {
 	return finished
 }
 
-func runSynchGHS(v lib.WeightedGraphNode, n int) {
+func runSynchronizedGHS(v lib.WeightedGraphNode, n int) {
 	v.StartProcessing()
-	finish := initializeSynchGHS(v)
-	v.FinishProcessing(false)
+	finish := initializeSynchronizedGHS(v)
+	v.FinishProcessing(finish)
 
 	for !finish {
 		v.StartProcessing()
-		finish = processSynchGHS(v, n)
+		finish = processSynchronizedGHS(v, n)
 		v.FinishProcessing(finish)
 	}
 }
 
-func RunSynchGHS(vertices []lib.WeightedGraphNode, synchronizer lib.Synchronizer) {
+func RunSynchronizedGHS(vertices []lib.WeightedGraphNode, synchronizer lib.Synchronizer) {
 	for _, v := range vertices {
-		go runSynchGHS(v, len(vertices))
+		go runSynchronizedGHS(v, len(vertices))
 	}
 	synchronizer.Synchronize(0)
 	synchronizer.GetStats()
-	verifySynchSHS(vertices)
+	verifySynchronizedGHS(vertices)
 }
 
-func RunSynchGHSRandom(n, m, maxWeight int) {
+func RunSynchronizedGHSRandom(n, m, maxWeight int) {
 	vertices, synchronizer := lib.BuildSynchronizedRandomConnectedWeightedGraph(n, m, maxWeight, lib.GetGenerator())
-	RunSynchGHS(vertices, synchronizer)
+	RunSynchronizedGHS(vertices, synchronizer)
 }

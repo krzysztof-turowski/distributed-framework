@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	weightedAdjencyList := [][][2]int{
+	weightedAdjacencyList := [][][2]int{
 		{{2, 4}, {3, 1}, {4, 4}},
 		{{1, 4}, {3, 3}, {5, 10}, {10, 18}},
 		{{1, 1}, {2, 3}, {4, 5}, {5, 9}},
@@ -18,5 +18,5 @@ func main() {
 		{{6, 6}, {8, 3}, {10, 9}},
 		{{2, 18}, {5, 8}, {8, 9}, {9, 9}},
 	}
-	mst.RunSynchGHS(lib.BuildSynchronizedWeightedGraphFromAdjencyList(weightedAdjencyList, lib.GetGenerator()))
+	mst.RunSynchronizedGHS(lib.BuildSynchronizedWeightedGraphFromAdjacencyList(weightedAdjacencyList, lib.GetGenerator()))
 }

@@ -14,7 +14,7 @@ const (
 	msgChooseEdge
 	msgConnectEdge
 	msgElectNewRoot
-	msgCompleated
+	msgCompleted
 )
 
 type messageSynchronizedGHS struct {
@@ -24,12 +24,12 @@ type messageSynchronizedGHS struct {
 	Root  int
 }
 
-func sendMessageSynchGHS(v lib.WeightedGraphNode, index int, message *messageSynchronizedGHS) {
+func sendMessageSynchronizedGHS(v lib.WeightedGraphNode, index int, message *messageSynchronizedGHS) {
 	outMessage, _ := json.Marshal(message)
 	v.SendMessage(index, outMessage)
 }
 
-func receiveMessageSynchGHS(v lib.WeightedGraphNode, index int) *messageSynchronizedGHS {
+func receiveMessageSynchronizedGHS(v lib.WeightedGraphNode, index int) *messageSynchronizedGHS {
 	var inMessage messageSynchronizedGHS
 	if data := v.ReceiveMessage(index); data != nil {
 		if err := json.Unmarshal(data, &inMessage); err == nil {

@@ -39,17 +39,17 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-// helper functions for Adjency List type
+// helper functions for Adjacency List type
 
-type adjencyList [][]int
+type adjacencyList [][]int
 
-func (al adjencyList) addEdge(vertices []lib.WeightedGraphNode, i, j int) {
+func (al adjacencyList) addEdge(vertices []lib.WeightedGraphNode, i, j int) {
 	al[i] = append(al[i], vertices[j].GetIndex())
 	al[j] = append(al[j], vertices[i].GetIndex())
 }
 
-func newAdjencyList(n int) adjencyList {
-	al := make(adjencyList, n)
+func newAdjacencyList(n int) adjacencyList {
+	al := make(adjacencyList, n)
 	for i := range al {
 		al[i] = make([]int, 0)
 	}
@@ -90,8 +90,8 @@ func (m *sequentialMst) visit(index int) {
 	}
 }
 
-func findMST(vertices []lib.WeightedGraphNode) adjencyList {
-	al := newAdjencyList(len(vertices))
+func findMST(vertices []lib.WeightedGraphNode) adjacencyList {
+	al := newAdjacencyList(len(vertices))
 	if len(vertices) == 0 {
 		return al
 	}
@@ -113,7 +113,7 @@ func findMST(vertices []lib.WeightedGraphNode) adjencyList {
 }
 
 // assuming all edges have unique weights than there is single MST
-func verifySynchSHS(vertices []lib.WeightedGraphNode) {
+func verifySynchronizedGHS(vertices []lib.WeightedGraphNode) {
 	expected := findMST(vertices)
 	for i, v := range vertices {
 		r := getTreeEdges(v)

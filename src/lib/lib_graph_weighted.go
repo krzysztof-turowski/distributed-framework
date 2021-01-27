@@ -28,7 +28,7 @@ func BuildSynchronizedEmptyWeightedGraph(n int, indexGenerator Generator) ([]Wei
 	return weightedVertices, synchronizer
 }
 
-func BuildSynchronizedWeightedGraphFromAdjencyList(adjacencyList [][][2]int, generator Generator) ([]WeightedGraphNode, Synchronizer) {
+func BuildSynchronizedWeightedGraphFromAdjacencyList(adjacencyList [][][2]int, generator Generator) ([]WeightedGraphNode, Synchronizer) {
 	vertices, synchronizer := BuildSynchronizedEmptyWeightedGraph(len(adjacencyList), generator)
 
 	for i, l := range adjacencyList {

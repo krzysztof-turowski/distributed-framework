@@ -10,5 +10,5 @@ func main() {
 	n, _ := strconv.Atoi(os.Args[len(os.Args)-2])
 	m, _ := strconv.Atoi(os.Args[len(os.Args)-2])
 	maxWeight, _ := strconv.Atoi(os.Args[len(os.Args)-2])
-	mst.RunSynchGHSRandom(n, m, maxWeight)
+	mst.RunSynchronizedGHSRandom(n, m, maxWeight)
 }

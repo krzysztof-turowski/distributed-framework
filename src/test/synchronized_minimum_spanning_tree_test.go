@@ -8,32 +8,32 @@ import (
 	"testing"
 )
 
-func TestRunSynchGHSTriangle(t *testing.T) {
+func TestRunSynchronizedGHSTriangle(t *testing.T) {
 	checkLogOutput()
-	adjencyList := [][][2]int{
+	adjacencyList := [][][2]int{
 		{{2, 10}, {3, 10}},
 		{{1, 10}, {3, 20}},
 		{{1, 10}, {2, 20}},
 	}
-	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	mst.RunSynchGHS(graph, synchronizer)
+	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjacencyList(adjacencyList, lib.GetGenerator())
+	mst.RunSynchronizedGHS(graph, synchronizer)
 }
 
-func TestRunSynchGHSSimplePath4(t *testing.T) {
+func TestRunSynchronizedGHSSimplePath4(t *testing.T) {
 	checkLogOutput()
-	adjencyList := [][][2]int{
+	adjacencyList := [][][2]int{
 		{{2, 10}},
 		{{1, 10}, {3, 20}},
 		{{2, 20}, {4, 10}},
 		{{3, 10}},
 	}
-	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	mst.RunSynchGHS(graph, synchronizer)
+	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjacencyList(adjacencyList, lib.GetGenerator())
+	mst.RunSynchronizedGHS(graph, synchronizer)
 }
 
-func TestRunSynchGHSSimplePath8(t *testing.T) {
+func TestRunSynchronizedGHSSimplePath8(t *testing.T) {
 	checkLogOutput()
-	adjencyList := [][][2]int{
+	adjacencyList := [][][2]int{
 		{{2, 10}},
 		{{1, 10}, {3, 20}},
 		{{2, 20}, {4, 10}},
@@ -43,13 +43,13 @@ func TestRunSynchGHSSimplePath8(t *testing.T) {
 		{{6, 20}, {8, 10}},
 		{{7, 10}},
 	}
-	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	mst.RunSynchGHS(graph, synchronizer)
+	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjacencyList(adjacencyList, lib.GetGenerator())
+	mst.RunSynchronizedGHS(graph, synchronizer)
 }
 
-func TestRunSynchGHSWikipediaExample(t *testing.T) {
+func TestRunSynchronizedGHSWikipediaExample(t *testing.T) {
 	checkLogOutput()
-	adjencyList := [][][2]int{
+	adjacencyList := [][][2]int{
 		{{2, 4}, {3, 1}, {4, 4}},
 		{{1, 4}, {3, 3}, {5, 10}, {10, 18}},
 		{{1, 1}, {2, 3}, {4, 5}, {5, 9}},
@@ -61,18 +61,18 @@ func TestRunSynchGHSWikipediaExample(t *testing.T) {
 		{{6, 6}, {8, 3}, {10, 9}},
 		{{2, 18}, {5, 8}, {8, 9}, {9, 9}},
 	}
-	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjencyList(adjencyList, lib.GetGenerator())
-	mst.RunSynchGHS(graph, synchronizer)
+	graph, synchronizer := lib.BuildSynchronizedWeightedGraphFromAdjacencyList(adjacencyList, lib.GetGenerator())
+	mst.RunSynchronizedGHS(graph, synchronizer)
 }
 
-func TestRunSynchGHSRandom(t *testing.T) {
+func TestRunSynchronizedGHSRandom(t *testing.T) {
 	checkLogOutput()
-	mst.RunSynchGHSRandom(25, 100, 25)
+	mst.RunSynchronizedGHSRandom(25, 100, 25)
 }
 
-func BenchmarkSynchGHSRandom(b *testing.B) {
+func BenchmarkSynchronizedGHSRandom(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-		mst.RunSynchGHSRandom(25, 100, 25)
+		mst.RunSynchronizedGHSRandom(25, 100, 25)
 	}
 }
