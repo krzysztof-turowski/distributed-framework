@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func compareTreeEdges(actual [][]int, vertices []lib.WeightedGraphNode, t *testing.T) {
+func compareTreeEdges(expectedTree [][]int, vertices []lib.WeightedGraphNode, t *testing.T) {
 	for i, v := range vertices {
-		l := getTreeEdges(v)
-		sort.Ints(l)
-		if !reflect.DeepEqual(actual[i], l) {
-			t.Fatalf("For node %d expectedTree tree edges %v but got %v\n", i, actual[i], l)
+		actualTree := getTreeEdges(v)
+		sort.Ints(actualTree)
+		if !reflect.DeepEqual(expectedTree[i], actualTree) {
+			t.Fatalf("For node %d expectedTree tree edges %v but got %v\n", i, expectedTree[i], actualTree)
 		}
 	}
 }

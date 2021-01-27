@@ -421,11 +421,11 @@ func RunSynchronizedGHSRandom(n, m, maxWeight int) {
 func verifySynchronizedGHS(vertices []lib.WeightedGraphNode) {
 	expected := findMST(vertices)
 	for i, v := range vertices {
-		r := getTreeEdges(v)
-		sort.Ints(r)
+		actual := getTreeEdges(v)
+		sort.Ints(actual)
 		sort.Ints(expected[i])
-		if !reflect.DeepEqual(r, expected[i]) {
-			panic(fmt.Sprintf("Node %d has tree neighbors %v but should have %v", v.GetIndex(), r, expected[i]))
+		if !reflect.DeepEqual(actual, expected[i]) {
+			panic(fmt.Sprintf("Node %d has tree neighbors %v but should have %v", v.GetIndex(), actual, expected[i]))
 		}
 	}
 	log.Printf("Algorithm output is correct\n")
