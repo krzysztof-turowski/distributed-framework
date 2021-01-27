@@ -6,6 +6,83 @@ import (
 	"log"
 )
 
+//  EDGES
+// Synchronized GHS algorithm for finding Minimal Spanning Tree requires every edge to have a unique weight.
+// To achieve that for every u,v in E we define new edge weight as a triple (w, v, u) where w is the original
+// weight and v < u. We order such triplets lexicographically.
+type edge struct {
+	Weight   int
+	SmallerV int
+	LargerV  int
+}
+
+func newEdge(weight, u, v int) *edge {
+	if u > v {
+		u, v = v, u
+	}
+	return &edge{Weight: weight, SmallerV: u, LargerV: v}
+}
+
+func (e *edge) Less(otherEdge lib.Comparable) bool {
+	f := otherEdge.(*edge)
+	if e.Weight != f.Weight {
+		return e.Weight < f.Weight
+	}
+	if e.SmallerV != f.SmallerV {
+		return e.SmallerV < f.SmallerV
+	}
+	return e.LargerV < f.LargerV
+}
+
+func (e *edge) isConnected(v int) bool {
+	return v == e.SmallerV || v == e.LargerV
+}
+
+type edgeStatus int
+
+const (
+	outgoingEdge edgeStatus = iota
+	treeEdge
+	rejectedEdge
+)
+
+//  MESSAGES
+// Messages used in synchronized ghs algorithm
+
+type messageType int
+
+const (
+	nilMessage messageType = iota
+	msgVerifyEdge
+	msgProposeEdge
+	msgChooseEdge
+	msgConnectEdge
+	msgElectNewRoot
+	msgCompleted
+)
+
+type messageSynchronizedGHS struct {
+	Type  messageType
+	MWOE  *edge // MWOE - Minimal Weight Outgoing Edge
+	Index int
+	Root  int
+}
+
+func sendMessageSynchronizedGHS(v lib.WeightedGraphNode, index int, message *messageSynchronizedGHS) {
+	outMessage, _ := json.Marshal(message)
+	v.SendMessage(index, outMessage)
+}
+
+func receiveMessageSynchronizedGHS(v lib.WeightedGraphNode, index int) *messageSynchronizedGHS {
+	var inMessage messageSynchronizedGHS
+	if data := v.ReceiveMessage(index); data != nil {
+		if err := json.Unmarshal(data, &inMessage); err == nil {
+			return &inMessage
+		}
+	}
+	return nil
+}
+
 /*  Vertice state in Synchronized GHS algorithm
  * State contains statuses for every edge and information about the current tree.
  */
