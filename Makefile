@@ -17,11 +17,16 @@ undirected_yoyo_example:
 undirected_mesh_leader_example:
 	go run src/example/undirected_mesh_leader.go 6 9
 
+synchronized_ghs_example:
+	go run src/example/synchronized_ghs_example.go
+	go run src/example/synchronized_ghs_example_random.go 10 30 100
+
 maximal_independent_set_luby_example:
 	go run src/example/maximal_independent_set_luby.go 20 0.25
 
 unit_test:
 	go test leader/undirected_graph -v
+	go test graphs/mst -v
 
 test:
 	go test test -run . -v
