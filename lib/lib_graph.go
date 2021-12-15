@@ -190,3 +190,28 @@ func BuildSynchronizedUndirectedMesh(a int, b int) ([]Node, Synchronizer) {
 	}
 	return BuildSynchronizedGraphFromAdjacencyList(adjacencyList, GetRandomGenerator())
 }
+
+func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
+	log.Println("building", dim, "dimensional cube")
+	vertices, synchronizer := BuildSynchronizedEmptyGraph(1<<dim, GetRandomGenerator())
+	for d := 0; d < dim; d++ {
+		for i := range vertices {
+			if (i & (1 << d)) > 0 {
+				continue
+			}
+
+			chans := getSynchronousChannels(2)
+			j := i | (1 << d)
+			addTwoWayConnection(vertices[i].(*twoWayNode), vertices[j].(*twoWayNode), chans[0], chans[1])
+			log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
+			log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
+		}
+	}
+	if !oriented {
+		for _, vertex := range vertices {
+			vertex.(*twoWayNode).shuffleTopology()
+		}
+	}
+	rand.Shuffle(len(vertices), func(i, j int) { vertices[i], vertices[j] = vertices[j], vertices[i] })
+	return vertices, synchronizer
+}
