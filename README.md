@@ -14,14 +14,14 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 1. Peterson algorithm
 
 #### Synchronized undirected graph
-1. YO-YO algorithm
+1. Yo-Yo algorithm
 
 ### Graph algorithms
 
-#### Minimum spanning tree
-1. Synchronized Gallager, Humblet, and Spira algorithm
+#### Synchronized minimum spanning tree
+1. Gallager-Humblet-Spira algorithm
 
-#### Maximal independent set
+#### Synchronized maximal independent set
 1. Luby algorithm
 
 ## Running
