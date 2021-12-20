@@ -148,8 +148,14 @@ func clearIncomingMessages(v lib.Node, index int) {
 
 func initializeHypercube(v lib.Node) bool {
 	st := newStateHyperelect(v.GetOutChannelsCount())
-	msg := newMessageHyperelect(v.GetIndex(), st.Stage, v.GetOutChannelsCount())
 
+	if v.GetOutChannelsCount() == 0 {
+		st.Status = leader
+		setStateHyperelect(v, st)
+		return true
+	}
+
+	msg := newMessageHyperelect(v.GetIndex(), st.Stage, v.GetOutChannelsCount())
 	addPending(0, st, msg)
 	sendPendingMessages(v, st)
 	setStateHyperelect(v, st)
