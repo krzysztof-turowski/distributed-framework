@@ -2,7 +2,7 @@ package mst
 
 import (
 	"container/heap"
-	"distributed-framework/lib"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 // helper functions for Adjacency List type

@@ -1,9 +1,9 @@
 package undirected_graph
 
 import (
-	"distributed-framework/lib"
 	"encoding/json"
 	"flag"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"io/ioutil"
 	"log"
 	"testing"

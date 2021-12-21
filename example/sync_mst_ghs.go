@@ -1,7 +1,7 @@
 package main
 
 import (
-	"distributed-framework/graphs/mst"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/mst"
 	"os"
 	"strconv"
 )

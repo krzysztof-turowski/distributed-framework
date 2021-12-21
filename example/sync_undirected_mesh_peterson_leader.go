@@ -1,8 +1,8 @@
 package main
 
 import (
-	"distributed-framework/leader/undirected_mesh"
-	"distributed-framework/lib"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_mesh"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"log"
 	"os"
 	"strconv"

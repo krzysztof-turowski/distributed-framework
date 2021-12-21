@@ -1,7 +1,7 @@
 package directed_ring
 
 import (
-	"distributed-framework/lib"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"encoding/json"
 	"fmt"
 	"log"

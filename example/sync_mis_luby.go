@@ -1,7 +1,7 @@
 package main
 
 import (
-	"distributed-framework/graphs/mis"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/mis"
 	"os"
 	"strconv"
 )

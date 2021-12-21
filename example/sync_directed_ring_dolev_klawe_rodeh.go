@@ -1,7 +1,7 @@
 package main
 
 import (
-	"distributed-framework/leader/directed_ring"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"os"
 	"strconv"
 	"strings"

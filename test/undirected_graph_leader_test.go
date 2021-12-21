@@ -1,7 +1,7 @@
 package test
 
 import (
-	"distributed-framework/leader/undirected_graph"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_graph"
 	"io/ioutil"
 	"log"
 	"testing"

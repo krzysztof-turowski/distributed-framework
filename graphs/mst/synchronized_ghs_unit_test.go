@@ -1,7 +1,7 @@
 package mst
 
 import (
-	"distributed-framework/lib"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"reflect"
 	"sort"
 	"testing"

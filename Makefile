@@ -34,7 +34,7 @@ benchmark:
 	go test ./test -bench . -benchtime 10x -run Benchmark -v
 
 check:
-	go vet `go list ./... | grep -v example`
+	@go vet `go list ./... | grep -v example`
 
 format:
 	gofmt -l -s -w .

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"distributed-framework/leader/directed_ring"
 	"fmt"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"io/ioutil"
 	"log"
 	"os"

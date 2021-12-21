@@ -1,8 +1,8 @@
 package undirected_graph
 
 import (
-	"distributed-framework/lib"
 	"encoding/json"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"log"
 )
 

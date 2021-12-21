@@ -1,7 +1,7 @@
 package test
 
 import (
-	"distributed-framework/leader/directed_ring"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"io/ioutil"
 	"log"
 	"testing"

@@ -1,8 +1,8 @@
 package test
 
 import (
-	"distributed-framework/graphs/mst"
-	"distributed-framework/lib"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/mst"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"io/ioutil"
 	"log"
 	"testing"
