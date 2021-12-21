@@ -33,10 +33,13 @@ type MessageHyperelect struct {
 }
 
 type StateHypercube struct {
-	Status       StatusType
-	Stage        int
-	Delayed      []*MessageHyperelect
-	Pending      [][]*MessageHyperelect
+	Status StatusType
+	Stage  int
+	// messages that have greater stage than current stage
+	Delayed []*MessageHyperelect
+	// messages waiting to be sent (one per neighbor per round)
+	Pending [][]*MessageHyperelect
+	// array of dimensions to reach match winner
 	NextDuellist []int
 }
 
@@ -66,15 +69,15 @@ func setStateHyperelect(v lib.Node, st *StateHypercube) {
 	v.SetState(data)
 }
 
-func addDelayed(st *StateHypercube, msg *MessageHyperelect) {
+func addDelayedMessage(st *StateHypercube, msg *MessageHyperelect) {
 	st.Delayed[msg.Stage] = msg
 }
 
-func addPending(index int, st *StateHypercube, msg *MessageHyperelect) {
+func addPendingMessage(index int, st *StateHypercube, msg *MessageHyperelect) {
 	st.Pending[index] = append(st.Pending[index], msg)
 }
 
-func clearPending(st *StateHypercube) {
+func clearPendingMessages(st *StateHypercube) {
 	for i := range st.Pending {
 		st.Pending[i] = nil
 	}
@@ -135,7 +138,7 @@ func forwardMessage(st *StateHypercube, msg *MessageHyperelect) {
 
 	index := msg.Destination[0]
 	msg.Destination = msg.Destination[1:]
-	addPending(index, st, msg)
+	addPendingMessage(index, st, msg)
 }
 
 func clearIncomingMessages(v lib.Node, index int) {
@@ -146,33 +149,42 @@ func clearIncomingMessages(v lib.Node, index int) {
 
 /* HYPERELECT METHODS */
 
+// initializes hypercube states and sends first match message
+// returns true if only one node
 func initializeHypercube(v lib.Node) bool {
 	st := newStateHyperelect(v.GetOutChannelsCount())
+	log.Println("Node", v.GetIndex(), "became duellist")
 
 	if v.GetOutChannelsCount() == 0 {
 		st.Status = leader
+		log.Println("Node", v.GetIndex(), "became leader")
+
 		setStateHyperelect(v, st)
 		return true
 	}
 
 	msg := newMessageHyperelect(v.GetIndex(), st.Stage, v.GetOutChannelsCount())
-	addPending(0, st, msg)
+	addPendingMessage(0, st, msg)
 	sendPendingMessages(v, st)
 	setStateHyperelect(v, st)
 
 	return false
 }
 
+// processes node that is/became leader/follower
+// returns true if Stage gets back to zero, i.e. all dimensions were notified
 func processFollow(v lib.Node, index int, st *StateHypercube) bool {
 	clearIncomingMessages(v, index)
-	clearPending(st)
+	clearPendingMessages(st)
 	if st.Stage > 0 {
-		addPending(st.Stage-1, st, &MessageHyperelect{Type: follow})
+		addPendingMessage(st.Stage-1, st, &MessageHyperelect{Type: follow})
 	}
 
 	return st.Stage == 0
 }
 
+// processes node that is/became defeated
+// returns true if finished (based on follow)
 func processDefeated(v lib.Node, index int, st *StateHypercube) bool {
 	for i := index; i < v.GetInChannelsCount(); i++ {
 		msg := receiveMessageHyperelect(v, i)
@@ -182,6 +194,8 @@ func processDefeated(v lib.Node, index int, st *StateHypercube) bool {
 			} else {
 				st.Status = follower
 				st.Stage = i
+				log.Println("Node", v.GetIndex(), "became follower")
+
 				return processFollow(v, i+1, st)
 			}
 		}
@@ -190,25 +204,33 @@ func processDefeated(v lib.Node, index int, st *StateHypercube) bool {
 	return false
 }
 
+// processes node that won match
+// returns true if node became leader (won dim matches)
 func processDuelWin(v lib.Node, index int, st *StateHypercube) bool {
 	st.Stage++
 
 	if st.Stage == v.GetOutChannelsCount() {
 		st.Status = leader
+		log.Println("Node", v.GetIndex(), "became leader")
+
 		clearIncomingMessages(v, index)
-		clearPending(st)
-		addPending(v.GetOutChannelsCount()-1, st, &MessageHyperelect{Type: follow})
+		clearPendingMessages(st)
+		addPendingMessage(v.GetOutChannelsCount()-1, st, &MessageHyperelect{Type: follow})
 		return true
 	}
 
 	m := newMessageHyperelect(v.GetIndex(), st.Stage, v.GetOutChannelsCount())
-	addPending(st.Stage, st, m)
+	addPendingMessage(st.Stage, st, m)
 
 	return false
 }
 
+// process node that lost match
+// returns true if finished (based on defeated)
 func processDuelLose(v lib.Node, index int, st *StateHypercube, msg *MessageHyperelect) bool {
 	st.Status = defeated
+	log.Println("Node", v.GetIndex(), "became defeated")
+
 	for i := range msg.Source {
 		if msg.Source[i] {
 			st.NextDuellist = append(st.NextDuellist, i)
@@ -223,26 +245,16 @@ func processDuelLose(v lib.Node, index int, st *StateHypercube, msg *MessageHype
 	return processDefeated(v, index, st)
 }
 
-func hyperelectDuellist(v lib.Node, st *StateHypercube) bool {
-	msg := st.Delayed[st.Stage]
-	st.Delayed[st.Stage] = nil
-	if msg != nil {
-		if msg.Value > v.GetIndex() {
-			if processDuelWin(v, 0, st) {
-				return false
-			}
-		} else {
-			return processDuelLose(v, 0, st, msg)
-		}
-	}
-
+// process node that is duellist
+// return true if finished (based on received messages)
+func processDuellist(v lib.Node, st *StateHypercube) bool {
 	for i := 0; i < v.GetInChannelsCount(); i++ {
-		msg = receiveMessageHyperelect(v, i)
+		msg := receiveMessageHyperelect(v, i)
 
 		if msg != nil {
 			if msg.Type == match {
 				if msg.Stage > st.Stage {
-					addDelayed(st, msg)
+					addDelayedMessage(st, msg)
 				} else if msg.Value > v.GetIndex() {
 					if processDuelWin(v, i+1, st) {
 						return false
@@ -253,6 +265,8 @@ func hyperelectDuellist(v lib.Node, st *StateHypercube) bool {
 			} else {
 				st.Status = follower
 				st.Stage = i
+				log.Println("Node", v.GetIndex(), "became follower")
+
 				return processFollow(v, i+1, st)
 			}
 		}
@@ -261,10 +275,31 @@ func hyperelectDuellist(v lib.Node, st *StateHypercube) bool {
 	return false
 }
 
+// process node that started round as duellist
+func hyperelectDuellist(v lib.Node, st *StateHypercube) bool {
+	msg := st.Delayed[st.Stage]
+	st.Delayed[st.Stage] = nil
+	if msg != nil {
+		if msg.Value > v.GetIndex() {
+			if processDuelWin(v, 0, st) {
+				return false
+			} else {
+				return processDuellist(v, st)
+			}
+		} else {
+			return processDuelLose(v, 0, st, msg)
+		}
+	}
+
+	return processDuellist(v, st)
+}
+
+// process node that started round as defeated
 func hyperelectDefeated(v lib.Node, st *StateHypercube) bool {
 	return processDefeated(v, 0, st)
 }
 
+// process node that started round as leader/follower
 func hyperelectClose(v lib.Node, st *StateHypercube) bool {
 	st.Stage--
 	return processFollow(v, 0, st)
