@@ -192,8 +192,16 @@ func BuildSynchronizedUndirectedMesh(a int, b int) ([]Node, Synchronizer) {
 }
 
 func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
+	if dim < 0 {
+		panic("Dimension cannot be negative")
+	}
+
 	log.Println("building", dim, "dimensional cube")
 	vertices, synchronizer := BuildSynchronizedEmptyGraph(1<<dim, GetRandomGenerator())
+	if len(vertices) == 0 {
+		panic("No vertices were created")
+	}
+
 	for d := 0; d < dim; d++ {
 		for i := range vertices {
 			if (i & (1 << d)) > 0 {
@@ -213,5 +221,6 @@ func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
 		}
 	}
 	rand.Shuffle(len(vertices), func(i, j int) { vertices[i], vertices[j] = vertices[j], vertices[i] })
+
 	return vertices, synchronizer
 }
