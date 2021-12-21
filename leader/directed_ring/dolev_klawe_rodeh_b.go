@@ -184,7 +184,6 @@ func checkDolevKlaweRodehB(vertices []lib.Node) {
 			}
 		}
 	}
-
 }
 
 func RunDolevKlaweRodehB(n int) (int, int) {

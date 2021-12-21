@@ -34,7 +34,9 @@ benchmark:
 	go test ./test -bench . -benchtime 10x -run Benchmark -v
 
 check:
-	for FILE in $(find . -name *.go); do echo $(FILE); go vet $(FILE); done
+	go vet `go list ./... | grep -v example`
 
 format:
 	gofmt -l -s -w .
+
+.PHONY: all unit_test test benchmark

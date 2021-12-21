@@ -41,7 +41,7 @@ func processMesh(v lib.Node, round int, rounds int) bool {
 		for _, i := range s.NeighboursToBroadcast {
 			sendMessageMesh(v, i, s.Broadcast)
 		}
-    done := (s.Broadcast != nil)
+		done := (s.Broadcast != nil)
 		NewNeighboursToBroadcast := make([]int, 0)
 		for _, i := range s.NeighboursToBroadcast {
 			msg := receiveMessageMesh(v, i)
