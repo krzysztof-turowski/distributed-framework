@@ -22,13 +22,13 @@ Let us take a closer look on how to execute aforementioned idea. We will start b
 
 Let $H_{k}$ be a $k$-dimensional hypercube and $H_{k:i}$ be a collection of $i$-dimensional hypercubes obtained from $H_{k}$ by removing all connections between nodes in dimensions $>i$, e.g. $H_{3:1}$ will be collection of 4 segments (1-dimensional hypercubes). After stage $i$ we want to have exactly one duellist left in each hypercube $H_{k:i}$. So after stage 2 we want to have only two duellist in $H_{3}$, one in each hypercube $H_{3:2}$. Let us also observe that hypercubes from collection $H_{k:i}$ will be nicely paired in colection $H_{k:i+1}$. So we start from $H_{k:0}$ where every node is a duellist, pair them up according to collection $H_{k:1}$ and have a match between them to determine the winner. We continue this process up to $H_{k:k}$. At the end, we are left with one duellist that will become the leader.
 
-In order to perform a match, a \textit{match} message has to get to the other duellist. We will do so in two steps. First, send a message to the other hypercube. Second, forward a message to a duellist. A duellist node can perform the first step by itself as it has the connection to the other hypercube. In order to forward the message every node that was defeated will remember the shortest path (what dimensions to travel) to its opponent (that won). The message will be forwarded in that fashion until it reaches the duellist.
+In order to perform a match, a \textit{match} message has to get to the other duellist. We will do so in two steps. First, send a message to the other hypercube. Second, forward a message to a duellist. A duellist can perform the first step by itself as it has the connection to the other hypercube. In order to forward the message every node that was defeated will remember the shortest path (what dimensions to travel) to its opponent (that won). The message will be forwarded in that fashion until it reaches the duellist.
 
-After electing a leader we need to notify all nodes. In $k$-dimensional hypercube we will perform that process over $k$ rounds. In a round $i\in[1, k]$ every node that is a leader or a \textit{follower} will notify their neighbor over connection in dimension $k-i+1$ to become a follower. So after round $i$ exactly one node in each hypercube $H_{k:k-i}$ will be a leader or follower.
+After electing a leader we need to notify all nodes. In $k$-dimensional hypercube we will perform that process over $k$ rounds. In a round $i\in[1, k]$ every node that is a leader or a \textit{follower} will notify their neighbor over connection in dimension $k-i+1$ to become a follower. So after round $i$ exactly one node in each hypercube $H_{k:k-i}$ will be a leader or a follower.
 
 \subsection*{Complexity - number of messages}
 
-Let $N = 2^{k}$ be the number of nodes. Let $d(i)$ be the maximal length of the shortest path from node defeated in stage $i$ to winner. Clearly, $d(i) = i$.
+Let $N = 2^{k}$ be the number of nodes. Let $d(i)$ be the maximal length of the shortest path from node defeated in stage $i$ to the winner. Clearly, $d(i) = i$.
 
 Sending \textit{match} message in stage $i$ can cost up to 
 $$l(i) = 1 + \sum_{j=1}^{i-1}d(j) = 1 + \sum_{j=1}^{i-1}j = 1 + \frac{i(i-1)}{2}.$$
@@ -49,7 +49,7 @@ The time complexity can be determined using above definitions
     T[Hyperelect] &\leq k + \sum_{i=1}^{k}l(i) 
     = k + \sum_{i=1}^{k}1+\sum_{i=1}^{k}\frac{i(i-1)}{2} 
     = 2k + \frac{(k-1)k(k+1)}{6} \\
-    &= \Theta(log^{3}\,N).
+    &= O(log^{3}\,N).
 \end{align*}
 
 \subsection*{Useful resources}
