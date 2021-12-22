@@ -26,6 +26,16 @@ In order to perform a match, a \textit{match} message has to get to the other du
 
 After electing a leader we need to notify all nodes. In $k$-dimensional hypercube we will perform that process over $k$ rounds. In a round $i\in[1, k]$ every node that is a leader or a \textit{follower} will notify their neighbor over connection in dimension $k-i+1$ to become a follower. So after round $i$ exactly one node in each hypercube $H_{k:k-i}$ will be a leader or a follower.
 
+\subsection*{Implementation details}
+
+Let us now discuss some aspects that might be helpful while implementing the algorithm. We will explain how to retrieve shortest path, then how to process received messages and how to close communication at the end.
+
+As the \textit{match} message travels to its duellist, nodes can mark in which dimensions is the message forwarded. Observe, that we are only interested whether the message was transmitted odd or even number of times in a particular dimension. List of dimensions that were used odd number of times will constitute the shortest route to other duellist.
+
+As some paths might be shorter than others, some \textit{match} messages might be sent to the other hypercube before it reaches appropriate stage. In that case every node will store some messages (at most one per stage) that will be delayed until node reaches given stage as a duellist or becomes defeated and message will be automatically forwarded.
+
+To gently close communication over the network every node that is/becomes a leader or a follower will send only \textit{follow} messages in that round. That will not disrupt the algorithm as the leader was already selected.
+
 \subsection*{Complexity - number of messages}
 
 Let $N = 2^{k}$ be the number of nodes. Let $d(i)$ be the maximal length of the shortest path from node defeated in stage $i$ to the winner. Clearly, $d(i) = i$.
