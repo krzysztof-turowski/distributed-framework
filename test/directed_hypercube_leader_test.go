@@ -2,10 +2,11 @@ package test
 
 import (
 	"io/ioutil"
-	"leader/directed_hypercube"
-	"lib"
 	"log"
 	"testing"
+
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_hypercube"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 func TestDirectedHypercubeLeader(t *testing.T) {

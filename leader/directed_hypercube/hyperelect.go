@@ -2,8 +2,9 @@ package directed_hypercube
 
 import (
 	"encoding/json"
-	"lib"
 	"log"
+
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 /* HYPERELECT TYPES */

@@ -1,10 +1,11 @@
 package main
 
 import (
-	"leader/directed_hypercube"
-	"lib"
 	"os"
 	"strconv"
+
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_hypercube"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 func main() {
