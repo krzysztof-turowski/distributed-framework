@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/krzysztof-turowski/distributed-framework/consensus/sync_ben_or"
+	"github.com/krzysztof-turowski/distributed-framework/consensus"
 )
 
 func main() {
@@ -23,5 +23,5 @@ func main() {
 		behaviours[i] = func(r int) byte { return 1 }
 	}
 
-	ben_or.RunBenOr(processes, behaviours)
+	consensus.RunBenOr(processes, behaviours)
 }

@@ -1,4 +1,4 @@
-package ben_or
+package consensus
 
 import (
 	"encoding/json"
@@ -146,7 +146,7 @@ func RunBenOr(processes []byte, behaviours []func(r int) byte) (int, int) {
 	if 5*t >= n {
 		panic("t too big")
 	}
-	nodes, synchronizer := lib.BuildCompleteGraphWithLoops(n)
+	nodes, synchronizer := lib.BuildCompleteGraphWithLoops(n, false, lib.GetRandomGenerator())
 
 	for i := 0; i < n-t; i++ {
 		bit := processes[i]
