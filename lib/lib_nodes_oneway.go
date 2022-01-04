@@ -26,12 +26,17 @@ func (v *oneWayNode) ReceiveMessage(index int) []byte {
 }
 
 func (v* oneWayNode) ReceiveAnyMessage() (int, []byte) {
-	index, value, _ := reflect.Select(v.inNeighborsCases)
-	message := value.Interface().([]byte)
-	if message != nil {
-		v.stats.receivedMessages++
+	for {
+		index, value, ok := reflect.Select(v.inNeighborsCases)
+		if !ok {
+			continue
+		}
+		message := value.Interface().([]byte)
+		if message != nil {
+			v.stats.receivedMessages++
+		}
+		return index, message
 	}
-	return index, message
 }
 
 func (v *oneWayNode) SendMessage(index int, message []byte) {
@@ -87,6 +92,15 @@ func (v *oneWayNode) FinishProcessing(finish bool) {
 		receivedMessages: v.stats.receivedMessages,
 	}
 	v.stats.sentMessages, v.stats.receivedMessages = 0, 0
+}
+
+func (v* oneWayNode) Close() {
+	for _, channel := range v.outNeighborsChannels {
+		close(channel)
+	}
+	for _, channel := range v.inNeighborsChannels {
+		for range channel { }
+	}
 }
 
 func (v *oneWayNode) shuffleTopology() {

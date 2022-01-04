@@ -29,12 +29,17 @@ func (v *twoWayNode) ReceiveMessage(index int) []byte {
 }
 
 func (v* twoWayNode) ReceiveAnyMessage() (int, []byte) {
-	index, value, _ := reflect.Select(v.neighborsCases)
-	message := value.Interface().([]byte)
-	if message != nil {
-		v.stats.receivedMessages++
+	for {
+		index, value, ok := reflect.Select(v.neighborsCases)
+		if !ok {
+			continue
+		}
+		message := value.Interface().([]byte)
+		if message != nil {
+			v.stats.receivedMessages++
+		}
+		return index, message
 	}
-	return index, message
 }
 
 func (v *twoWayNode) SendMessage(index int, message []byte) {
@@ -90,6 +95,15 @@ func (v *twoWayNode) FinishProcessing(finish bool) {
 		receivedMessages: v.stats.receivedMessages,
 	}
 	v.stats.sentMessages, v.stats.receivedMessages = 0, 0
+}
+
+func (v* twoWayNode) Close() {
+	for _, channel := range v.neighborsChannels {
+		close(channel.output)
+	}
+	for _, channel := range v.neighborsChannels {
+		for range channel.input { }
+	}
 }
 
 func (v *twoWayNode) shuffleTopology() {

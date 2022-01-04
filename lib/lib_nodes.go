@@ -14,6 +14,7 @@ type Node interface {
 	GetSize() int
 	StartProcessing()
 	FinishProcessing(finish bool)
+	Close()
 }
 
 type counterMessage struct {

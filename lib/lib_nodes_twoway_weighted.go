@@ -67,6 +67,10 @@ func (v *twoWayWeightedGraphNode) FinishProcessing(finish bool) {
 	v.node.FinishProcessing(finish)
 }
 
+func (v *twoWayWeightedGraphNode) Close() {
+	v.node.Close()
+}
+
 func (v *twoWayWeightedGraphNode) shuffleTopology() {
 	rand.Shuffle(len(v.node.neighborsChannels), func(i, j int) {
 		v.node.neighborsChannels[i], v.node.neighborsChannels[j] = v.node.neighborsChannels[j], v.node.neighborsChannels[i]
