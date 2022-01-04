@@ -3,6 +3,7 @@ package lib
 import (
 	"log"
 	"math/rand"
+	"reflect"
 )
 
 type oneWayNode struct {
@@ -12,6 +13,7 @@ type oneWayNode struct {
 	outNeighborsChannels []chan<- []byte
 	inNeighbors          []Node
 	outNeighbors         []Node
+	inNeighborsCases     []reflect.SelectCase
 	stats                statsNode
 }
 
@@ -21,6 +23,15 @@ func (v *oneWayNode) ReceiveMessage(index int) []byte {
 		v.stats.receivedMessages++
 	}
 	return message
+}
+
+func (v* oneWayNode) ReceiveAnyMessage() (int, []byte) {
+	index, value, _ := reflect.Select(v.inNeighborsCases)
+	message := value.Interface().([]byte)
+	if message != nil {
+		v.stats.receivedMessages++
+	}
+	return index, message
 }
 
 func (v *oneWayNode) SendMessage(index int, message []byte) {
@@ -82,6 +93,7 @@ func (v *oneWayNode) shuffleTopology() {
 	rand.Shuffle(len(v.inNeighborsChannels), func(i, j int) {
 		v.inNeighborsChannels[i], v.inNeighborsChannels[j] = v.inNeighborsChannels[j], v.inNeighborsChannels[i]
 		v.inNeighbors[i], v.inNeighbors[j] = v.inNeighbors[j], v.inNeighbors[i]
+		v.inNeighborsCases[i], v.inNeighborsCases[j] = v.inNeighborsCases[j], v.inNeighborsCases[i]
 	})
 	rand.Shuffle(len(v.outNeighborsChannels), func(i, j int) {
 		v.outNeighborsChannels[i], v.outNeighborsChannels[j] = v.outNeighborsChannels[j], v.outNeighborsChannels[i]
@@ -95,4 +107,7 @@ func addOneWayConnection(
 	firstNode.outNeighbors = append(firstNode.outNeighbors, secondNode)
 	secondNode.inNeighborsChannels = append(secondNode.inNeighborsChannels, channel)
 	secondNode.inNeighbors = append(secondNode.inNeighbors, firstNode)
+	secondNode.inNeighborsCases = append(
+		secondNode.inNeighborsCases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
 }
