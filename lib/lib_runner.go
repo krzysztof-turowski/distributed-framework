@@ -26,7 +26,9 @@ func (r *Runner) Run() {
 			cases[index].Chan, r.outConfirm[index] = reflect.ValueOf(nil), nil
 		}
 		r.messages += message.receivedMessages
-		log.Println("Node", index, "sent a message")
+		log.Println(
+			"Node number", index+1, "received", message.receivedMessages,
+			"and sent", message.sentMessages, "messages")
 		if r.outConfirm[index] != nil {
 			r.outConfirm[index] <- true
 		}
