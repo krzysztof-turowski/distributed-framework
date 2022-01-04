@@ -2,7 +2,6 @@ package lib
 
 import (
 	"math/rand"
-	"time"
 )
 
 type Generator interface {
@@ -22,14 +21,12 @@ func (r *generator) Int() int {
 	return r.state
 }
 
-type randomGenerator struct {
-	state *rand.Rand
-}
+type randomGenerator struct{}
 
 func GetRandomGenerator() Generator {
-	return &randomGenerator{state: rand.New(rand.NewSource(time.Now().UnixNano()))}
+	return randomGenerator{}
 }
 
-func (r *randomGenerator) Int() int {
-	return r.state.Int()
+func (r randomGenerator) Int() int {
+	return rand.Int()
 }
