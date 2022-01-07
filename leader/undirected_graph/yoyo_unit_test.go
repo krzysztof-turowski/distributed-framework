@@ -28,6 +28,10 @@ func (v *testNode) ReceiveMessage(index int) []byte {
 	return bytes
 }
 
+func (v *testNode) ReceiveAnyMessage() (int, []byte) {
+	return 0, nil
+}
+
 func (v *testNode) SendMessage(index int, message []byte) {
 
 }
@@ -68,6 +72,9 @@ func (v *testNode) StartProcessing() {
 }
 
 func (v *testNode) FinishProcessing(finish bool) {
+}
+
+func (v *testNode) Close() {
 }
 
 func TestProcessSetup(t *testing.T) {
