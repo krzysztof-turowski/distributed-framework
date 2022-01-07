@@ -1,0 +1,292 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{xspace}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{10pt}
+\setlist[itemize]{itemsep=0pt,topsep=0pt}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+
+\newcommand{\tcapture}{\texttt{capture}\xspace}
+\newcommand{\taccept}{\texttt{accept}\xspace}
+\newcommand{\tyes}{\texttt{yes}\xspace}
+\newcommand{\tno}{\texttt{no}\xspace}
+\newcommand{\tleader}{\texttt{leader}\xspace}
+\newcommand{\tid}{\texttt{id}\xspace}
+\newcommand{\tsize}{\texttt{size}\xspace}
+\newcommand{\tactive}{\texttt{active}\xspace}
+\newcommand{\tlevel}{\texttt{level}\xspace}
+\newcommand{\towner}{\texttt{owner}\xspace}
+\newcommand{\tqueue}{\texttt{queue}\xspace}
+\newcommand{\tcontender}{\texttt{contender}\xspace}
+\newcommand{\tnone}{\texttt{none}\xspace}
+\newcommand{\ttrue}{\texttt{true}\xspace}
+\newcommand{\tfalse}{\texttt{false}\xspace}
+\newcommand{\midentifier}{\mathit{identifier}}
+\newcommand{\mlevel}{\mathit{level}}
+\newcommand{\mpotentiallevel}{\mathit{potential \ level}}
+
+\begin{document}
+
+\section*{Humblet's clique leader election algorithm}
+
+Our goal is to elect a leader in a complete graph with $n$ nodes and asynchronous first-in-first-out communication.
+We assume that every node has a unique identifier, and that all identifiers are totally ordered.
+Initially, no node needs any knowledge about the identities of the nodes at the other ends of its incident edges,
+and these edges may be arbitrarily ordered.
+
+The simplest solution to this problem is to let every node send its identifier to all its neighbors,
+and then let every node select the neighbor with the largest identifier.
+This approach requires $O(n^2)$ messages.
+Here we describe an algorithm developed by Pierre Humblet in 1984,
+which solves this problem and only requires $O(n \lg n)$ messages.
+
+\subsection*{Algorithm description}
+
+The idea is that every node tries to ``capture'' its consecutive neighbors and expand its ``territory'',
+until it is either defeated by another node or its territory is large enough so that it can announce itself as a leader.
+
+Every node is in one of three states: \emph{active}, \emph{inactive} or \emph{captured}.
+Every node remembers its \emph{level}, i.e., the number of nodes it has already captured.
+Initially, all nodes are active.
+An active node tries to capture its consecutive neighbors
+by sending a \tcapture message, waiting for an \taccept response, increasing its level, and repeating this for the next node.
+A capture may fail, and in this case no \taccept response is sent and the node waiting for it may not proceed.
+The \tcapture message contains the sender's identifier and current level.
+
+When an active or inactive node receives a \tcapture message,
+it compares the sender's pair $(\mlevel, \midentifier)$ with its own
+(they must be different, because the identifiers are unique),
+and if the sender's pair is greater, it responds with an \taccept message and becomes captured.
+Otherwise, no response is sent and the sender may not proceed.
+A node may be captured multiple times and it remembers its \emph{owner}, i.e., the last node which captured it.
+
+When an already captured node receives a \tcapture message,
+it forwards this message to its owner (which is not necessarily still active)
+and waits for a response with the result of comparison between the sender and the owner.
+During this time, any other incoming \tcapture messages are queued and only processed after the awaited response,
+which may potentially result in a change of the owner.
+If the sender has won the comparison,
+the captured node changes its owner to the sender and responds to it with an \taccept message.
+In this case, if the previous owner was active, then it becomes inactive,
+which means that it no longer tries to capture next nodes, but is not captured yet.
+Otherwise, if the sender has lost the comparison,
+the captured node keeps its owner and sends no response to the sender, which then may not proceed.
+The queueing of \tcapture messages prevents a situation in which a node is about to change its owner,
+but the \tyes message has not yet arrived, and the node erroneously forwards a message to its previous owner.
+
+When an active node reaches a level such that its \emph{territory}, i.e., the node itself and all its captured nodes,
+is a majority of all nodes (which means that $\mlevel + 1 > n / 2$), then this node announces itself as a leader and finishes.
+All other nodes then immediately finish after receiving this announcement.
+
+\subsection*{Implementation details}
+
+Every node keeps the following variables:
+\begin{itemize}
+    \item \tid \ -- the node's identifier
+    \item \tsize \ -- the size of the graph
+    \item \tactive \ -- whether the node is active; initially \ttrue
+    \item \tlevel \ -- the node's level; initially $0$
+    \item \towner \ -- the index (neighbor number) of the node's owner;
+        if \tnone, then this node is not yet captured
+    \item \tqueue \ -- the queue for \tcapture messages
+    \item \tcontender \ -- the index of the node which sent a \tcapture message when this node was already captured;
+        only set for the time of waiting for a response from the owner;
+        the \tqueue may only be processed when this variable is \tnone
+\end{itemize}
+
+A node is active if and only if \texttt{active \&\& owner == none},
+inactive if and only if \texttt{!active \&\& owner == none},
+and captured if and only if \texttt{!active \&\& owner != none}.
+
+Every node starts by sending a \tcapture message to its first neighbor.
+Then it enters a loop in which it processes the incoming messages.
+
+After receiving a \tcapture message, the node checks if it is forwarded from a captured node and enqueues this message.
+The message is forwarded if and only if the index of the sender is less than the node's current level,
+because a captured node only forwards a message to its owner, and a non-forwarded message must come from a non-captured node.
+
+After receiving an \taccept message, the node increases its level,
+and if it is active, checks whether to capture next node or announce itself as a leader and finish.
+
+When receiving a \tyes or \tno message, the node must have been already captured,
+must have received a \tcapture message from \tcontender, and this must be a response from the owner.
+If the response is \tyes, the node changes its owner to \tcontender,
+sends \taccept message to it, and sets the \tcontender variable to \tnone.
+If the response is \tno, it ignores the \tcontender and only sets this variable to \tnone.
+After this, the processing of the \tqueue may continue.
+
+After receiving a \tleader message, the node saves the leader's identifier and finishes.
+
+After processing the incoming message, and while the \tcontender variable is \tnone, the node processes the \tqueue.
+
+If the dequeued \tcapture message is forwarded, the node responds with \tyes or \tno
+depending on the result of the comparison with the original sender.
+If the sender has won, the node sets \tactive to \tfalse, which either makes it inactive or keeps it captured.
+
+If the dequeued \tcapture message is not forwarded and the node is not captured, then the node compares itself with the sender.
+If the sender has won, then the node becomes captured and responds with \taccept message to the sender.
+Otherwise, the node ignores the sender.
+
+If the dequeued \tcapture message is not forwarded and the node is captured,
+then the node forwards the message to its owner and sets the \tcontender variable to the sender.
+This variable can then only be unset after receiving a \tyes or \tno response from the owner,
+and during this time the \tqueue may not be processed.
+
+\subsection*{Correctness proof}
+
+A node is a \emph{winner} when it has won its last capture attempt
+and a relevant \tyes or \taccept message is currently in transit.
+
+A node's \emph{potential level}
+is its level when it is not a winner,
+or its level plus one when it is a winner.
+
+\begin{lemma}\label{lost-capture}
+    After a node loses its capture attempt,
+    neither its level nor its potential level can increase.
+\end{lemma}
+\begin{proof}
+    The only way for the node's level to increase is by receiving an \taccept message,
+    which can only happen after winning a capture attempt.
+    The only way for the node's potential level to increase
+    is by increasing its level or by winning a capture attempt.
+\end{proof}
+
+\begin{lemma}\label{defeated}
+    After a node with level $l$ stops being active,
+    its potential level can only become at most $l + 1$.
+\end{lemma}
+\begin{proof}
+    The only way for the node's level to increase is by receiving an \taccept message,
+    which in turn requires a \tcapture message to be sent.
+    When the node becomes a winner, its potential level becomes $l + 1$,
+    and it will eventually receive an \taccept message,
+    which will make both its level and potential level equal $l + 1$.
+    It will not however send a next \tcapture message,
+    so neither its level nor its potential level will increase.
+\end{proof}
+
+A node is a \emph{candidate},
+when it is active and has not lost its last capture attempt,
+so either it is a winner or the \tcapture message is still in transit.
+
+\begin{lemma}\label{no-candidate-again}
+    Once a node stops being a candidate, it can not become a candidate again.
+\end{lemma}
+\begin{proof}
+    A node can not become active again, and an ignored \tcapture message
+    prevents the node from sending any other \tcapture messages.
+\end{proof}
+
+\begin{lemma}\label{always-one-candidate}
+    At any moment at least one node is a candidate.
+\end{lemma}
+\begin{proof}
+    Since all identifiers are unique,
+    at any moment there must be a node $x$ with the largest $(\mpotentiallevel, \midentifier)$ pair.
+    Suppose that this node is not a candidate.
+    Then either it has stopped being active or it has lost its last capture attempt.
+    If it has lost its last capture attempt,
+    then at that moment some node $y$ must have had larger $(\mlevel, \midentifier)$ pair.
+    By lemma \ref{lost-capture}, the $x$'s $(\mpotentiallevel, \midentifier)$ pair
+    could not have increased afterwards, so $y$'s pair must still be larger,
+    but $x$'s pair was assumed to be currently the largest (contradiction).
+    If it has stopped being active, then it must have been defeated by some node $y$.
+    Let $i_x$ and $i_y$ be the identifiers of $x$ and $y$ respectively.
+    Let $l_x$ and $l_y$ be the levels of $x$ and $y$ respectively, at the moment when $y$ defeated $x$.
+    Let $p_x$ and $p_y$ be the current potential levels of $x$ and $y$ respectively.
+    Since $y$ has won the capture attempt, there must be $(l_y, i_y) > (l_x, i_x)$ and $p_y \geq l_y + 1$.
+    By lemma \ref{defeated}, there must be $p_x \leq l_x + 1$.
+    Thus, $(p_y, i_y) \geq (l_y + 1, i_y) > (l_x + 1, i_x) \geq (p_x, i_x)$,
+    but $x$'s pair was assumed to be currently the largest (contradiction).
+    Therefore, the node $x$ must be a candidate.
+\end{proof}
+
+\begin{lemma}\label{min-one-leader}
+    Some node will announce itself as a leader.
+\end{lemma}
+\begin{proof}
+    By lemma \ref{no-candidate-again} and lemma \ref{always-one-candidate},
+    some node will be a candidate for the whole run time of the algorithm.
+    This node will eventually reach a level high enough to announce itself as a leader.
+\end{proof}
+
+\begin{lemma}\label{disjoint-territories}
+    If a node $x_1$ reaches level $l$ at moment $t_1$,
+    and another node $x_2$ reaches the same level $l$ at moment $t_2$,
+    then $x_1$'s territory from moment $t_1$ is disjoint with $x_2$'s territory from moment $t_2$.
+\end{lemma}
+\begin{proof}
+    Assume, without loss of generality, that $t_1$ is before $t_2$.
+    Suppose that some node belongs both to $x_1$'s territory at moment $t_1$ and to $x_2$'s territory at moment $t_2$.
+    Then it must have been captured by $x_2$ in the time between $t_1$ and $t_2$.
+    At that moment $x_1$ has already reached level $l$, but $x_2$ has not yet reached this level.
+    Therefore, $x_2$ must have lost this capture attempt (contradiction).
+\end{proof}
+
+\begin{lemma}\label{max-for-level}
+    At most $n / (l + 1)$ nodes can reach level $l$.
+\end{lemma}
+\begin{proof}
+    Consider the set of all nodes which reached level $l$.
+    Every one of them had territory of size $l + 1$ at the moment of reaching this level.
+    By lemma \ref{disjoint-territories}, all these territories must be mutually disjoint,
+    so this set can have at most $n / (l + 1)$ elements.
+\end{proof}
+
+\begin{lemma}\label{max-one-leader}
+    At most one node can announce itself as a leader.
+\end{lemma}
+\begin{proof}
+    A node can only announce itself as a leader when its level $l$ is greater than $n / 2 - 1$.
+    Then, $n / (l + 1) < n / (n / 2) = 2$, so by lemma \ref{max-for-level}, at most one node can reach this level.
+\end{proof}
+
+\begin{theorem}\label{one-leader}
+    Exactly one node will announce itself as a leader.
+\end{theorem}
+\begin{proof}
+    Follows from lemma \ref{min-one-leader} and lemma \ref{max-one-leader}.
+\end{proof}
+
+\subsection*{Complexity analysis}
+
+\begin{lemma}\label{capture-messages}
+    Every \tcapture message sent from an active node generates at most three other messages.
+\end{lemma}
+\begin{proof}
+    A \tcapture message may be forwarded to the receiver's owner,
+    the owner does not forward this message any further and responds with \tyes or \tno message,
+    and then an \taccept response may be sent.
+\end{proof}
+
+\begin{theorem}\label{messages}
+    At most $4 n H_{\lfloor n / 2 \rfloor} + n - 1$ messages are sent,
+    where $H_i$ is the $i$-th harmonic number.
+\end{theorem}
+\begin{proof}
+    Group all \tcapture messages from active nodes by the sender's level.
+    An active node may only sent one \tcapture message per level.
+    The maximum level at which an active node may send a \tcapture message is $\lfloor n / 2 \rfloor - 1$.
+    By lemma \ref{max-for-level} and lemma \ref{capture-messages},
+    the total number of messages generated by capture attempts is at most
+    $$\sum_{l=0}^{\lfloor n / 2 \rfloor - 1} 4 n / (l + 1) = 4 n \sum_{l=1}^{\lfloor n / 2 \rfloor} 1 / l = 4 n H_{\lfloor n / 2 \rfloor},$$
+    and the final leader announcement generates exactly $n - 1$ messages.
+\end{proof}
+
+\subsection*{References}
+
+P. Humblet, ``Selecting a leader in a clique in $O(N \log N)$ messages,''
+The 23rd IEEE Conference on Decision and Control. IEEE, Dec. 1984. doi: 10.1109/cdc.1984.272191.
+
+N. Santoro, ``Design and Analysis of Distributed Algorithms,''
+Wiley Series on Parallel and Distributed Computing. John Wiley \& Sons, Inc., Nov. 22, 2006. doi: 10.1002/0470072644.
+
+\end{document}
