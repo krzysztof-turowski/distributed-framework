@@ -28,6 +28,10 @@ func (v *testNode) ReceiveMessage(index int) []byte {
 	return bytes
 }
 
+func (v *testNode) ReceiveAnyMessage() (int, []byte) {
+	return -1, nil
+}
+
 func (v *testNode) SendMessage(index int, message []byte) {
 
 }
