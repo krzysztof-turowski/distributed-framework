@@ -3,6 +3,7 @@ package lib
 import (
 	"log"
 	"math/rand"
+	"reflect"
 )
 
 type twoWaySynchronousChannel struct {
@@ -15,7 +16,17 @@ type twoWayNode struct {
 	state             []byte
 	neighborsChannels []twoWaySynchronousChannel
 	neighbors         []Node
+	selectCases		  []reflect.SelectCase
 	stats             statsNode
+}
+
+func (v *twoWayNode) ReceiveAnyMessage() (int, []byte) {
+	from, selectMessage, _ := reflect.Select(v.selectCases)
+	message := selectMessage.Bytes()
+	if message != nil {
+		v.stats.receivedMessages++
+	}
+	return from, message
 }
 
 func (v *twoWayNode) ReceiveMessage(index int) []byte {
@@ -85,6 +96,7 @@ func (v *twoWayNode) shuffleTopology() {
 	rand.Shuffle(len(v.neighborsChannels), func(i, j int) {
 		v.neighborsChannels[i], v.neighborsChannels[j] = v.neighborsChannels[j], v.neighborsChannels[i]
 		v.neighbors[i], v.neighbors[j] = v.neighbors[j], v.neighbors[i]
+		v.selectCases[i], v.selectCases[j] = v.selectCases[j], v.selectCases[i]
 	})
 }
 
@@ -95,8 +107,13 @@ func addTwoWayConnection(
 		firstNode.neighborsChannels,
 		twoWaySynchronousChannel{input: secondChan, output: firstChan})
 	firstNode.neighbors = append(firstNode.neighbors, secondNode)
+	firstNode.selectCases = append(firstNode.selectCases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(secondChan)})
+
 	secondNode.neighborsChannels = append(
 		secondNode.neighborsChannels,
 		twoWaySynchronousChannel{input: firstChan, output: secondChan})
 	secondNode.neighbors = append(secondNode.neighbors, firstNode)
+	secondNode.selectCases = append(secondNode.selectCases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(firstChan)})
 }

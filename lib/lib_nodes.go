@@ -1,6 +1,7 @@
 package lib
 
 type Node interface {
+	ReceiveAnyMessage() (int, []byte)
 	ReceiveMessage(index int) []byte
 	SendMessage(index int, message []byte)
 	GetInChannelsCount() int
@@ -32,6 +33,14 @@ func getSynchronousChannels(n int) []chan []byte {
 	channels := make([]chan []byte, n)
 	for i := range channels {
 		channels[i] = make(chan []byte, 1)
+	}
+	return channels
+}
+
+func getAsynchronousChannels(n int) []chan []byte {
+	channels := make([]chan []byte, n)
+	for i := range channels {
+		channels[i] = make(chan []byte)
 	}
 	return channels
 }

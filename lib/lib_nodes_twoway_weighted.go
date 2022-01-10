@@ -15,6 +15,10 @@ func (v *twoWayWeightedGraphNode) GetOutWeights() []int {
 	return v.weights
 }
 
+func (v *twoWayWeightedGraphNode) ReceiveAnyMessage() (int, []byte) {
+	return v.node.ReceiveAnyMessage()
+}
+
 func (v *twoWayWeightedGraphNode) ReceiveMessage(index int) []byte {
 	return v.node.ReceiveMessage(index)
 }

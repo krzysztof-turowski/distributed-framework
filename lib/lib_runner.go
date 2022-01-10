@@ -20,7 +20,7 @@ func (r *Runner) Run() {
 	}
 	for finish := 0; finish < r.n; {
 		index, value, _ := reflect.Select(cases)
-		message := value.Interface().(*counterMessage)
+		message := value.Interface().(counterMessage)
 		if message.finish {
 			finish++
 			cases[index].Chan, r.outConfirm[index] = reflect.ValueOf(nil), nil
