@@ -24,17 +24,17 @@
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 
-\section*{Ben-Or asynchronous Byzantine consensus algorithm}
+\section*{Ben-Or asynchronous Byzantine agreement algorithm}
 \subsection*{Introduction}
-The idea of the consensus problem is to have a system of $N$ processes, $t$ of which are faulty. Each correct process starts with either 0 or 1, and after running the algorithm, all correct processes must end up with either 0 or 1 based on the following rules:
+The idea of the Byzantine agreement problem is to have a system of $N$ processes, $t$ of which are faulty. Each correct process starts with either 0 or 1, and after running the algorithm, all correct processes must end up with either 0 or 1 based on the following rules:
 \begin{itemize}
     \item All correct processes end up with the same value.
     \item If all correct processes start with the same value $v$, then all correct processes must end with $v$.
     \item All correct processes must terminate (with probability 1).
 \end{itemize}
-Ben-Or algorithm allows the network to be asynchronous and does not restrict the malevolence of faulty processes.
+Ben-Or algorithm allows the network to be asynchronous and does not restrict the malevolence of faulty processes. It works under assumption $t<\frac{N}{5}$.
 \subsection*{Protocol}
-Let $N$ - number of all processes, $t$ - number of faulty processes. It is assumed that $t<\frac{N}{5}$.\\
+Let $N$ - number of all processes, $t$ - number of faulty processes, $t<\frac{N}{5}$\\
 Let's bring up the pseudo code\cite{Ben83}:
 \begin{flushleft}
 \textbf{Process} P: Initial value $x_p$.\\

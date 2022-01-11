@@ -71,6 +71,7 @@ func (v *twoWayWeightedGraphNode) shuffleTopology() {
 	rand.Shuffle(len(v.node.neighborsChannels), func(i, j int) {
 		v.node.neighborsChannels[i], v.node.neighborsChannels[j] = v.node.neighborsChannels[j], v.node.neighborsChannels[i]
 		v.node.neighbors[i], v.node.neighbors[j] = v.node.neighbors[j], v.node.neighbors[i]
+		v.node.neighborsCases[i], v.node.neighborsCases[j] = v.node.neighborsCases[j], v.node.neighborsCases[i]
 		v.weights[i], v.weights[j] = v.weights[j], v.weights[i]
 	})
 }
