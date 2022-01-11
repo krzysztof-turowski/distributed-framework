@@ -8,6 +8,7 @@ import (
 type Runner struct {
 	n          int
 	messages   int
+	vertices   []Node
 	inConfirm  []chan counterMessage
 	outConfirm []chan bool
 }
@@ -24,6 +25,7 @@ func (r *Runner) Run() {
 		if message.finish {
 			finish++
 			cases[index].Chan, r.outConfirm[index] = reflect.ValueOf(nil), nil
+			go r.vertices[index].Close()
 		}
 		r.messages += message.receivedMessages
 		log.Println(

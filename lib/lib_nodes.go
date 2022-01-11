@@ -14,7 +14,7 @@ type Node interface {
 	GetSize() int
 	StartProcessing()
 	FinishProcessing(finish bool)
-	Close()
+	Close() // only for use by Runner
 }
 
 type counterMessage struct {

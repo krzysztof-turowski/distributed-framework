@@ -155,7 +155,6 @@ func runHumblet(node lib.Node) {
 		}
 	}
 
-	node.Close()
 	node.FinishProcessing(true)
 }
 

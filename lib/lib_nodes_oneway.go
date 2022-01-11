@@ -25,7 +25,7 @@ func (v *oneWayNode) ReceiveMessage(index int) []byte {
 	return message
 }
 
-func (v* oneWayNode) ReceiveAnyMessage() (int, []byte) {
+func (v *oneWayNode) ReceiveAnyMessage() (int, []byte) {
 	for {
 		index, value, ok := reflect.Select(v.inNeighborsCases)
 		if !ok {
@@ -94,7 +94,7 @@ func (v *oneWayNode) FinishProcessing(finish bool) {
 	v.stats.sentMessages, v.stats.receivedMessages = 0, 0
 }
 
-func (v* oneWayNode) Close() {
+func (v *oneWayNode) Close() {
 	for _, channel := range v.outNeighborsChannels {
 		close(channel)
 	}

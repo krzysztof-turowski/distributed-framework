@@ -33,7 +33,7 @@ func BuildEmptyDirectedGraph(n int) ([]Node, Runner) {
 		}
 		log.Println("Node", vertices[i].GetIndex(), "built")
 	}
-	return vertices, Runner{n: n, inConfirm: inConfirm, outConfirm: outConfirm}
+	return vertices, Runner{n: n, vertices: vertices, inConfirm: inConfirm, outConfirm: outConfirm}
 }
 
 func BuildSynchronizedEmptyDirectedGraph(n int) ([]Node, Synchronizer) {
@@ -82,7 +82,7 @@ func BuildEmptyGraph(n int, indexGenerator Generator) ([]Node, Runner) {
 		}
 		log.Println("Node", vertices[i].GetIndex(), "built")
 	}
-	return vertices, Runner{n: n, inConfirm: inConfirm, outConfirm: outConfirm}
+	return vertices, Runner{n: n, vertices: vertices, inConfirm: inConfirm, outConfirm: outConfirm}
 }
 
 func BuildSynchronizedEmptyGraph(n int, indexGenerator Generator) ([]Node, Synchronizer) {
