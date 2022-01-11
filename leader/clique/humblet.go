@@ -4,6 +4,7 @@ import (
 	"log"
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
@@ -17,11 +18,20 @@ const (
 
 const none = -1;
 
+type stateHumblet struct {
+	Active    bool
+	Level     int
+	Owner     int
+	Queue     []captureMessage
+	Contender int
+	Leader    int
+}
+
 type captureMessage struct {
-	sender int
-	passed bool
-	level  int
-	id     int
+	Sender int
+	Passed bool
+	Level  int
+	Id     int
 }
 
 func RunHumblet(nodes []lib.Node, runner lib.Runner) int {
@@ -35,29 +45,54 @@ func RunHumblet(nodes []lib.Node, runner lib.Runner) int {
 
 	checkSingleLeaderElected(nodes)
 
-	leader := getLeader(nodes[0])
+	leader := getState(nodes[0]).Leader
 	log.Println("Elected node", leader, "as a leader")
-
 	return leader
 }
 
 func runHumblet(node lib.Node) {
 	node.StartProcessing()
 
+	initializeHumblet(node)
+
+	for {
+		sender, message := node.ReceiveAnyMessage()
+		if processHumblet(node, sender, message) {
+			break
+		}
+	}
+
+	node.FinishProcessing(true)
+}
+
+func initializeHumblet(node lib.Node) {
+	setState(node, &stateHumblet{
+		Active: true,
+		Level: 0,
+		Owner: none,
+		Queue: make([]captureMessage, 0),
+		Contender: none,
+		Leader: none,
+	})
+
+	id := node.GetIndex()
+	log.Println("Node", id, "tries to capture first node")
+	node.SendMessage(0, encodeAll(byte(msgCapture), int32(0), int64(id)))
+}
+
+func processHumblet(node lib.Node, sender int, message []byte) bool {
 	id := node.GetIndex()
 	size := node.GetSize()
-	active := true
-	level := 0
-	owner := none
-	queue := make([]captureMessage, 0)
-	contender := none
+	state := getState(node)
+
+	defer setState(node, &state)
 
 	captureNext := func() {
-		node.SendMessage(level, encodeAll(byte(msgCapture), int32(level), int64(id)))
+		node.SendMessage(state.Level, encodeAll(byte(msgCapture), int32(state.Level), int64(id)))
 	}
 
 	passToOwner := func(message captureMessage) {
-		node.SendMessage(owner, encodeAll(byte(msgCapture), int32(message.level), int64(message.id)))
+		node.SendMessage(state.Owner, encodeAll(byte(msgCapture), int32(message.Level), int64(message.Id)))
 	}
 
 	respond := func(receiver int, label byte) {
@@ -71,108 +106,102 @@ func runHumblet(node lib.Node) {
 		}
 	}
 
-	log.Println("Node", id, "tries to capture first node")
-	captureNext()
+	buffer := bytes.NewBuffer(message)
 
-	loop: for {
-		sender, message := node.ReceiveAnyMessage()
-		buffer := bytes.NewBuffer(message)
+	var label byte
+	decode(buffer, &label)
 
-		var label byte
-		decode(buffer, &label)
+	switch label {
+	case msgCapture:
+		passed := sender < state.Level
+		var level int32
+		var id int64
+		decode(buffer, &level, &id)
+		state.Queue = append(state.Queue, captureMessage{Sender: sender, Passed: passed, Level: int(level), Id: int(id)})
 
-		switch label {
-		case msgCapture:
-			passed := sender < level
-			var level int32
-			var id int64
-			decode(buffer, &level, &id)
-			queue = append(queue, captureMessage{sender: sender, passed: passed, level: int(level), id: int(id)})
-
-		case msgAccept:
-			level++
-			if active {
-				if level + 1 <= size / 2 {
-					log.Println("Node", id, "reaches level", level, "and tries to capture next node")
-					captureNext()
-				} else {
-					log.Println("Node", id, "reaches level", level, "and becomes a leader")
-					setLeader(node, id)
-					announceAsLeader()
-					break loop
-				}
+	case msgAccept:
+		state.Level++
+		if state.Active {
+			if state.Level + 1 <= size / 2 {
+				log.Println("Node", id, "reaches level", state.Level, "and tries to capture next node")
+				captureNext()
+			} else {
+				log.Println("Node", id, "reaches level", state.Level, "and becomes a leader")
+				state.Leader = id
+				announceAsLeader()
+				return true
 			}
-
-		case msgYes:
-			log.Println("Node", id, "changes its owner")
-			owner = contender
-			respond(contender, msgAccept)
-			contender = none
-
-		case msgNo:
-			log.Println("Node", id, "keeps its owner")
-			contender = none
-
-		case msgLeader:
-			log.Println("Node", id, "receives leader announcement")
-			var leader int64
-			decode(buffer, &leader)
-			setLeader(node, int(leader))
-			break loop
 		}
 
-		for contender == none && len(queue) > 0 {
-			message := queue[0]
-			queue = queue[1:]
+	case msgYes:
+		log.Println("Node", id, "changes its owner")
+		state.Owner = state.Contender
+		respond(state.Contender, msgAccept)
+		state.Contender = none
 
-			compare := func() bool {
-				return message.level > level || (message.level == level && message.id > id)
-			}
+	case msgNo:
+		log.Println("Node", id, "keeps its owner")
+		state.Contender = none
 
-			if message.passed {
-				if compare() {
-					log.Println("Node", id, "yields to node", message.id)
-					active = false
-					respond(message.sender, msgYes)
-				} else {
-					log.Println("Node", id, "ignores node", message.id)
-					respond(message.sender, msgNo)
-				}
-			} else if owner == none {
-				if compare() {
-					log.Println("Node", id, "yields to node", message.id, "and becomes captured")
-					active = false
-					owner = message.sender
-					respond(message.sender, msgAccept)
-				} else {
-					log.Println("Node", id, "ignores node", message.id)
-				}
+	case msgLeader:
+		log.Println("Node", id, "receives leader announcement")
+		var leader int64
+		decode(buffer, &leader)
+		state.Leader = int(leader)
+		return true
+	}
+
+	for state.Contender == none && len(state.Queue) > 0 {
+		message := state.Queue[0]
+		state.Queue = state.Queue[1:]
+
+		compare := func() bool {
+			return message.Level > state.Level || (message.Level == state.Level && message.Id > id)
+		}
+
+		if message.Passed {
+			if compare() {
+				log.Println("Node", id, "yields to node", message.Id)
+				state.Active = false
+				respond(message.Sender, msgYes)
 			} else {
-				log.Println("Node", id, "passes a message from node", message.id, "to its owner")
-				passToOwner(message)
-				contender = message.sender
+				log.Println("Node", id, "ignores node", message.Id)
+				respond(message.Sender, msgNo)
 			}
+		} else if state.Owner == none {
+			if compare() {
+				log.Println("Node", id, "yields to node", message.Id, "and becomes captured")
+				state.Active = false
+				state.Owner = message.Sender
+				respond(message.Sender, msgAccept)
+			} else {
+				log.Println("Node", id, "ignores node", message.Id)
+			}
+		} else {
+			log.Println("Node", id, "passes a message from node", message.Id, "to its owner")
+			passToOwner(message)
+			state.Contender = message.Sender
 		}
 	}
 
-	node.FinishProcessing(true)
+	return false
 }
 
-func setLeader(node lib.Node, leader int) {
-	value := int64(leader)
-	node.SetState(encodeAll(value))
+func getState(node lib.Node) stateHumblet {
+	var state stateHumblet
+	json.Unmarshal(node.GetState(), &state)
+	return state
 }
 
-func getLeader(node lib.Node) int {
-	var value int64
-	decodeAll(node.GetState(), &value)
-	return int(value)
+func setState(node lib.Node, state *stateHumblet) {
+	encodedState, _ := json.Marshal(*state)
+	node.SetState(encodedState)
 }
 
 func checkSingleLeaderElected(nodes []lib.Node) {
-	leader := getLeader(nodes[0])
+	leader := getState(nodes[0]).Leader
 	for _, node := range nodes {
-		if getLeader(node) != leader {
+		if getState(node).Leader != leader {
 			panic("Multiple leaders elected")
 		}
 	}
