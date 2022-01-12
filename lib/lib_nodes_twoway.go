@@ -3,6 +3,7 @@ package lib
 import (
 	"log"
 	"math/rand"
+	"reflect"
 )
 
 type twoWaySynchronousChannel struct {
@@ -15,6 +16,7 @@ type twoWayNode struct {
 	state             []byte
 	neighborsChannels []twoWaySynchronousChannel
 	neighbors         []Node
+	neighborsCases    []reflect.SelectCase
 	stats             statsNode
 }
 
@@ -24,6 +26,20 @@ func (v *twoWayNode) ReceiveMessage(index int) []byte {
 		v.stats.receivedMessages++
 	}
 	return message
+}
+
+func (v *twoWayNode) ReceiveAnyMessage() (int, []byte) {
+	for {
+		index, value, ok := reflect.Select(v.neighborsCases)
+		if !ok {
+			continue
+		}
+		message := value.Interface().([]byte)
+		if message != nil {
+			v.stats.receivedMessages++
+		}
+		return index, message
+	}
 }
 
 func (v *twoWayNode) SendMessage(index int, message []byte) {
@@ -81,10 +97,20 @@ func (v *twoWayNode) FinishProcessing(finish bool) {
 	v.stats.sentMessages, v.stats.receivedMessages = 0, 0
 }
 
+func (v *twoWayNode) Close() {
+	for _, channel := range v.neighborsChannels {
+		close(channel.output)
+	}
+	for _, channel := range v.neighborsChannels {
+		for range channel.input { }
+	}
+}
+
 func (v *twoWayNode) shuffleTopology() {
 	rand.Shuffle(len(v.neighborsChannels), func(i, j int) {
 		v.neighborsChannels[i], v.neighborsChannels[j] = v.neighborsChannels[j], v.neighborsChannels[i]
 		v.neighbors[i], v.neighbors[j] = v.neighbors[j], v.neighbors[i]
+		v.neighborsCases[i], v.neighborsCases[j] = v.neighborsCases[j], v.neighborsCases[i]
 	})
 }
 
@@ -95,8 +121,14 @@ func addTwoWayConnection(
 		firstNode.neighborsChannels,
 		twoWaySynchronousChannel{input: secondChan, output: firstChan})
 	firstNode.neighbors = append(firstNode.neighbors, secondNode)
+	firstNode.neighborsCases = append(
+		firstNode.neighborsCases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(secondChan)})
 	secondNode.neighborsChannels = append(
 		secondNode.neighborsChannels,
 		twoWaySynchronousChannel{input: firstChan, output: secondChan})
 	secondNode.neighbors = append(secondNode.neighbors, firstNode)
+	secondNode.neighborsCases = append(
+		secondNode.neighborsCases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(firstChan)})
 }
