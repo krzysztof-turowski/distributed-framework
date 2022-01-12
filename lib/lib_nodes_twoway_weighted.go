@@ -15,12 +15,12 @@ func (v *twoWayWeightedGraphNode) GetOutWeights() []int {
 	return v.weights
 }
 
-func (v *twoWayWeightedGraphNode) ReceiveAnyMessage() (int, []byte) {
-	return v.node.ReceiveAnyMessage()
-}
-
 func (v *twoWayWeightedGraphNode) ReceiveMessage(index int) []byte {
 	return v.node.ReceiveMessage(index)
+}
+
+func (v *twoWayWeightedGraphNode) ReceiveAnyMessage() (int, []byte) {
+	return v.node.ReceiveAnyMessage()
 }
 
 func (v *twoWayWeightedGraphNode) SendMessage(index int, message []byte) {
@@ -65,6 +65,10 @@ func (v *twoWayWeightedGraphNode) StartProcessing() {
 
 func (v *twoWayWeightedGraphNode) FinishProcessing(finish bool) {
 	v.node.FinishProcessing(finish)
+}
+
+func (v *twoWayWeightedGraphNode) Close() {
+	v.node.Close()
 }
 
 func (v *twoWayWeightedGraphNode) shuffleTopology() {

@@ -1,8 +1,8 @@
 package lib
 
 type Node interface {
-	ReceiveAnyMessage() (int, []byte)
 	ReceiveMessage(index int) []byte
+	ReceiveAnyMessage() (int, []byte)
 	SendMessage(index int, message []byte)
 	GetInChannelsCount() int
 	GetOutChannelsCount() int
@@ -14,6 +14,7 @@ type Node interface {
 	GetSize() int
 	StartProcessing()
 	FinishProcessing(finish bool)
+	Close() // only for use by Runner
 }
 
 type counterMessage struct {
