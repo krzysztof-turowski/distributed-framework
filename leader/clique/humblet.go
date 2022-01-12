@@ -34,7 +34,7 @@ type captureMessage struct {
 	Id     int
 }
 
-func RunHumblet(nodes []lib.Node, runner lib.Runner) int {
+func RunHumblet(nodes []lib.Node, runner lib.Runner) (int, int) {
 	for _, node := range nodes {
 		log.Println("Running node", node.GetIndex())
 		go runHumblet(node)

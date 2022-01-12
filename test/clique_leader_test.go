@@ -19,15 +19,11 @@ func TestHumblet(t *testing.T) {
 }
 
 func BenchmarkHumblet(b *testing.B) {
-	b.StopTimer()
 	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
 		rand.Seed(0)
 		nodes, runner := lib.BuildCompleteGraph(100)
-
-		b.StartTimer()
 		clique.RunHumblet(nodes, runner)
-		b.StopTimer()
 	}
 }
