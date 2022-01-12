@@ -27,7 +27,5 @@ func main() {
 
 	fmt.Println("\nRunning...\n")
 
-	leader := clique.RunHumblet(nodes, runner)
-
-	fmt.Println("\nLeader:", leader)
+	clique.RunHumblet(nodes, runner)
 }

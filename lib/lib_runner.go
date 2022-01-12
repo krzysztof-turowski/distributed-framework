@@ -37,6 +37,7 @@ func (r *Runner) Run() {
 	}
 }
 
-func (r *Runner) GetStats() {
+func (r *Runner) GetStats() int {
 	log.Println("Total messages: ", r.messages)
+	return r.messages
 }

@@ -41,13 +41,9 @@ func RunHumblet(nodes []lib.Node, runner lib.Runner) int {
 	}
 
 	runner.Run()
-	runner.GetStats()
-
 	checkSingleLeaderElected(nodes)
 
-	leader := getState(nodes[0]).Leader
-	log.Println("Elected node", leader, "as a leader")
-	return leader
+	return runner.GetStats()
 }
 
 func runHumblet(node lib.Node) {
@@ -203,6 +199,7 @@ func checkSingleLeaderElected(nodes []lib.Node) {
 			panic("Multiple leaders elected")
 		}
 	}
+	log.Println("Elected node", leader, "as a leader")
 }
 
 func encode(buffer *bytes.Buffer, values ...interface{}) {
