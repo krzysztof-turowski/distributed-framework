@@ -1,11 +1,11 @@
 package clique
 
 import (
-	"log"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
+	"log"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	msgLeader
 )
 
-const none = -1;
+const none = -1
 
 type stateHumblet struct {
 	Active    bool
@@ -52,7 +52,6 @@ func RunHumblet(nodes []lib.Node, runner lib.Runner) int {
 
 func runHumblet(node lib.Node) {
 	node.StartProcessing()
-
 	initializeHumblet(node)
 
 	for {
@@ -61,18 +60,17 @@ func runHumblet(node lib.Node) {
 			break
 		}
 	}
-
 	node.FinishProcessing(true)
 }
 
 func initializeHumblet(node lib.Node) {
 	setState(node, &stateHumblet{
-		Active: true,
-		Level: 0,
-		Owner: none,
-		Queue: make([]captureMessage, 0),
+		Active:    true,
+		Level:     0,
+		Owner:     none,
+		Queue:     make([]captureMessage, 0),
 		Contender: none,
-		Leader: none,
+		Leader:    none,
 	})
 
 	id := node.GetIndex()
@@ -101,7 +99,7 @@ func processHumblet(node lib.Node, sender int, message []byte) bool {
 
 	announceAsLeader := func() {
 		message := encodeAll(byte(msgLeader), int64(id))
-		for receiver := 0; receiver < size - 1; receiver++ {
+		for receiver := 0; receiver < size-1; receiver++ {
 			node.SendMessage(receiver, message)
 		}
 	}
@@ -122,7 +120,7 @@ func processHumblet(node lib.Node, sender int, message []byte) bool {
 	case msgAccept:
 		state.Level++
 		if state.Active {
-			if state.Level + 1 <= size / 2 {
+			if state.Level+1 <= size/2 {
 				log.Println("Node", id, "reaches level", state.Level, "and tries to capture next node")
 				captureNext()
 			} else {
@@ -208,19 +206,19 @@ func checkSingleLeaderElected(nodes []lib.Node) {
 }
 
 func encode(buffer *bytes.Buffer, values ...interface{}) {
-    for _, value := range values {
-        if binary.Write(buffer, binary.BigEndian, value) != nil {
+	for _, value := range values {
+		if binary.Write(buffer, binary.BigEndian, value) != nil {
 			panic("Failed to encode a value")
 		}
-    }
+	}
 }
 
 func decode(buffer *bytes.Buffer, values ...interface{}) {
-    for _, value := range values {
-        if binary.Read(buffer, binary.BigEndian, value) != nil {
+	for _, value := range values {
+		if binary.Read(buffer, binary.BigEndian, value) != nil {
 			panic("Failed to decode a value")
 		}
-    }
+	}
 }
 
 func encodeAll(values ...interface{}) []byte {
