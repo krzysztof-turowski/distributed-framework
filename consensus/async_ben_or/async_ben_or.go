@@ -6,38 +6,44 @@ import (
 
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
+
+const (
+	msgDecided   = 1
+	msgUndecided = 0
+)
+
 type messageTypeBenOr int
 
 const (
-	msgDecided		= 1
-	msgUndecided	= 0
+	msgTypeOne messageTypeBenOr = iota
+	msgTypeTwo
 )
 
 type messageBenOr struct {
-	Type	messageTypeBenOr
-	Round	int
-	Val		byte
+	Type    messageTypeBenOr
+	Round   int
+	Val     byte
 	Decided int
 }
 
 type vertexBenOr struct {
-	node			lib.Node
+	node lib.Node
 
 	// round -> [ids that have already sent this round]
-	receivedOnes	map[int]map[int]bool
+	receivedOnes map[int]map[int]bool
 	// ones[round][0/1] -> # of messages from round 'r' with value 0 or 1
-	ones			map[int]*[2]int
+	ones map[int]*[2]int
 
 	// round -> [ids that have already sent this round]
-	receivedTwos	map[int]map[int]bool
-	// twos[round][msgUndecided/msgDecided][0/1] -> # of messages from round 'r' which are decided/undecided, with value 0 or 1 
-	twos			map[int]*[2][2]int
+	receivedTwos map[int]map[int]bool
+	// twos[round][msgUndecided/msgDecided][0/1] -> # of messages from round 'r' which are decided/undecided, with value 0 or 1
+	twos map[int]*[2][2]int
 
 	// used to discard messages coming from previous rounds
-	recentRound 	int
+	recentRound int
 }
 
-func (v* vertexBenOr) sendAllBenOr(msg messageBenOr) {
+func (v *vertexBenOr) sendAllBenOr(msg messageBenOr) {
 	bytes, _ := json.Marshal(msg)
 	channelsCount := v.node.GetOutChannelsCount()
 	for i := 0; i < channelsCount; i++ {
@@ -45,9 +51,9 @@ func (v* vertexBenOr) sendAllBenOr(msg messageBenOr) {
 	}
 }
 
-func (v* vertexBenOr) receiveAnyBenOr() (int, messageBenOr) {
+func (v *vertexBenOr) receiveAnyBenOr() (int, messageBenOr) {
 	// ignore nil & incorrectly formed messages
-	for ;; {
+	for {
 		from, bytes := v.node.ReceiveAnyMessage()
 		if bytes == nil {
 			continue
@@ -60,12 +66,12 @@ func (v* vertexBenOr) receiveAnyBenOr() (int, messageBenOr) {
 	}
 }
 
-func (v* vertexBenOr) processMessage(from int, msg messageBenOr) {
+func (v *vertexBenOr) processMessage(from int, msg messageBenOr) {
 	if msg.Round < v.recentRound {
 		return
 	}
 
-	if msg.Type == 1 {
+	if msg.Type == msgTypeOne {
 		// check if already sent
 		if _, contains := v.receivedOnes[msg.Round]; contains {
 			if _, contains2 := v.receivedOnes[msg.Round][from]; contains2 {
@@ -81,8 +87,8 @@ func (v* vertexBenOr) processMessage(from int, msg messageBenOr) {
 			v.ones[msg.Round] = &[2]int{0, 0}
 		}
 
-		(*v.ones[msg.Round])[msg.Val] ++
-	} else if msg.Type == 2 {
+		(*v.ones[msg.Round])[msg.Val]++
+	} else if msg.Type == msgTypeTwo {
 		if _, contains := v.receivedTwos[msg.Round]; contains {
 			if _, contains2 := v.receivedTwos[msg.Round][from]; contains2 {
 				// neighbour already sent type 2 message this round
@@ -92,35 +98,34 @@ func (v* vertexBenOr) processMessage(from int, msg messageBenOr) {
 			v.receivedTwos[msg.Round] = make(map[int]bool)
 		}
 		v.receivedTwos[msg.Round][from] = true
-		
+
 		if _, contains := v.twos[msg.Round]; !contains {
 			v.twos[msg.Round] = &[2][2]int{{0, 0}, {0, 0}}
 		}
-		(*v.twos[msg.Round])[msg.Decided][msg.Val] ++
+		(*v.twos[msg.Round])[msg.Decided][msg.Val]++
 	}
 }
 
-func (v* vertexBenOr) receiveAndProcessAnyMessage() {
+func (v *vertexBenOr) receiveAndProcessAnyMessage() {
 	v.processMessage(v.receiveAnyBenOr())
 }
 
-func (v* vertexBenOr) initialiseBenOr(startingBit byte) {
+func (v *vertexBenOr) initialiseBenOr() {
 	v.receivedOnes = make(map[int]map[int]bool)
 	v.receivedTwos = make(map[int]map[int]bool)
-	
 }
 
 // returns number of type 1 messages from round 'r' with value 'x'
-func (v* vertexBenOr) getLenTypeOne(r int, x byte) int {
+func (v *vertexBenOr) getLenTypeOne(r int, x byte) int {
 	return v.ones[r][x]
 }
 
 // returns number of type 2 messages from round 'r' with value 'x' and decidedness 'd'
-func (v* vertexBenOr) getLenTypeTwo(r int, d int, x byte) int {
+func (v *vertexBenOr) getLenTypeTwo(r int, d int, x byte) int {
 	return v.twos[r][d][x]
 }
 
-func (v* vertexBenOr) initRound(r int) {
+func (v *vertexBenOr) initRound(r int) {
 	for i := 0; i < v.node.GetInChannelsCount(); i++ {
 		if _, contains := v.ones[r]; !contains {
 			v.ones[r] = &[2]int{0, 0}
@@ -133,44 +138,43 @@ func (v* vertexBenOr) initRound(r int) {
 }
 
 // process one local round
-func (v* vertexBenOr) processRound(r int, x byte, rand lib.Generator, n, t int) (bool, byte) {
+func (v *vertexBenOr) processRound(r int, x byte, rand lib.Generator, n, t int) (bool, byte) {
 	decided := false
 	resultBit := x
 
 	v.recentRound = r
 	v.initRound(r)
 
-	initMsg := messageBenOr{Type: 1, Round: r, Val: resultBit}
+	initMsg := messageBenOr{Type: msgTypeOne, Round: r, Val: resultBit}
 	v.sendAllBenOr(initMsg)
-	
-	for v.getLenTypeOne(r, 0) + v.getLenTypeOne(r, 1) < n - t {
+
+	for v.getLenTypeOne(r, 0)+v.getLenTypeOne(r, 1) < n-t {
 		v.receiveAndProcessAnyMessage()
 	}
 
 	var decideMessage messageBenOr
-	if v.getLenTypeOne(r, 0) > (n + t) / 2 {
-		decideMessage = messageBenOr{Type: 2, Round: r, Val: 0, Decided: msgDecided}
-	} else if v.getLenTypeOne(r, 1) > (n + t) / 2 {
-		decideMessage = messageBenOr{Type: 2, Round: r, Val: 1, Decided: msgDecided}
+	if v.getLenTypeOne(r, 0) > (n+t)/2 {
+		decideMessage = messageBenOr{Type: msgTypeTwo, Round: r, Val: 0, Decided: msgDecided}
+	} else if v.getLenTypeOne(r, 1) > (n+t)/2 {
+		decideMessage = messageBenOr{Type: msgTypeTwo, Round: r, Val: 1, Decided: msgDecided}
 	} else {
-		decideMessage = messageBenOr{Type: 2, Round: r, Decided: msgUndecided}
+		decideMessage = messageBenOr{Type: msgTypeTwo, Round: r, Decided: msgUndecided}
 	}
 	v.sendAllBenOr(decideMessage)
 
-
-	for v.getLenTypeTwo(r, msgUndecided, 0) + v.getLenTypeTwo(r, msgUndecided, 1) + v.getLenTypeTwo(r, msgDecided, 0) + v.getLenTypeTwo(r, msgDecided, 1) < n - t {
+	for v.getLenTypeTwo(r, msgUndecided, 0)+v.getLenTypeTwo(r, msgUndecided, 1)+v.getLenTypeTwo(r, msgDecided, 0)+v.getLenTypeTwo(r, msgDecided, 1) < n-t {
 		v.receiveAndProcessAnyMessage()
 	}
-	
+
 	zeroLen := v.getLenTypeTwo(r, msgDecided, 0)
-	oneLen  := v.getLenTypeTwo(r, msgDecided, 1)
-	if zeroLen >= t + 1 || oneLen >= t + 1 {
-		if zeroLen >= t + 1 {
+	oneLen := v.getLenTypeTwo(r, msgDecided, 1)
+	if zeroLen >= t+1 || oneLen >= t+1 {
+		if zeroLen >= t+1 {
 			resultBit = 0
-		} else if oneLen >= t + 1 {
+		} else if oneLen >= t+1 {
 			resultBit = 1
 		}
-		if zeroLen + oneLen > (n + t) / 2 {
+		if zeroLen+oneLen > (n+t)/2 {
 			decided = true
 		}
 	} else {
@@ -187,23 +191,21 @@ func (v* vertexBenOr) processRound(r int, x byte, rand lib.Generator, n, t int) 
 	return decided, resultBit
 }
 
-
-
-func (v* vertexBenOr) runBenOr(startingBit byte, n, t int, rand lib.Generator) byte {
+func (v *vertexBenOr) runBenOr(startingBit byte, n, t int, rand lib.Generator) byte {
 	v.node.StartProcessing()
-	
-	v.initialiseBenOr(startingBit)
+
+	v.initialiseBenOr()
 
 	x := startingBit
 	decided := false
-	
+
 	r := 1
-	for ; !decided ; r++ {
+	for ; !decided; r++ {
 		decided, x = v.processRound(r, x, rand, n, t)
 	}
 
-	v.sendAllBenOr(messageBenOr{Type: 1, Round: r, Val: x})
-	v.sendAllBenOr(messageBenOr{Type: 2, Round: r, Val: x, Decided: msgDecided})
+	v.sendAllBenOr(messageBenOr{Type: msgTypeOne, Round: r, Val: x})
+	v.sendAllBenOr(messageBenOr{Type: msgTypeTwo, Round: r, Val: x, Decided: msgDecided})
 
 	// let other processes know -> info only for faulty
 	for i := 0; i < v.node.GetOutChannelsCount(); i++ {
@@ -226,8 +228,8 @@ func RunBenOr(processes []byte, behaviours []func(r int) byte) {
 	vertices := make([]*vertexBenOr, 0)
 
 	generator := lib.GetRandomGenerator()
-	
-	for i := 0; i < n - t; i++ {
+
+	for i := 0; i < n-t; i++ {
 		startingBit := processes[i]
 		if processes[i] != 0 && processes[i] != 1 {
 			panic("Incorrect processes[] value")
@@ -236,22 +238,22 @@ func RunBenOr(processes []byte, behaviours []func(r int) byte) {
 		// set starting state, starting with (startingBit, ?), should end with (startingBit, decidedBit)
 		nodes[i].SetState([]byte{startingBit, 2})
 
-		v := vertexBenOr{node: nodes[i], ones: make(map[int]*[2]int), twos: make(map[int]*[2][2]int), }
+		v := vertexBenOr{node: nodes[i], ones: make(map[int]*[2]int), twos: make(map[int]*[2][2]int)}
 		vertices = append(vertices, &v)
 		go v.runBenOr(startingBit, n, t, generator)
 	}
 	for i := 0; i < t; i++ {
-		go runFaulty(behaviours[i], nodes[i + n - t], n, t)
+		go runFaulty(behaviours[i], nodes[i+n-t], n, t)
 	}
 
 	runner.Run()
 	runner.GetStats()
-	
+
 	checkBenOr(vertices)
 }
 
 // functions for faulty processes
-func processMessageFaulty(behaviour func (r int) byte, node lib.Node, target int, msg messageBenOr) {
+func processMessageFaulty(behaviour func(r int) byte, node lib.Node, target int, msg messageBenOr) {
 	responseVal := behaviour(msg.Round)
 	responseMessage := messageBenOr{Type: msg.Type, Decided: msg.Decided, Round: msg.Round, Val: responseVal}
 
@@ -259,12 +261,12 @@ func processMessageFaulty(behaviour func (r int) byte, node lib.Node, target int
 	node.SendMessage(target, newBytes)
 }
 
-func runFaulty(behaviour func (r int) byte, node lib.Node, n, t int) {
+func runFaulty(behaviour func(r int) byte, node lib.Node, n, t int) {
 	closed := 0
 
 	node.StartProcessing()
 	// accept messages until every nonfaulty process has finished
-	for closed < n - t {
+	for closed < n-t {
 		from, bytes := node.ReceiveAnyMessage()
 		if bytes == nil {
 			closed++
@@ -284,17 +286,17 @@ func checkBenOr(vertices []*vertexBenOr) {
 		log.Println("OK, length 0")
 		return
 	}
-	firstBit := (*vertices[0]).node.GetState()[1]
+	firstBit := vertices[0].node.GetState()[1]
 
 	// unanimous decision
 	for _, v := range vertices {
-		if decided := (*v).node.GetState()[1]; decided != firstBit {
+		if decided := v.node.GetState()[1]; decided != firstBit {
 			panic("Decided values differ")
 		}
 	}
 	// nontrivial
 	for _, v := range vertices {
-		if starting := (*v).node.GetState()[0]; starting == firstBit {
+		if starting := v.node.GetState()[0]; starting == firstBit {
 			log.Println("OK, decided value:", firstBit)
 			return
 		}

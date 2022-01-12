@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/krzysztof-turowski/distributed-framework/consensus/ben_or"
+	"github.com/krzysztof-turowski/distributed-framework/consensus/async_ben_or"
 )
 
 func TestAllCorrectBenOr(t *testing.T) {
