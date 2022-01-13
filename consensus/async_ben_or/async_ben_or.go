@@ -67,7 +67,7 @@ func (v *vertexBenOr) receiveAnyBenOr() (int, messageBenOr) {
 }
 
 func (v *vertexBenOr) processMessage(from int, msg messageBenOr) {
-	if msg.Round < v.recentRound {
+	if msg.Round < v.recentRound || (msg.Decided != msgDecided && msg.Decided != msgUndecided) || (msg.Val != 0 && msg.Val != 1) {
 		return
 	}
 

@@ -20,7 +20,7 @@ func main() {
 		processes[i] = byte(i % 2)
 	}
 	for i := 0; i < t; i++ {
-		behaviours[i] = func(r int) byte { return byte(r % 2) }
+		behaviours[i] = func(r int) byte { return 1 }
 	}
 
 	ben_or.RunBenOr(processes, behaviours)

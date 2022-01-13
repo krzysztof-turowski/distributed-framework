@@ -303,7 +303,7 @@ func BuildAsyncEmptyDirectedGraph(n int, indexGenerator Generator) ([]Node, Runn
 		}
 		log.Println("Node", vertices[i].GetIndex(), "built")
 	}
-	return vertices, Runner{n: n, inConfirm: inConfirm, outConfirm: outConfirm}
+	return vertices, Runner{n: n, vertices: vertices, inConfirm: inConfirm, outConfirm: outConfirm}
 }
 
 func BuildAsyncCompleteGraphWithLoops(n int) ([]Node, Runner) {
