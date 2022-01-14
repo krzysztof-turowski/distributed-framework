@@ -9,26 +9,15 @@ import (
 )
 
 const (
-	msgUndecided = 0
 	msgDecided   = 1
+	msgUndecided = 0
 )
 
 type messageTypeBenOr int
 
 const (
-	msgTypeOne messageTypeBenOr = 1
-	msgTypeTwo messageTypeBenOr = 2
-)
-
-type stepBenOr int
-
-const (
-	initRound stepBenOr = iota
-	waitingOne
-	doingOne
-	waitingTwo
-	doingTwo
-	done
+	msgTypeOne messageTypeBenOr = iota
+	msgTypeTwo
 )
 
 type messageBenOr struct {
@@ -43,7 +32,6 @@ type stateBenOr struct {
 	EndingBit   byte
 	N           int
 	T           int
-	NextStep    stepBenOr
 	// round -> [ids that have already sent this round]
 	ReceivedOnes map[int]map[int]bool
 
@@ -91,7 +79,7 @@ func getAllTypeTwo(state *stateBenOr) int {
 	return getTypeTwo(state, msgUndecided, 0) + getTypeTwo(state, msgUndecided, 1) + getTypeTwo(state, msgDecided, 0) + getTypeTwo(state, msgDecided, 1)
 }
 
-func finaliseRound(node lib.Node, state *stateBenOr) {
+func finaliseRound(node lib.Node, state *stateBenOr, decided bool) {
 	r := state.RecentRound
 
 	delete(state.Ones0, r)
@@ -103,9 +91,21 @@ func finaliseRound(node lib.Node, state *stateBenOr) {
 	delete(state.TwosD0, r)
 	delete(state.TwosD1, r)
 	delete(state.ReceivedTwos, r)
+
+	if decided {
+		// participate in the next round
+		sendAllBenOr(node, messageBenOr{Type: msgTypeOne, Round: r + 1, Value: state.EndingBit})
+		sendAllBenOr(node, messageBenOr{Type: msgTypeTwo, Round: r + 1, Value: state.EndingBit, Decided: msgDecided})
+
+		// let faulty processes know
+		for i := 0; i < node.GetOutChannelsCount(); i++ {
+			go node.SendMessage(i, nil)
+		}
+	}
 }
 
-func applyMessage(state *stateBenOr, from int, message messageBenOr) {
+func receiveAndProcessAnyMessage(node lib.Node, state *stateBenOr) {
+	from, message := receiveAnyBenOr(node)
 	if message.Round < state.RecentRound || (message.Decided != msgDecided && message.Decided != msgUndecided) || (message.Value != 0 && message.Value != 1) {
 		return
 	}
@@ -150,79 +150,55 @@ func applyMessage(state *stateBenOr, from int, message messageBenOr) {
 	}
 }
 
-func processMessage(node lib.Node, from int, message messageBenOr) bool {
+func processRound(node lib.Node) bool {
 	state := getState(node)
-	applyMessage(state, from, message)
+	state.RecentRound++
 
-	result := false
-loop:
-	for {
-		switch state.NextStep {
-		case initRound:
-			sendAllBenOr(node, messageBenOr{Type: msgTypeOne, Round: state.RecentRound, Value: state.EndingBit})
-			state.NextStep = waitingOne
-		case waitingOne:
-			if getAllTypeOne(state) < state.N-state.T {
-				result = false
-				break loop
-			}
-			state.NextStep = doingOne
-		case doingOne:
-			var decideMessage messageBenOr
-			if getTypeOne(state, 0) > (state.N+state.T)/2 {
-				decideMessage = messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Value: 0, Decided: msgDecided}
-			} else if getTypeOne(state, 1) > (state.N+state.T)/2 {
-				decideMessage = messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Value: 1, Decided: msgDecided}
-			} else {
-				decideMessage = messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Decided: msgUndecided}
-			}
-			sendAllBenOr(node, decideMessage)
-			state.NextStep = waitingTwo
-		case waitingTwo:
-			if getAllTypeTwo(state) < state.N-state.T {
-				result = false
-				break loop
-			}
-			state.NextStep = doingTwo
-		case doingTwo:
-			decided := false
-			zeroLen := getTypeTwo(state, msgDecided, 0)
-			oneLen := getTypeTwo(state, msgDecided, 1)
-			if zeroLen >= state.T+1 || oneLen >= state.T+1 {
-				if zeroLen >= state.T+1 {
-					state.EndingBit = 0
-				} else if oneLen >= state.T+1 {
-					state.EndingBit = 1
-				}
-				if zeroLen+oneLen > (state.N+state.T)/2 {
-					decided = true
-				}
-			} else {
-				state.EndingBit = byte(rand.Int() % 2)
-			}
+	decided := false
 
-			if decided {
-				state.NextStep = done
-			} else {
-				state.NextStep = initRound
-			}
-			finaliseRound(node, state)
-			state.RecentRound++
-		case done:
-			// participate in the next round
-			sendAllBenOr(node, messageBenOr{Type: msgTypeOne, Round: state.RecentRound, Value: state.EndingBit})
-			sendAllBenOr(node, messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Value: state.EndingBit, Decided: msgDecided})
+	// send initial message to everyone
+	sendAllBenOr(node, messageBenOr{
+		Type:  msgTypeOne,
+		Round: state.RecentRound,
+		Value: state.EndingBit,
+	})
 
-			// let faulty processes know
-			for i := 0; i < node.GetOutChannelsCount(); i++ {
-				go node.SendMessage(i, nil)
-			}
-			result = true
-			break loop
-		}
+	for getAllTypeOne(state) < state.N-state.T {
+		receiveAndProcessAnyMessage(node, state)
 	}
+
+	var decideMessage messageBenOr
+	if getTypeOne(state, 0) > (state.N+state.T)/2 {
+		decideMessage = messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Value: 0, Decided: msgDecided}
+	} else if getTypeOne(state, 1) > (state.N+state.T)/2 {
+		decideMessage = messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Value: 1, Decided: msgDecided}
+	} else {
+		decideMessage = messageBenOr{Type: msgTypeTwo, Round: state.RecentRound, Decided: msgUndecided}
+	}
+	sendAllBenOr(node, decideMessage)
+
+	for getAllTypeTwo(state) < state.N-state.T {
+		receiveAndProcessAnyMessage(node, state)
+	}
+
+	zeroLen := getTypeTwo(state, msgDecided, 0)
+	oneLen := getTypeTwo(state, msgDecided, 1)
+	if zeroLen >= state.T+1 || oneLen >= state.T+1 {
+		if zeroLen >= state.T+1 {
+			state.EndingBit = 0
+		} else if oneLen >= state.T+1 {
+			state.EndingBit = 1
+		}
+		if zeroLen+oneLen > (state.N+state.T)/2 {
+			decided = true
+		}
+	} else {
+		state.EndingBit = byte(rand.Int() % 2)
+	}
+
+	finaliseRound(node, state, decided)
 	setState(node, state)
-	return result
+	return decided
 }
 
 func initialiseBenOr(node lib.Node, startingBit byte, n, t int) {
@@ -239,10 +215,7 @@ func initialiseBenOr(node lib.Node, startingBit byte, n, t int) {
 		TwosU1:       map[int]int{},
 		TwosD0:       map[int]int{},
 		TwosD1:       map[int]int{},
-		RecentRound:  1,
-		NextStep:     waitingOne,
 	})
-	sendAllBenOr(node, messageBenOr{Type: msgTypeOne, Round: 1, Value: startingBit})
 }
 
 func runBenOr(node lib.Node, startingBit byte, n, t int) {
@@ -251,8 +224,7 @@ func runBenOr(node lib.Node, startingBit byte, n, t int) {
 	initialiseBenOr(node, startingBit, n, t)
 
 	for {
-		from, message := receiveAnyBenOr(node)
-		if processMessage(node, from, message) {
+		if processRound(node) {
 			break
 		}
 	}
