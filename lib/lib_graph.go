@@ -279,36 +279,9 @@ func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
 	return vertices, asSynchronizer(runner)
 }
 
-func BuildAsyncEmptyDirectedGraph(n int, indexGenerator Generator) ([]Node, Runner) {
-	vertices := make([]Node, n)
-	inConfirm := make([]chan counterMessage, n)
-	outConfirm := make([]chan bool, n)
-	for i := range inConfirm {
-		inConfirm[i] = make(chan counterMessage)
-		outConfirm[i] = make(chan bool)
-	}
-	rng := GetRandomGenerator()
-	for i := range vertices {
-		vertices[i] = &oneWayNode{
-			index:                rng.Int(),
-			size:                 n,
-			inNeighborsChannels:  make([]<-chan []byte, 0),
-			inNeighbors:          make([]Node, 0),
-			outNeighborsChannels: make([]chan<- []byte, 0),
-			outNeighbors:         make([]Node, 0),
-			stats: statsNode{
-				inConfirm:  outConfirm[i],
-				outConfirm: inConfirm[i],
-			},
-		}
-		log.Println("Node", vertices[i].GetIndex(), "built")
-	}
-	return vertices, Runner{n: n, vertices: vertices, inConfirm: inConfirm, outConfirm: outConfirm}
-}
-
-func BuildAsyncCompleteGraphWithLoops(n int) ([]Node, Runner) {
-	vertices, runner := BuildAsyncEmptyDirectedGraph(n, GetRandomGenerator())
-	chans := getAsynchronousChannels(n * n)
+func BuildCompleteGraphWithLoops(n int) ([]Node, Synchronizer) {
+	vertices, synchronizer := BuildSynchronizedEmptyDirectedGraph(n)
+	chans := getSynchronousChannels(n * n)
 	counter := 0
 	for i := 0; i < n; i++ {
 		for j := 0; j < n; j++ {
@@ -320,5 +293,5 @@ func BuildAsyncCompleteGraphWithLoops(n int) ([]Node, Runner) {
 	for _, vertex := range vertices {
 		vertex.(*oneWayNode).shuffleTopology()
 	}
-	return vertices, runner
+	return vertices, synchronizer
 }

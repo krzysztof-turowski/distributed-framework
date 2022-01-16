@@ -95,6 +95,9 @@ func (v *oneWayNode) FinishProcessing(finish bool) {
 }
 
 func (v *oneWayNode) Close() {
+	for _, channel := range v.outNeighborsChannels {
+		close(channel)
+	}
 	for _, channel := range v.inNeighborsChannels {
 		for range channel { }
 	}

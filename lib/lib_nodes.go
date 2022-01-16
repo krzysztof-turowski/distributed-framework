@@ -37,11 +37,3 @@ func getSynchronousChannels(n int) []chan []byte {
 	}
 	return channels
 }
-
-func getAsynchronousChannels(n int) []chan []byte {
-	channels := make([]chan []byte, n)
-	for i := range channels {
-		channels[i] = make(chan []byte)
-	}
-	return channels
-}

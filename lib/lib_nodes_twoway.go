@@ -99,6 +99,9 @@ func (v *twoWayNode) FinishProcessing(finish bool) {
 
 func (v *twoWayNode) Close() {
 	for _, channel := range v.neighborsChannels {
+		close(channel.output)
+	}
+	for _, channel := range v.neighborsChannels {
 		for range channel.input { }
 	}
 }

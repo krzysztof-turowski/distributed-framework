@@ -13,7 +13,7 @@
 	footskip=60pt
 ]{geometry}
 \usepackage{algorithm}
-\usepackage[noend]{algpseudocode}
+\usepackage{cleveref}
 
 \headheight=28pt
 
@@ -52,7 +52,7 @@ Processes locally keep track of current round number, and store current binary v
 Within each round they go through 2 stages, messages from each round from now on will be called type 1 or 2 messages.
 \subsection*{Correctness}
 Let's start with proving the following lemma:
-\begin{lemma} 
+\begin{lemma}\label{same-value}
 If all correct processes start with the value $v$, then within one round they will all decide $v$.
 \end{lemma}
 \begin{proof}
@@ -62,7 +62,7 @@ At most $t$ messages came from faulty processes, which means that at least $N-2\
 Among $N-t$ accepted type 2 messages at most $t$ are incorrect, which means that step 3(b) will not execute.\\
 Again, because at least $N-2\cdot t$ of type 2 messages are correct, then more than $\frac{N+t}{2}$ of them will have the same value (v). That means that every process will \textbf{decide $v$} this round.
 \end{proof}
-\begin{lemma}
+\begin{lemma}\label{one-choice}
 If process sets $v$ in step 3(a) in round $r$, then it can't set $\neg v$ in the same round.
 \end{lemma}
 \begin{proof}
@@ -77,8 +77,8 @@ If for some round r, some correct process decides $v$ in step 3(b), then all oth
 Let $P$ be the process that has decided on $v$.
 In order to \textbf{decide $v$}, $P$ must have received more than $\frac{N+t}{2}$ messages $(2,\ r,\ \_,\ D)$. That means that more than $\frac{N-t}{2}$ correct processes sent that message. Let $A_x$ be the number of $(2,\ r,\ x,\ D)$ messages from correct processes for $x=0,1$.\\
 Because $P$ has decided $v$, it follows that $A_{\neg v}\leq t$. On top of that $A_v+A_{\neg v}>\frac{N-t}{2}$.\\
-Simple calculations show that $A_v\geq t+1$. It means that every other process will set $v$ in step 3(a). From \textit{Lemma 2} we know that it will be the only value that they will set.\\
-It follows that in the next round every correct process will start with $v$, so \textit{Lemma 1} can be applied.
+Simple calculations show that $A_v\geq t+1$. It means that every other process will set $v$ in step 3(a). From \cref{one-choice} we know that it will be the only value that they will set.\\
+It follows that in the next round every correct process will start with $v$, so \cref{same-value} can be applied.
 \end{proof}
 \subsection*{Time complexity}
 In each round processes have probability of at least $2^{-(N-t)+1}$ of all setting the same value, which using \textit{Lemma 1} means that the run algorithm would end next round. That means that expected number of rounds is bounded by $O(2^{N-t})$.\\

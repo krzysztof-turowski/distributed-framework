@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/krzysztof-turowski/distributed-framework/consensus/async_ben_or"
+	"github.com/krzysztof-turowski/distributed-framework/consensus/sync_ben_or"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/krzysztof-turowski/distributed-framework/consensus/async_ben_or"
+	"github.com/krzysztof-turowski/distributed-framework/consensus/sync_ben_or"
 )
 
 func TestAllCorrectBenOr(t *testing.T) {
@@ -40,14 +40,14 @@ func TestSmallBenOr(t *testing.T) {
 	processes := []byte{0, 1, 0, 1, 0}
 	behaviours := []func(r int) byte{func(r int) byte { return 1 }}
 
-	for it := 0; it < 1000; it++ {
+	for it := 0; it < 100; it++ {
 		ben_or.RunBenOr(processes, behaviours)
 	}
 }
 
 func TestBigBenOr(t *testing.T) {
 	checkLogOutput()
-	n, f := 50, 9
+	n, f := 101, 20
 
 	processes := make([]byte, n-f)
 	for i := 0; i < n-f; i++ {
