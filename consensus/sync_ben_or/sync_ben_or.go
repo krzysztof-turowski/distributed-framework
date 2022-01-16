@@ -140,7 +140,7 @@ func runBenOr(v lib.Node, startingBit byte, n, t int) {
 	}
 }
 
-func RunBenOr(processes []byte, behaviours []func(r int) byte) {
+func RunBenOr(processes []byte, behaviours []func(r int) byte) (int, int) {
 	t := len(behaviours)
 	n := len(processes) + t
 	if 5*t >= n {
@@ -161,9 +161,9 @@ func RunBenOr(processes []byte, behaviours []func(r int) byte) {
 	}
 
 	synchronizer.Synchronize(0)
-	synchronizer.GetStats()
-
 	checkBenOr(nodes, n, t)
+
+	return synchronizer.GetStats()
 }
 
 func processFaultyRound(v lib.Node, r int, behaviour func(r int) byte) bool {
