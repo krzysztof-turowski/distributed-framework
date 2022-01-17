@@ -102,7 +102,8 @@ func (v *twoWayNode) Close() {
 		close(channel.output)
 	}
 	for _, channel := range v.neighborsChannels {
-		for range channel.input { }
+		for range channel.input {
+		}
 	}
 }
 

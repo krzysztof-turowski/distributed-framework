@@ -1,9 +1,9 @@
 package directed_ring
 
 import (
-	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"encoding/json"
 	"fmt"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"log"
 	"math/rand"
 	"time"

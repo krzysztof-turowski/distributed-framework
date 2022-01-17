@@ -278,3 +278,20 @@ func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
 	vertices, runner := BuildHypercube(dim, oriented)
 	return vertices, asSynchronizer(runner)
 }
+
+func BuildCompleteGraphWithLoops(n int) ([]Node, Synchronizer) {
+	vertices, synchronizer := BuildSynchronizedEmptyDirectedGraph(n)
+	chans := getSynchronousChannels(n * n)
+	counter := 0
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			addOneWayConnection(vertices[i].(*oneWayNode), vertices[j].(*oneWayNode), chans[counter])
+			counter += 1
+			log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
+		}
+	}
+	for _, vertex := range vertices {
+		vertex.(*oneWayNode).shuffleTopology()
+	}
+	return vertices, synchronizer
+}

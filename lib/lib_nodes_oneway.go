@@ -99,7 +99,8 @@ func (v *oneWayNode) Close() {
 		close(channel)
 	}
 	for _, channel := range v.inNeighborsChannels {
-		for range channel { }
+		for range channel {
+		}
 	}
 }
 

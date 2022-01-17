@@ -1,6 +1,6 @@
 all: test benchmark check
 
-example: sync_directed_hypercube_leader_example sync_directed_ring_leader_example sync_undirected_graph_leader_example sync_undirected_mesh_leader_example sync_mst_example sync_mis_example
+example: sync_directed_hypercube_leader_example sync_directed_ring_leader_example sync_undirected_graph_leader_example sync_undirected_mesh_leader_example sync_mst_example sync_mis_example sync_ben_or_example
 
 runners:
 	go run example/synchronized.go 5
@@ -25,6 +25,9 @@ sync_mst_example:
 
 sync_mis_example:
 	go run example/sync_mis_luby.go 20 0.25
+
+sync_ben_or_example:
+	go run example/sync_consensus_ben_or.go 6 1
 
 unit_test:
 	go test ./leader/undirected_graph -v
