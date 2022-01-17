@@ -1,12 +1,12 @@
 package test
 
 import (
-	"testing"
-	"math/rand"
-	"log"
-	"io/ioutil"
 	"github.com/krzysztof-turowski/distributed-framework/leader/clique"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
+	"io/ioutil"
+	"log"
+	"math/rand"
+	"testing"
 )
 
 func TestHumblet(t *testing.T) {

@@ -66,7 +66,7 @@ func BenchmarkBenOr(b *testing.B) {
 
 	processes := make([]byte, n-f)
 	for i := 0; i < n-f; i++ {
-		processes[i] = byte(1 - i % 2)
+		processes[i] = byte(1 - i%2)
 	}
 	behaviours := make([]func(r int) byte, f)
 	for i := 0; i < f; i++ {
