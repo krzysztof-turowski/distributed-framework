@@ -40,15 +40,14 @@ type Message struct {
 
 type stateStagesWithFeedback struct {
 	Status             int
-	Leader             int64
-	Id                 int64
 	Messages           []Message
+	Leader             int64
 	ReverseOrientation bool
 }
 
 func getState(node lib.Node) stateStagesWithFeedback {
 	var state stateStagesWithFeedback
-	_ = json.Unmarshal(node.GetState(), &state)
+	json.Unmarshal(node.GetState(), &state)
 	return state
 }
 func setState(node lib.Node, state *stateStagesWithFeedback) {
@@ -60,9 +59,8 @@ func initializeStagesWithFeedback(node lib.Node) {
 	id := int64(node.GetIndex())
 	setState(node, &stateStagesWithFeedback{
 		Status:   statusECandidate,
-		Leader:   none,
 		Messages: []Message{{byteNone, none}, {byteNone, none}},
-		Id:       id,
+		Leader:   none,
 	})
 
 	node.SendMessage(left, encodeAll(byte(msgE), id))
@@ -114,7 +112,7 @@ func heldMessages(messages []Message) int {
 }
 func processStagesWithFeedback(node lib.Node, sender int, message []byte) bool {
 	state := getState(node)
-	id := state.Id
+	id := int64(node.GetIndex())
 	defer setState(node, &state)
 	var msg Message
 	decodeAll(message, &msg)
@@ -124,7 +122,7 @@ func processStagesWithFeedback(node lib.Node, sender int, message []byte) bool {
 		if isEmptyMessage(state.Messages[sender]) {
 			state.Messages[sender] = msg
 		}
-		if heldMessages(state.Messages) == 2 { //
+		if heldMessages(state.Messages) == 2 {
 			vl := state.Messages[left].Val
 			vr := state.Messages[right].Val
 			if id == vl && id == vr {
@@ -189,9 +187,9 @@ func processStagesWithFeedback(node lib.Node, sender int, message []byte) bool {
 func runStagesWithFeedback(node lib.Node) {
 	node.StartProcessing()
 	initializeStagesWithFeedback(node)
+	var sender int
+	var message []byte
 	for {
-		var sender int
-		var message []byte
 		switch awaitMessage(getState(node)) {
 		case left:
 			sender = left

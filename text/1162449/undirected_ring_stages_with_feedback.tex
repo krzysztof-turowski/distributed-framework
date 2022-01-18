@@ -7,6 +7,7 @@
 \usepackage{amsmath}
 \usepackage{csquotes}
 \usepackage{graphicx}
+\usepackage{amsthm}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 \begin{filecontents}{\jobname.bib}
 @article{ROTEM1987575,
@@ -25,57 +26,74 @@ abstract = {A new and more detailed analysis of the unidirectional algorithm of 
 \end{filecontents}
 
 \usepackage{natbib}
-
+\newtheorem*{lemma}{Lemma}
+\newtheorem*{theorem}{Theorem}
 \begin{document}
-\section*{Leader election in undirected ring - stages with feedback}
-Our goal is to elect leader in a undirected ring with n nodes an d asynchronous first-in-first-out communication.  We assume that every node has a unique identifier, and that all identifiers are
+\section*{Leader election in an undirected ring}
+Our goal is to elect a leader in an undirected ring with $n$ nodes and asynchronous first-in-first-out communication.  We assume that every node has a unique identifier, and that all identifiers are
 totally ordered. Initially, no node needs any knowledge about the identities of the nodes at the
 other ends of its incident edges. Each node recognizes the directions of its edges, but there is no global sense of orientation in the ring. 
-\\ \\
-Here we describe algorithm presented by \cite{ROTEM1987575}, which achieves the above while using at most $3 n\log_{3}n + O(n)$ messages in the worst case.
+\paragraph{}
+Here we describe an algorithm presented by \cite{ROTEM1987575}, which achieves the above and uses at most $3 n\log_{3}n + O(n)$ messages in the worst case.
 \subsection*{The algorithm}
 The algorithm will consist of electoral rounds.\\
 We will distinguish 4 states a node can be in:\\
 \textit{passive} - node does not participate in election anymore and only passes messages\\
 (node that is not "\textit{passive}" will be also regarded as "\textit{active}")\\
-\textit{E-candidate} - node is taking part in this round election\\ \textit{A-candidate} - node awaits feedback from its active neighbours\\ \textit{Leader} - node is the leader\\
+\textit{E-candidate} - node is taking part in this electoral round\\ \textit{A-candidate} - node awaits feedback from its active neighbours\\ \textit{Leader} - node is the leader\\
 \\
-Messages sent will consist of pairs of "type" and "value" where values will be from set of unique identifiers of nodes participating, while types can be  either of \textit{E-msg}, \textit{A-msg} and \textit{T-msg}.\\
-By  \textit{left}, \textit{right} and  \textit{both} we will denote directions in witch node sends or from which it receives a message.\\
-By $i$ we will denote node's unique identifier and by $n(i)$ node whose unique identifier is $i$.
+Messages sent will consist of pairs of "type" and "value". Values will be from the set of unique identifiers of the nodes participating, while type can be  either \textit{E-msg}, \textit{A-msg} or \textit{T-msg}.\\
+By  \textit{left}, \textit{right} and  \textit{both}, we will denote directions in witch node sends or from which it receives a message.\\
+By $i$ we will denote the node's unique identifier and by $n(i)$ the node whose unique identifier is $i$.
 \\
 Upon initialization each node starts with status \textit{E-candidate}.\\
 \\
 Each round starts with each \textit{E-candidate} sending message (\textit{E-msg},$i$) in both of its directions.\\
 \\
-Than, each \textit{E-candidate} awaits to receive a message from both of its direction, lets denote them as $(\textit{E-msg},vl)$ recieved from \textit{left} and $(\textit{E-msg},vr)$ received from \textit{right}, let $y=max(i,vl,vr)$. \\
-If $y>i$ then $n(i)$ will send $(\textit{A-msg},y)$ toward direction from witch message with value$=y$ was received.\\
-Than regardless if any message was sent from $n(i)$, it will change it's state to \textit{A-candidate}.\\
-If $i=vl=vr$ than $n(i)$ is the only \textit{E-candidate} in the ring, it should become \textit{Leader} and send \textit{T-msg} in one of it's directions.\\
+Then, each \textit{E-candidate} awaits to receive a message from both of its directions.\\
+Let's denote them as $(\textit{E-msg},vl)$ received from \textit{left} and $(\textit{E-msg},vr)$ received from \textit{right}.\\
+Let $y=max(i,vl,vr)$. \\
+If $y>i$, then $n(i)$ will send $(\textit{A-msg},y)$ to left if $y=vr$ or to right if $y=vl$.\\
+Then regardless if any message was sent from $n(i)$, it will change its state to \textit{A-candidate}.\\
+If $i=vl=vr$ then $n(i)$ is the only \textit{E-candidate} in the ring. It should become the \textit{Leader} and send \textit{T-msg} in one of its directions.\\
 \\
-Each \textit{A-candidate}, awaits approval from both of it's active neighbours as such it waits for message $(\textit{A-msg},i)$ from both sides than it changes status to \textit{E-candidate} to participate in the next round.\\
-If \textit{A-candidate} receives $(\textit{E-msg},i)$ it should treat it as negative feedback from an active neighbour, it than becomes \textit{passive} and passes the received message.\\
+Each \textit{A-candidate} awaits approval from both of its active neighbours, meaning, it waits for message $(\textit{A-msg},i)$ from both sides. Afterwards, it changes its status to \textit{E-candidate} to participate in the next round.\\
+If \textit{A-candidate} receives $(\textit{E-msg},i)$, it should treat it as a negative feedback, it should become \textit{passive} and pass the received message.\\
 \\
-\textit{passive} nodes pass every message except for potential $(\textit{A-msg},i)$ being no longer needed.\\
-If it receives $(\textit{T-msg},val)$ it learns that $n(val)$ is the leader, passes the message and ends algorithm.\\
+\textit{passive} node passes every message, except for potential $(\textit{A-msg},i)$ which is no longer needed.\\
+If it receives $(\textit{T-msg},val)$, it learns that $n(val)$ is the leader, passes the message and finishes.\\
 \\
-\textit{Leader} ends when it receives $(\textit{T-msg},i)$.\\
+\textit{Leader} finishes when it receives $(\textit{T-msg},i)$.\\
 \\
 It shall be noted that receiving \textit{T-msg} can be used to obtain common sense of direction in the ring.
 \newpage
 \subsection*{Correctness}
-Let $j=max\{i| n(i) \text{participates in the algorithm}\}$, than from the voting and checking procedure follows that at each electoral round $n(j)$ will defeat both of it's immediate active neighbours; hence the number of \textit{passive} nodes increases monotonically. At the same time $n(j)$ will never be defeated (receive negative feedback). This implies that at some round $n(j)$ will be the only active node and both of it's \textit{E-msg}es will return to it making it the leader.\\
-Having being elected $n(j)$ can send termination order \textit{T-msg} around the ring along with it's identifier to notify other nodes of it's election.
+Let $j=max\{i | n(i) \text{ participates in the algorithm}\}$. \\
+Then from the voting and checking procedure follows that at each electoral round $n(j)$ will defeat both of its immediate active neighbours; hence the number of \textit{passive} nodes increases monotonically. At the same time $n(j)$ will never be defeated (receive negative feedback). This implies that at some round $n(j)$ will be the only active node and both of its \textit{E-msg} messages will return to it, making it the leader.\\
+Having been elected $n(j)$ can send a termination order \textit{T-msg} around the ring along with its identifier to notify other nodes of its election.
 \subsection*{Complexity analysis}
 By $m_i$ let's denote set of nodes participating in $i$-th election (number of \textit{E-candidates}).\\
-Let $r_j(n(i))$ where $n(i)\in m_j$ the immediate neighbour to the left from $n(i)$ that $r_j(n(i)\in m_j$, symmetrically we define $l_j(n(i)\in m_j$.
-\subsubsection*{Lemma 1. - $|m_j|\geq 3|m_{j+1}|$ $\forall j$}
-If a node $n(i)\in m_j$ survives the $j$-th round than it means that it must have received positive acknowledgment from both $r_j(n(i)$ and $l_j(n(i)$. Therefore because of the voting procedure, a negative feedback will be received by $l^{2}_{j}(n(i)$, $l_{j}(n(i)$, $r_{j}(n(i)$ and $r^{2}_{j}(n(i)$. Therefore for each surviving node at least 2 were eliminated. Hence, at most one third of the processors in $m_j$ survives the $j$-th stage, and the lemma is proved.
-\subsubsection*{Lemma 2. - number of electoral rounds $\leq \lceil\log_{3}n\rceil$}
-The proof follows from Lemma 1.\\
-\\
-We can now notice that each round every 2 immediate active nodes will send between them at most 3 messages being, exchange of 2 \textit{E-msg}es and no more than one \textit{A-msg} from which follows;
-\subsubsection*{$|$Messages$|\leq 3n[\log_{3}n+O(n)\approx 1.89n \log_{2}n+O(n)$}
+Let $r_j(n(i))$ where $n(i)\in m_j$ be the immediate neighbour to the left of $n(i)$ who is still active in $j$-th round, symmetrically we define $l_j(n(i)$.
+\begin{lemma}[1]
+    $|m_j|\geq 3|m_{j+1}|$ $\forall j$
+\end{lemma}
+\begin{proof}
+If a node $n(i)\in m_j$ survives the $j$-th round, then it means that it must have received positive acknowledgment from both $r_j(n(i)$ and $l_j(n(i)$.
+Therefore, because of the voting procedure, negative feedback will be received by $l^{2}_{j}(n(i)$, $l_{j}(n(i)$, $r_{j}(n(i)$ and $r^{2}_{j}(n(i)$. Thus, for each surviving node, at least 2 were eliminated. 
+Hence, at most a third of the processors from $m_j$ survive the $j$-th round.
+\end{proof}
+\begin{lemma}[2]
+    number of electoral rounds $\leq \lceil\log_{3}n\rceil$
+\end{lemma}
+\begin{proof}
+The proof follows from Lemma (1).
+\end{proof}
+\paragraph{}
+We can now notice that each round every 2 immediate active nodes will exchange at most 3 messages. That is, 2 \textit{E-msg} messages and no more than one \textit{A-msg}.\\
+Hence, follows:
+\begin{theorem}
+$|$Messages$|\leq 3n[\log_{3}n+O(n)\approx 1.89n \log_{2}n+O(n)$
+\end{theorem}
 \bibliographystyle{plainnat}
 \bibliography{\jobname} 
 \end{document}
