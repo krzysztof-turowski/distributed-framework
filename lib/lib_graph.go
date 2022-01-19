@@ -1,8 +1,10 @@
 package lib
+
 import (
 	"log"
 	"math/rand"
 )
+
 func asSynchronizer(runner Runner) Synchronizer {
 	return Synchronizer{n: runner.n, inConfirm: runner.inConfirm, outConfirm: runner.outConfirm}
 }
