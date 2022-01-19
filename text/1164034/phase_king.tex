@@ -1,0 +1,92 @@
+\documentclass[11pt, a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+% \usepackage{polski}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{relsize}
+\usepackage{listings}
+\usepackage{mathtools}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{placeins}
+\usepackage{paralist}
+\usepackage{xcolor}
+\usepackage{amsthm}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[normalem]{ulem}
+\usepackage{blindtext}
+
+\usepackage[
+    bindingoffset=-15pt,
+	voffset=0pt, 
+	hoffset=10pt, 
+	textwidth=500pt, 
+    textheight=650pt, 
+	marginparwidth=20pt,
+	footskip=60pt
+]{geometry}
+\pagestyle{fancy}
+
+\headheight=28pt
+
+\renewcommand{\footrulewidth}{0.4pt}
+
+
+\begin{document}
+
+\lhead{Mateusz Pach}
+\chead{\textbf{King Phase Protocol}}
+\rhead{\today{}}
+\cfoot{Page \thepage/\pageref{LastPage}}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem} % reset theorem numbering for each chapter
+\newtheorem{lem}{Lemma} % definition numbers are dependent on theorem numbers
+\newtheorem{exmp}{Example}% same for example numbers
+\theoremstyle{definition}
+\newtheorem{defn}{Definition} % definition numbers are dependent on theorem numbers
+
+\subsection*{Introduction} 
+Let us remind the consensus problem.
+\begin{defn}[The consensus problem]
+We are given processors of which $t$ may be faulty. The processors are given initial values and after exchanging messages all correct ones must agree on a single value choosen from among the initial values. Formally, three conditions must be met.
+\begin{itemize}
+    \item \textbf{Agreement} All correct processes must agree on the same (single) value.
+    \item \textbf{Validity} If all the correct processes have the same initial value, then the agreed upon value by all the correct processes must be that same value.
+    \item \textbf{Termination} Each correct process must eventually decide on a value. 
+\end{itemize}
+\end{defn}
+
+One can measure the quality of protocols solving the consensus problem using the following parameters: total number of processors $n$, number of rounds of message exchange $r$ and maximal message length $m$. Their optima are known to be respectively $3t+1, t+1$ and $1$.
+
+The King Phase protocol, proposed by Berman, Garay and Perry, is one of protocols solving the consensus problem. It's also asymptotically optimal in all the three parameters mentioned earlier. Namely, their values for the protocol are respectively $3t+1$, $3t+3$ and $2$.
+
+\subsection*{Protocol}
+The idea of the protocol is as follows. It runs $t+1$ phases, each consisting of three exchange rounds. Each processor has a local variable $V$ which can obtain values from $\{0,1,2\}$ and two arrays $C$ and $D$ counting messages with different values received from the other processors in the first and the second exchange round respectively. Variables $V$ are set to the initial values at the beginning. In each phase a unique processor becomes a king of the phase (the phase number determines the id of the king). Let us proof the following lemmas.
+\begin{lem}
+If all correct processors have the same values V equal to 0 or 1 before the phase, then it holds also after the phase.
+\end{lem}
+\begin{proof}
+If all correct processors have the same values $V$ equal to $v\in\{0,1\}$ before the phase, then they all broadcast $v$ in the first exchange round and for each of them $C(v) \geq n-t$ holds. For each $k\neq v$ we know that $C(k) < n-t$, as otherwise $n\geq (n-t) + (n-t) - t = 2n-3t$, but we know it's impossible because $n>3t$. It means the processors have the same values $V$ equal to $v$ before the second exchange round. It implies they all broadcast $v$ in the second exchange round and for each of them $D(k)>t$ holds only for $k=v$, so their values $V$ remain the same before the third exchange round. The third exchange round does not alter values $V$, because $D(v)\geq n-t$ just like $C(v)\geq n-t$. It proves none of exchange rounds change values $V$ in correct processors, hence the claim.
+\end{proof}
+\begin{lem}
+If a king is a correct processor, then after its round all correct processors have the same values $V$ equal to 0 or 1.
+\end{lem}
+\begin{proof}
+The first exchange round set all the correct processors' $V$ variables to merely zeroes and twos or to merely ones and twos, because if there was a pair of correct processors having $V=1$ and $V=2$, then $n\ge2(n-t)-t$, but $n\geq 3t+1$, which would mean $3t\ge n \ge 3t+1$, which is a contradiction. If the king is correct, then he broadcast his $V$. Two cases may occur now. Either all the correct processors set $V$ to the same value from $\{0,1\}$ in the third round or there is some for which $V\neq2$ and $D(V)\ge n-t$. The later case implies that for each of the correct processor having $V\neq2$ follows $D(V)>t$ (because there are $t$ faulty processors and $n\geq 3t+1$), meaning that the correct processors have $V$ already set to the same value from $\{0,1\}$ after the second phase, which completes the proof.
+\end{proof}
+Lemma 1. does not only assure the validity, but also implies it's enough to reach the agreement once, in any phase. At least one of $t+1$ kings must be correct, so due to Lemma 2. and the previous sentence the correct processors must reach agreement. Finite number of operations assures the termination. Thus, we derive the valid protocol for the consensus problem.
+
+Let's discuss a complexity of the protocol. Minimal number of processors is $3t+1$, as it is a sufficient bound needed for correctness and we know from the previous works that it cannot be lower. There are in total $3t+3$ message exchange rounds, 3 per each of $t+1$ phases. Finally, there are only 3 types of messages which can be encoded using 2 bits.
+
+\subsection*{References}
+\begin{itemize}
+    \item P. Berman, J. A. Garay and K. J. Perry, \emph{Towards optimal distributed consensus,} 30th Annual Symposium on Foundations of Computer Science, 1989, pp. 410-415, doi: 10.1109/SFCS.1989.63511.
+    \item A. D. Kshemkalyani and M. Singhal, \emph{Distributed Computing Principles, Algorithms, and Systems,} 2011, pp. 510-514, ISBN: 9780521189842.
+\end{itemize}
+
+\end{document}
