@@ -5,6 +5,9 @@ example: sync_directed_hypercube_leader_example sync_directed_ring_leader_exampl
 runners:
 	go run example/synchronized.go 5
 
+async_undirected_ring_leader_example:
+	go run example/undirected_ring_leader_test.go 10
+
 sync_directed_hypercube_leader_example:
 	go run example/sync_directed_hypercube_leader.go 6
 
@@ -13,9 +16,6 @@ sync_directed_ring_leader_example:
 	go run example/sync_directed_ring_chang_roberts.go 10
 	go run example/sync_directed_ring_dolev_klawe_rodeh.go a 10
 	go run example/sync_directed_ring_dolev_klawe_rodeh.go b 10
-
-async_undirected_ring_leader_example:
-	go run example/async_ring_stages_with_feedback.go 10
 
 sync_undirected_graph_leader_example:
 	go run example/sync_undirected_graph_yoyo.go 20 0.25
