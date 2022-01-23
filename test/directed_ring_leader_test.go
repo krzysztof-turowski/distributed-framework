@@ -1,10 +1,11 @@
 package test
 
 import (
-	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"io/ioutil"
 	"log"
 	"testing"
+
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 )
 
 func TestDirectedRingChangRoberts(t *testing.T) {
@@ -25,6 +26,11 @@ func TestDirectedRingRunDolevKlaweRodehA(t *testing.T) {
 func TestDirectedRingRunDolevKlaweRodehB(t *testing.T) {
 	checkLogOutput()
 	directed_ring.RunDolevKlaweRodehB(1000)
+}
+
+func TestDirectedRingPeterson(t *testing.T) {
+	checkLogOutput()
+	directed_ring.RunPeterson(1000)
 }
 
 func BenchmarkDirectedRingChangRoberts(b *testing.B) {
@@ -52,5 +58,12 @@ func BenchmarkDirectedRingRunDolevKlaweRodehB(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		directed_ring.RunDolevKlaweRodehB(1000)
+	}
+}
+
+func BenchmarkDirectedRingPeterson(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		directed_ring.RunPeterson(1000)
 	}
 }
