@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/krzysztof-turowski/distributed-framework/consensus/sync_ben_or"
+	"github.com/krzysztof-turowski/distributed-framework/consensus"
 )
 
 func TestAllCorrectBenOr(t *testing.T) {
@@ -16,7 +16,7 @@ func TestAllCorrectBenOr(t *testing.T) {
 	for i := 0; i < n; i++ {
 		processes[i] = byte(i % 2)
 	}
-	ben_or.RunBenOr(processes, make([]func(r int) byte, 0))
+	consensus.RunBenOr(processes, make([]func(r int) byte, 0))
 }
 
 func TestSameStartingBenOr(t *testing.T) {
@@ -31,7 +31,7 @@ func TestSameStartingBenOr(t *testing.T) {
 	for i := 0; i < f; i++ {
 		behaviours[i] = func(r int) byte { return 1 }
 	}
-	ben_or.RunBenOr(processes, behaviours)
+	consensus.RunBenOr(processes, behaviours)
 }
 
 func TestSmallBenOr(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSmallBenOr(t *testing.T) {
 	behaviours := []func(r int) byte{func(r int) byte { return 1 }}
 
 	for it := 0; it < 100; it++ {
-		ben_or.RunBenOr(processes, behaviours)
+		consensus.RunBenOr(processes, behaviours)
 	}
 }
 
@@ -57,7 +57,7 @@ func TestBigBenOr(t *testing.T) {
 	for i := 0; i < f; i++ {
 		behaviours[i] = func(r int) byte { return byte((i + r) % 2) }
 	}
-	ben_or.RunBenOr(processes, behaviours)
+	consensus.RunBenOr(processes, behaviours)
 }
 
 func BenchmarkBenOr(b *testing.B) {
@@ -74,6 +74,6 @@ func BenchmarkBenOr(b *testing.B) {
 	}
 
 	for it := 0; it < b.N; it++ {
-		ben_or.RunBenOr(processes, behaviours)
+		consensus.RunBenOr(processes, behaviours)
 	}
 }
