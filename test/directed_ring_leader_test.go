@@ -1,11 +1,10 @@
 package test
 
 import (
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"io/ioutil"
 	"log"
 	"testing"
-
-	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 )
 
 func TestDirectedRingChangRoberts(t *testing.T) {

@@ -1,10 +1,9 @@
 package main
 
 import (
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"os"
 	"strconv"
-
-	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 )
 
 func main() {

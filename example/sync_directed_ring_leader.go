@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"text/tabwriter"
-
-	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
 )
 
 func main() {

@@ -3,9 +3,8 @@ package directed_ring
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-
 	"github.com/krzysztof-turowski/distributed-framework/lib"
+	"log"
 )
 
 type statePeterson struct {
