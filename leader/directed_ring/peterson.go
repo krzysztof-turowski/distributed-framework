@@ -93,23 +93,20 @@ func processPeterson(v lib.Node, round int) bool {
 	} else {
 		for i := 0; i < 2; i++ {
 			m := receiveMessagePeterson(v)
-			if m.Max > s.Max {
-				s.Max = m.Max
-			}
+			s.Max = m.Max
 			if m.Mode == leader {
-				if s.Status != leader {
-					s.Status = nonleader
-				}
+				s.Status = nonleader
 				setStatePeterson(v, s)
 				sendMessagePeterson(v, m)
 				return true
 			} else if m.Max == v.GetIndex() {
 				s.Status = leader
+				setStatePeterson(v, s)
 				sendMessagePeterson(v, messagePeterson{Max: m.Max, Mode: leader})
+				break
 			} else {
 				sendMessagePeterson(v, m)
 			}
-			setStatePeterson(v, s)
 		}
 	}
 	return false
