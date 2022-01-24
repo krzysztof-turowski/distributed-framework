@@ -35,7 +35,7 @@ abstract = {A new and more detailed analysis of the unidirectional algorithm of 
 Our goal is to elect a leader in an undirected ring with $n$ nodes and asynchronous first-in-first-out communication.  We assume that every node has a unique identifier, and that all identifiers are
 totally ordered. Initially, no node needs any knowledge about the identities of the nodes at the
 other ends of its incident edges. Each node recognizes the directions of its edges, but there is no global sense of orientation in the ring. 
-\paragraph{}
+
 Here we describe an algorithm presented by \cite{ROTEM1987575}, which achieves the above and uses at most $3 n\log_{3}n + O(n)$ messages in the worst case.
 \subsection*{The algorithm}
 \subsubsection*{Definitions and assumptions}
@@ -59,7 +59,7 @@ By $i$ we will denote the node's unique identifier and by $n(i)$ the node whose 
 Upon initialization each node starts with status \textit{E-candidate}.
 \subsubsection*{Procedures}
 Each round starts with each \textit{E-candidate} sending message (\textit{E-msg},$i$) in both of its directions.
-\paragraph{}
+
 Afterwards, each \textit{E-candidate} awaits to receive a message from both of its directions.
 
 Let's denote them as $(\textit{E-msg},vl)$ received from \textit{left} and $(\textit{E-msg},vr)$ received from \textit{right}.
@@ -70,17 +70,17 @@ If $y>i$, then $n(i)$ will send $(\textit{A-msg},y)$ to left if $y=vr$ or to rig
 Then regardless if any message was sent from $n(i)$, it will change its state to \textit{A-candidate}.
 
 If $i=vl=vr$ then $n(i)$ is the only \textit{E-candidate} in the ring. It should become the \textit{Leader} and send \textit{T-msg} in one of its directions.
-\paragraph{}
+
 Each \textit{A-candidate} awaits approval from both of its active neighbours. Meaning, it waits for message $(\textit{A-msg},i)$ from both sides. Afterwards, it changes its status to \textit{E-candidate} to participate in the next round.
 
 If \textit{A-candidate} receives $(\textit{E-msg},i)$, it should treat it as a negative feedback, it should become \textit{passive} and pass the received message.
-\paragraph{}
+
 \textit{passive} node passes every message, except for potential $(\textit{A-msg},i)$ which is no longer needed.
 
 If it receives $(\textit{T-msg},val)$, it learns that $n(val)$ is the leader, passes the message and finishes.
-\paragraph{}
+
 \textit{Leader} finishes when it receives $(\textit{T-msg},i)$.
-\paragraph{}
+
 It shall be noted that receiving \textit{T-msg} can be used to obtain common sense of direction in the ring.
 \subsection*{Correctness}
 Let $j=max\{i | n(i) \text{ participates in the algorithm}\}$. 
@@ -106,7 +106,7 @@ Hence, at most a third of the processors from $m_j$ survive the $j$-th round.
 \begin{proof}
 The proof follows from \Cref{lemma1}.
 \end{proof}
-\paragraph{}
+
 We can now notice that each round every $2$ immediate active nodes will exchange at most $3$ messages. That is, $2$ \textit{E-msg} messages and no more than one \textit{A-msg}.
 
 Hence, follows:
