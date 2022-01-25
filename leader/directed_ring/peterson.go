@@ -49,48 +49,47 @@ func setStatePeterson(v lib.Node, s statePeterson) {
 
 func processPeterson(v lib.Node, round int) bool {
 	s := getStatePeterson(v)
-	if s.Status != relay {
-		if s.Status == unknown {
-			sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: unknown})
-			m1 := receiveMessagePeterson(v)
-			if m1.Mode == leader {
-				s.Max = m1.Max
+	if s.Status == unknown {
+		sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: unknown})
+		m1 := receiveMessagePeterson(v)
+		if m1.Mode == leader {
+			s.Max = m1.Max
+			s.Status = nonleader
+			sendMessagePeterson(v, messagePeterson{Max: m1.Max, Mode: leader})
+			setStatePeterson(v, s)
+			return true
+		} else if m1.Max == v.GetIndex() {
+			s.Status = leader
+			sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: leader})
+		} else {
+			if s.Max > m1.Max {
+				sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: unknown})
+			} else {
+				sendMessagePeterson(v, messagePeterson{Max: m1.Max, Mode: unknown})
+			}
+			m2 := receiveMessagePeterson(v)
+			if m2.Mode == leader {
+				s.Max = m2.Max
 				s.Status = nonleader
-				sendMessagePeterson(v, messagePeterson{Max: m1.Max, Mode: leader})
-			} else if m1.Max == v.GetIndex() {
+				sendMessagePeterson(v, messagePeterson{Max: m2.Max, Mode: leader})
+				setStatePeterson(v, s)
+				return true
+			} else if m2.Max == v.GetIndex() {
 				s.Status = leader
 				sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: leader})
+			} else if m1.Max >= s.Max && m1.Max >= m2.Max {
+				s.Max = m1.Max
 			} else {
-				if s.Max > m1.Max {
-					sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: unknown})
-				} else {
-					sendMessagePeterson(v, messagePeterson{Max: m1.Max, Mode: unknown})
-				}
-				m2 := receiveMessagePeterson(v)
-				if m2.Mode == leader {
-					s.Max = m2.Max
-					s.Status = nonleader
-					sendMessagePeterson(v, messagePeterson{Max: m2.Max, Mode: leader})
-				} else if m2.Max == v.GetIndex() {
-					s.Status = leader
-					sendMessagePeterson(v, messagePeterson{Max: s.Max, Mode: leader})
-				} else if m1.Max >= s.Max && m1.Max >= m2.Max {
-					s.Max = m1.Max
-				} else {
-					s.Status = relay
-				}
-			}
-			setStatePeterson(v, s)
-			if s.Status == nonleader {
-				return true
-			}
-		} else if s.Status == leader {
-			m := receiveMessagePeterson(v)
-			if m.Mode == leader {
-				return true
+				s.Status = relay
 			}
 		}
-	} else {
+		setStatePeterson(v, s)
+	} else if s.Status == leader {
+		m := receiveMessagePeterson(v)
+		if m.Mode == leader {
+			return true
+		}
+	} else if s.Status == relay {
 		for i := 0; i < 2; i++ {
 			m := receiveMessagePeterson(v)
 			s.Max = m.Max

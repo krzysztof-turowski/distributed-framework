@@ -39,8 +39,7 @@ numpages = {5}
 
 Given $n$ processes in a directed ring with synchronous communication, communicating only with message passing to its neighbors, the circular extrema-finding (or election) problem is to select a maximum process. Each process has a unique value in a set with a total order. These values may be transmitted and compared. All processes are identical (except for their value) i.e run the same algorithm and $n$, the number of processes, is not initially known.
 
-\paragraph{}
-Here we describe an algorithm presented by \cite{10.1145/69622.357194}, which achieves the above and uses at most $2 n \lfloor{}\log n\rfloor{} + n$ messages in the worst case.
+Here we describe an algorithm presented by \cite{10.1145/69622.357194}, which achieves the above and uses at most $2 n \lfloor\log n\rfloor + n$ messages in the worst case.
 \subsection*{The algorithm}
 \subsubsection*{Definitions and assumptions}
 The algorithm will consist of electoral rounds.
@@ -63,23 +62,19 @@ Assume all messages are passed to the right. All processes are initially \textit
 
 \subsubsection*{Procedures}
 
-Each round starts with each \textit{active} sending message ($tid$, \textit{active}) to right neighbour.
-\paragraph{}
-Afterwards, each \textit{active} awaits to receive a message from left.
+Each round starts with each \textit{active} sending message ($tid$, \textit{active}) to right neighbour. Afterwards, each \textit{active} awaits to receive a message from left.
 
 Let's denote message received from left as $(m1.ntid, m1.status)$. We need to \textit{check} whether $m1.status$ is \textit{leader} or $m1.ntid$ is equal to node's unique identifier. In first case we need set our state to \textit{non-leader} and pass the message to right. In second case we need to declare this node as leader: set state to \textit{leader} and send message with $(i, \textit{leader})$ to right. If \textit{check} is failed then we await for one more message from left as $(m2.nntid, m2.status)$. Do the same \textit{check} as previously, and if it's failed then there are two cases. In first case $m1.ntid \geq tid \land m1.ntid \geq m2.nntid$ we assign $m1.ntid$ to node's $tid$, otherwise we set the node state to \textit{relay}.
 
-\paragraph{}
 Nodes that become \textit{non-leader} are terminated. \textit{Leader} finishes when it receives message with status \textit{leader}.
 
-\paragraph{}
 \textit{Relay} await for at most two messages from left processed one by one, for each message do \textit{check} and if it's failed just pass the message to right.
 
 \subsection*{Correctness}
 The correctness of the algorithm follows from two facts: during any phase there is exactly one process whose \textit{tid} is the maximum value, and no process except the maximum will ever see its own initial value. The first fact comes by noting that the process whose \textit{tid} is the maximum value is by definition larger than its two \textit{active} neighbors, so the \textit{active} process to its right will have its \textit{tid} equal to the maximum on the next phase. The second fact follows by first noting that, for any process, its value is either the \textit{tid} value of the nearest \textit{active} process to its right, or its value no longer is being propagated. It therefore follows that in order for some nonmaximum value of a process to cycle around the ring, the largest value must already have passed the process (lest the \textit{active} process with \textit{tid} equal to the maximum prevents passage of the lower value), but then the smaller value is no longer being propagated since the \textit{tid} value to the right of the process is now the maximum.
 \subsection*{Complexity analysis}
 It is very simple to see that at most $2n \log n + n$ messages are sent. First one
-notes that there can be at most $\lfloor{}\log n \rfloor{}$ phases to reach one \textit{active} process. This follows from the fact that any \textit{active} process survives a phase only if the \textit{active} process to its left does not survive that phase. Hence of $m$ \textit{active} processes during a phase, at most $\lfloor{} \frac{m}{2} \rfloor{}$ will survive for $m > 1$. During a phase every process sends (and receives) two messages, and on the last phase the lone \textit{active} process sends one message which is relayed around to the maximum for a total of $2n \log n + n$.
+notes that there can be at most $\lfloor\log n\rfloor$ phases to reach one \textit{active} process. This follows from the fact that any \textit{active} process survives a phase only if the \textit{active} process to its left does not survive that phase. Hence of $m$ \textit{active} processes during a phase, at most $\lfloor\frac{m}{2}\rfloor$ will survive for $m > 1$. During a phase every process sends (and receives) two messages, and on the last phase the lone \textit{active} process sends one message which is relayed around to the maximum for a total of $2n \log n + n$.
 \bibliographystyle{plainnat}
 \bibliography{\jobname} 
 \end{document}
