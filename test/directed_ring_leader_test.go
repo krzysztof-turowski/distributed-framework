@@ -27,6 +27,11 @@ func TestDirectedRingRunDolevKlaweRodehB(t *testing.T) {
 	directed_ring.RunDolevKlaweRodehB(1000)
 }
 
+func TestDirectedRingPeterson(t *testing.T) {
+	checkLogOutput()
+	directed_ring.RunPeterson(1000)
+}
+
 func BenchmarkDirectedRingChangRoberts(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
@@ -52,5 +57,12 @@ func BenchmarkDirectedRingRunDolevKlaweRodehB(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		directed_ring.RunDolevKlaweRodehB(1000)
+	}
+}
+
+func BenchmarkDirectedRingPeterson(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		directed_ring.RunPeterson(1000)
 	}
 }
