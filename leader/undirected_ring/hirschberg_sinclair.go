@@ -10,8 +10,7 @@ import (
 type modeType string
 
 const (
-	pass      modeType = "pass"
-	unknown            = "unknown"
+	unknown   modeType = "unknown"
 	nonleader          = "nonleader"
 	leader             = "leader"
 )
@@ -19,14 +18,13 @@ const (
 type messageType string
 
 const (
+	null messageType = "null"
 	out = "out"
 	in = "in"
 	end = "end"
-	null = "null"
 )
 
 type stateHirschbergSinclair struct {
-	MyValue    int
 	Status modeType
 	MaxNum int
 }
@@ -87,35 +85,36 @@ func receiveHirschbergSinclair(v lib.Node) (stateHirschbergSinclair, messageHirs
 }
 
 func initializeHirschbergSinclair(v lib.Node) bool {
-	s := stateHirschbergSinclair{MyValue: v.GetIndex(), Status: unknown, MaxNum: 1}
+	s := stateHirschbergSinclair{Status: unknown, MaxNum: 1}
+	log.Println("Node", v.GetIndex(), "initiates a message with length", s.MaxNum)
 	sendHirschbergSinclair(v, s, messageHirschbergSinclair{
 		MessageType: out,
-		Value:       s.MyValue,
+		Value:       v.GetIndex(),
 		Num:         s.MaxNum,
 	}, messageHirschbergSinclair{
 		MessageType: out,
-		Value:       s.MyValue,
+		Value:       v.GetIndex(),
 		Num:         s.MaxNum,
 	})
 	return false
 }
 
-func handleMessageHirschbergSinclair(s stateHirschbergSinclair, result bool, receivedA messageHirschbergSinclair,
+func handleMessageHirschbergSinclair(v lib.Node, s stateHirschbergSinclair, result bool, receivedA messageHirschbergSinclair,
 	sendA messageHirschbergSinclair, sendB messageHirschbergSinclair) (messageHirschbergSinclair, messageHirschbergSinclair, stateHirschbergSinclair, bool){
 	if receivedA.MessageType == out{
-		if receivedA.Value > s.MyValue && receivedA.Num > 1 {
+		if receivedA.Value > v.GetIndex() && receivedA.Num > 1 {
 			sendB.MessageType = out
 			sendB.Num = receivedA.Num - 1
 			sendB.Value = receivedA.Value
-		} else if receivedA.Value > s.MyValue && receivedA.Num == 1 {
+		} else if receivedA.Value > v.GetIndex() && receivedA.Num == 1 {
 			sendA.MessageType = in
 			sendA.Num = 1
 			sendA.Value = receivedA.Value
-		} else if receivedA.Value == s.MyValue {
+		} else if receivedA.Value == v.GetIndex() {
 			s.Status = leader
 			result = true
 		}
-	} else if receivedA.MessageType == in && receivedA.Value != s.MyValue{
+	} else if receivedA.MessageType == in && receivedA.Value != v.GetIndex(){
 		sendB.MessageType = in
 		sendB.Num = 1
 		sendB.Value = receivedA.Value
@@ -133,17 +132,18 @@ func processHirschbergSinclair(v lib.Node, round int) bool {
 	s, receivedLeft, receivedRight := receiveHirschbergSinclair(v)
 	result := false
 	sendLeft, sendRight := messageHirschbergSinclair{MessageType: null}, messageHirschbergSinclair{MessageType: null}
-	sendLeft, sendRight, s, result = handleMessageHirschbergSinclair(s, result, receivedLeft, sendLeft, sendRight)
-	sendRight, sendLeft, s, result = handleMessageHirschbergSinclair(s, result, receivedRight, sendRight, sendLeft)
-	if receivedLeft.Value == s.MyValue && receivedLeft.MessageType == in && receivedLeft.Num == 1 &&
-		receivedRight.Value == s.MyValue && receivedRight.MessageType == in && receivedRight.Num == 1 {
+	sendLeft, sendRight, s, result = handleMessageHirschbergSinclair(v, s, result, receivedLeft, sendLeft, sendRight)
+	sendRight, sendLeft, s, result = handleMessageHirschbergSinclair(v, s, result, receivedRight, sendRight, sendLeft)
+	if receivedLeft.Value == v.GetIndex() && receivedLeft.MessageType == in && receivedLeft.Num == 1 &&
+		receivedRight.Value == v.GetIndex() && receivedRight.MessageType == in && receivedRight.Num == 1 {
 		s.MaxNum *= 2
-		sendLeft.Value = s.MyValue
+		sendLeft.Value = v.GetIndex()
 		sendLeft.MessageType = out
 		sendLeft.Num = s.MaxNum
-		sendRight.Value = s.MyValue
+		sendRight.Value = v.GetIndex()
 		sendRight.MessageType = out
 		sendRight.Num = s.MaxNum
+		log.Println("Node", v.GetIndex(), "initiates a message with length", s.MaxNum)
 	}
 	sendHirschbergSinclair(v, s, sendLeft, sendRight)
 	return result
@@ -176,20 +176,20 @@ func checkHirschbergSinclair(vertices []lib.Node) {
 	max := 0
 	for _, v := range vertices {
 		json.Unmarshal(v.GetState(), &s)
-		if s.MyValue > max{
-			max = s.MyValue
+		if v.GetIndex() > max{
+			max = v.GetIndex()
 		}
 		if v != leaderNode {
 			if s.Status == leader {
 				panic(fmt.Sprint(
-					"Multiple leaders on the undirected ring: ", s.MyValue, leaderNode.GetIndex()))
+					"Multiple leaders on the undirected ring: ", v.GetIndex(), leaderNode.GetIndex()))
 			}
 			if s.Status != nonleader {
 				panic(fmt.Sprint("Node ", v.GetIndex(), " has state ", s.Status))
 			}
 		}
 	}
-	if max > leaderNode.GetIndex(){
+	if max != leaderNode.GetIndex(){
 		panic(fmt.Sprint("Leader has value ", leaderNode.GetIndex(), " but max is ", max))
 	}
 }
