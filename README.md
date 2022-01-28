@@ -10,6 +10,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 2. Itai-Rodeh algorithm
 3. Dolev-Klawe-Rodeh algorithms A and B
 
+#### Synchronized undirected ring
+1. Hirschberg-Sinclair algorithm
+
 #### Synchronized undirected mesh
 1. Peterson algorithm
 
