@@ -15,13 +15,13 @@ const (
 	leader             = "leader"
 )
 
-type messageType string
+type messageType int
 
 const (
-	null messageType = "null"
-	out = "out"
-	in = "in"
-	end = "end"
+	null messageType = iota
+	out
+	in
+	end
 )
 
 type stateHirschbergSinclair struct {
