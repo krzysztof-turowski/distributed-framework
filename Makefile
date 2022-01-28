@@ -1,9 +1,12 @@
 all: test benchmark check
 
-example: sync_directed_hypercube_leader_example sync_directed_ring_leader_example sync_undirected_graph_leader_example sync_undirected_mesh_leader_example sync_mst_example sync_mis_example sync_consensus_example
+example: sync_directed_hypercube_leader_example sync_directed_ring_leader_example sync_undirected_graph_leader_example sync_undirected_mesh_leader_example sync_mst_example sync_mis_example sync_consensus_example async_undirected_ring_leader_example
 
 runners:
 	go run example/synchronized.go 5
+
+async_undirected_ring_leader_example:
+	go run example/undirected_ring_leader_test.go 10
 
 sync_directed_hypercube_leader_example:
 	go run example/sync_directed_hypercube_leader.go 6
@@ -13,6 +16,7 @@ sync_directed_ring_leader_example:
 	go run example/sync_directed_ring_chang_roberts.go 10
 	go run example/sync_directed_ring_dolev_klawe_rodeh.go a 10
 	go run example/sync_directed_ring_dolev_klawe_rodeh.go b 10
+	go run example/sync_directed_ring_peterson.go 10
 
 sync_undirected_ring_leader_example:
 	go run example/sync_undirected_ring_hirschberg_sinclair.go 10

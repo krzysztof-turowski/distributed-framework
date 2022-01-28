@@ -7,4 +7,5 @@ const (
 	unknown            = "unknown"
 	nonleader          = "nonleader"
 	leader             = "leader"
+	relay              = "relay"
 )
