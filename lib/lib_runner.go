@@ -15,7 +15,7 @@ type Runner struct {
 	outConfirm []chan bool
 }
 
-func (r *Runner) Run() {
+func (r *Runner) Run(close bool) {
 	cases := make([]reflect.SelectCase, len(r.inConfirm))
 	for i, channel := range r.inConfirm {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)}
@@ -30,7 +30,9 @@ func (r *Runner) Run() {
 		if message.finish {
 			finish++
 			cases[index].Chan, r.outConfirm[index] = reflect.ValueOf(nil), nil
-			go r.vertices[index].Close()
+			if close {
+				go r.vertices[index].Close()
+			}
 		}
 		r.messages += message.receivedMessages
 		log.Println(

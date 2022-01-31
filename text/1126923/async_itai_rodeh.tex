@@ -1,0 +1,100 @@
+\documentclass{article}
+
+\usepackage[english]{babel}
+\usepackage{filecontents}
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+\usepackage{amsmath}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\usepackage{biblatex}
+\begin{filecontents*}[overwrite]{general.bib}
+ @article{fokkink2005simplifying,
+  title={Simplifying Itai-Rodeh leader election for anonymous rings},
+  author={Fokkink, Wan and Pang, Jun},
+  journal={Electronic Notes in Theoretical Computer Science},
+  volume={128},
+  number={6},
+  pages={53--68},
+  year={2005},
+  publisher={Elsevier}
+}
+\end{filecontents*}
+\addbibresource{general.bib}
+\nocite{*}
+
+\usepackage{indentfirst}
+
+\usepackage{cleveref}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\begin{document}
+\section*{Itai-Rodeh Leader Election for Anonymous Rings}
+
+\subsection*{Introduction}
+Itai-Rodeh leader election algorithm is a probabilistic leader election algorithm for anonymous unidirectional rings with asynchronous communication. Additionally, the size of the ring is known to all processes.
+
+Processes select random identities from a finite domain (of size bigger than $1$). Processes with the largest identities start another new election rounds, select new identities, and continue broadcasting messages until a leader is elected. Processes with smaller identities became passive that only pass on the messages they receive. It is assumed that the size of the ring is known to all processes so that each process can recognize its own message. The Itai-Rodeh algorithm terminates with probability one, and eventually, exactly one leader is elected. The expected number of messages is at most $O(n^2)$.
+
+\subsection*{The algorithm}
+\subsubsection*{Process $i$ maintains:}
+\begin{itemize}
+    \item $id_i \in \{1, \ldots , k\}$ --- random identity of a process selected anew each round
+    \item $state_i \in \{active,\ passive,\ leader\}$
+    \item $round_i \in \mathbb{N}^+$ --- represents the number of the current election round
+    \item[$\star$] additionally process keeps track of number of the messages it sent, received and whether leader was selected to properly terminate
+\end{itemize}
+
+\subsubsection*{Message format:}
+\begin{itemize}
+    \item $id$ --- information about the original sender
+    \item $round$ --- information about the original sender
+    \item $hop$ --- distance that a message travelled
+    \item $bit$ --- whether there exist identical process to the original sender (need to select new identity)
+    \item[$\star$] additionally message id of the preceding process is send to properly terminate
+\end{itemize}
+
+\subsubsection*{Procedures}
+Precise description can be found on page 5 in \cite{fokkink2005simplifying}. I will only describe an algorithm with words for simplicity.
+
+\textbf{Initialization:} all processes are active, and each process pi randomly selects its identity $id_i$ and sends the message $(id_i,\ 1,\ 1,\ true)$
+
+\textbf{Passive process:} Upon receipt of a message, passes on the message, increasing the $hop$ counter by one.
+
+\textbf{Active process:} Upon receipt of a message $(id,\ round\ hop,\ bit)$ behaves according to the following steps:
+\begin{itemize}
+    \item if a process receives message from itself and $bit == true$, then becomes leader
+    \item else if a process receives message from itself and $bit == false$, then selects new identity, moves to another round and sends the message $(id_i,\ round_i,\ 1,\ true)$
+    \item else if a process receives a message from the identical process then passes it on with $bit == false$ and increased $hop$ counter
+    \item else if the process receives a message with pair $(round,\ id)$ lexicographically bigger than itself, then it becomes passive and passes on message with increased $hop$ counter
+    \item else purges the message
+\end{itemize}
+
+\clearpage
+
+\subsection*{Correctness}
+First, let's consider a simpler case in which the algorithm was lucky, and each process's identity is different. Then we would get a problem of leader election for a unidirectional ring with asynchronous communication but this time with unique identities. No $bit$ would change. No process would advance to round 2. Itai-Rodeh algorithm would be reduced to Chang and Roberts algorithm for leader selection.
+
+In the general case, an algorithm has $round$'s and $bit$'s are tracking information about duplicate $id$'s.  On the ring, until a leader is elected there always exists a message with lexicographically largest pair $(round,\ id)$ that travels to its owner (maybe a few of them). If there exists at least one process lexicographically smaller than this message and it reaches him, then one more process will become passive bringing us a step closer to electing a leader. Otherwise, all the processes will move to the next round and with some luck, some processes will become passive. Eventually, the leader will be elected. 
+
+If there exist at least $2$ active processes in the same round and the domain of drawing identities is of size $2$ then the probability that they drew different $id$'s is at least $\frac{1}{2}$. Furthermore, the probability that a lexicographically bigger message reaches a lexicographically smaller process to make him passive is at least $\frac{1}{2}$. With a number of rounds converging on infinity probability of a single process becoming passive converges to $1$. With a finite number of processes probability of algorithm terminating equals $1$.
+
+\subsection*{Complexity analysis}
+
+In the worst-case scenario domain of identities equals $\{0,1\}$. Let $n$ be a number of processes. Then expected number of processes with identity $1$ in the first round equals $\frac{n}{2}$. In each following round number of active processes will be reduced by half. The expected number of rounds equals $\log n$.
+
+All the messages that reach its owner have to travel the way around the ring. Consequently, in a round with $k$ active processes, there will be $kn$ messages. 
+
+Then the formula for an expected total number of messages throughout the algorithm will be:
+$$
+O\left(n\left(n + \frac{n}{2} + \frac{n}{4} + \ldots + 1 \right)\right) = O(n^2)
+$$
+
+\printbibliography
+
+\end{document}
