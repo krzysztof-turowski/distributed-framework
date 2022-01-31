@@ -19,6 +19,9 @@ sync_directed_ring_leader_example:
 	go run example/sync_directed_ring_dolev_klawe_rodeh.go b 10
 	go run example/sync_directed_ring_peterson.go 10
 
+sync_undirected_ring_leader_example:
+	go run example/sync_undirected_ring_hirschberg_sinclair.go 10
+
 sync_undirected_graph_leader_example:
 	go run example/sync_undirected_graph_yoyo.go 20 0.25
 

@@ -81,11 +81,11 @@ If it receives $(\textit{T-msg},val)$, it learns that $n(val)$ is the leader, pa
 
 \textit{Leader} finishes when it receives $(\textit{T-msg},i)$.
 
-It shall be noted that receiving \textit{T-msg} can be used to obtain common sense of direction in the ring.
+It shall be noted that receiving \textit{T-msg} can be used to obtain a common sense of direction in the ring.
 \subsection*{Correctness}
 Let $j=max\{i | n(i) \text{ participates in the algorithm}\}$. 
 
-Then from the voting and checking procedure follows that at each electoral round $n(j)$ will defeat both of its immediate active neighbours; hence the number of \textit{passive} nodes increases monotonically. At the same time $n(j)$ will never be defeated (receive negative feedback). This implies that at some round $n(j)$ will be the only active node and both of its \textit{E-msg} messages will return to it, making it the leader.
+The voting and checking procedure imply that at each electoral round $n(j)$ will defeat both of its immediate active neighbours; hence the number of \textit{passive} nodes increases monotonically. At the same time $n(j)$ will never be defeated (receive negative feedback). This implies that at some round $n(j)$ will be the only active node and both of its \textit{E-msg} messages will return to it, making it the leader.
 
 Having been elected $n(j)$ can send a termination order \textit{T-msg} around the ring along with its identifier to notify other nodes of its election.
 \subsection*{Complexity analysis}

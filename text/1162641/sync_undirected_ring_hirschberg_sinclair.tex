@@ -1,0 +1,99 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{amssymb}
+\usepackage[english]{babel}
+\usepackage{filecontents}
+\usepackage{csquotes}
+\usepackage{graphicx}
+
+\usepackage[colorlinks=false]{hyperref}
+\usepackage[backend=bibtex,style=chem-angew,citestyle=numeric-comp,articletitle=true,hyperref=true,url=true]{biblatex}
+\addbibresource{biblio.bib}
+\usepackage{titlesec}
+\usepackage{tocloft}
+
+\begin{filecontents}{biblio.bib}
+@article{Iványi+2014+54+1,
+author = {Antal Iványi},
+doi = {doi:10.2478/ausm-2014-0005},
+url = {https://doi.org/10.2478/ausm-2014-0005},
+title = {Leader election in synchronous networks},
+journal = {Acta Universitatis Sapientiae, Mathematica},
+number = {1},
+volume = {5},
+year = {2014},
+pages = {54--1}
+}
+@article{10.1145/359024.359029,
+author = {Hirschberg, D. S. and Sinclair, J. B.},
+title = {Decentralized Extrema-Finding in Circular Configurations of Processors},
+year = {1980},
+issue_date = {Nov. 1980},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {23},
+number = {11},
+issn = {0001-0782},
+url = {https://doi.org/10.1145/359024.359029},
+doi = {10.1145/359024.359029},
+abstract = {This note presents an efficient algorithm, requiring O(n log n) message passes, for finding the largest (or smallest) of a set of n uniquely numbered processors arranged in a circle, in which no central controller exists and the number of processors is not known a priori.},
+journal = {Commun. ACM},
+month = {nov},
+pages = {627–628},
+numpages = {2},
+keywords = {distributed system, operating systems, decentralized algorithms}
+}
+\end{filecontents}
+
+
+\begin{document}
+\section{Leader election in synchronised undirected ring}
+The goal is to elect a leader in an undirected ring with $n$ nodes, that communicate in synchronous rounds. We assume that the processors are identical, except for unique identifiers. The size of the network is unknown. Each node has a list of its neighbours in an arbitrary order.\par
+The most straightforward solution is to make every node send its identifier to both neighbours. By passing the identifiers around processors can choose the node with the highest identifier to be the leader. This algorithm requires only $O(n)$ rounds, but it needs $O(n^2)$ messages to be sent. Here we present a synchronous version \cite{Iványi+2014+54+1} of an algorithm presented in 1980 by Hirschberg and Sinclair \cite{10.1145/359024.359029}, which only requires $O(n\log n)$ messages.
+
+\section{The algorithm}
+The idea is that nodes initiate messages that are passed around in both directions along paths of predetermined length (which are successive powers of 2). In the first round every processor sends a message containing its identifier, length 1 and an information that the message is going out. Then in every round they check for messages from both neighbours. There are five main cases:
+\begin{enumerate}
+    \item If the identifier in the message is higher than the processor's identifier:
+    \begin{enumerate}
+        \item If the message already visited the predetermined number of nodes, then we send it back, with the information that it's coming back.
+        \item If the message has not yet visited the predetermined number of nodes or is already coming back, then we pass it to the next processor lowering its length by 1.
+    \end{enumerate}
+    \item If the identifier in the message is lower than the processor's identifier, then the message is ignored.
+    \item If the identifier in the message is equal to the processor's identifier and the message is going out, then we win the election and now need to send an ending message to both neighbours.
+    \item If the identifier in both messages is equal to the processor's identifier and the messages are coming back, then we initiate a new message with double the length of the previously initiated message and send it to both neighbours.
+    \item If the message is an end message, we pass it to the next processor and ignore the other one.
+\end{enumerate}
+
+\section{Correctness}
+Let $v$ be the node with the highest identifier. Any node that receives a message from $v$ must have a lower identifier. That means it will have to pass this message further or send it back to the source. It follows that every message with a length lower than $n$ will come back to $v$, so after $\lceil\log n\rceil$ initiated messages $v$ will send one with a length at least $n$. This message will visit $v$ again without being sent back at any point, which means $v$ will be declared the leader.\par
+On the other hand for any node $w\neq v$ it is impossible to be declared the leader, because there exists $k<n$ such that a message with length $k$ sent from $w$ will visit $v$, where it will be ignored. Every such node will be relaying messages until it receives a stop message originating from the leader.
+
+\section{Complexity analysis}
+\begin{theorem}
+Number of rounds is $O(n)$.
+\end{theorem}
+\begin{proof}
+If a message with length $l$ is not ignored at some point, it must come back exactly in $2l$ rounds. Every node starts with a message with length 1 and every time the message comes back, a new one with double the length is initiated. We know that a leader is elected after receiving a message with length $2^{\lceil\log n\rceil}$ originating from itself. So the number of rounds needed for the leader to find out it won is bounded by:
+$$2(1+2+\dots+2^{\lceil\log n\rceil})\leqslant 8n$$
+At this point only $\lceil\frac{n}{2}\rceil$ rounds are needed for other nodes to receive the end message from the leader, so the number of rounds is clearly linear.
+\end{proof}
+
+\begin{theorem}
+Number of messages is $O(n\log n)$.
+\end{theorem}
+\begin{proof}
+A processor initiates a message with length $2^i$ only if it is not defeated by a processor within distance $2^{i-1}$, so within any group of $2^{i-1}+1$ processors only one will initiate a message with length $2^i$. As a result of that initiation at most $4\cdot2^i$ messages will be passed, because every message is sent in two directions and will either travel $2^i$ edges and return or will be ignored within the first $2^i$ steps. As mentioned before no message will have a length higher than $2^{\lceil\log n\rceil}$, so the total number of messages is bounded by:
+$$4(1\cdot n +2\cdot\lceil\frac{n}{2}\rceil+4\cdot\lceil\frac{n}{3}\rceil+\dots+2^i\cdot\lceil\frac{n}{2^{i-1}+1}\rceil+\dots+2^{\lceil\log n\rceil}\cdot\lceil\frac{n}{2^{\lceil\log n\rceil-1}+1}\rceil)$$
+Each of the $1+\lceil\log n\rceil$ terms is bounded by $2n$, so the number of messages is not greater than $8(n+n\log n)\in O(n\log n)$.
+\end{proof}
+
+\printbibliography
+\end{document}
