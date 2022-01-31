@@ -39,7 +39,7 @@
 \subsection*{Introduction}
 Itai-Rodeh leader election algorithm is a probabilistic leader election algorithm for anonymous unidirectional rings with asynchronous communication. Additionally, the size of the ring is known to all processes.
 
-Processes select random identities from a finite domain (of size bigger than $1$). Processes with the largest identities start another new election rounds, select new identities, and continue broadcasting messages until a leader is elected. Processes with smaller identities became passive that only pass on the messages they receive. It is assumed that the size of the ring is known to all processes so that each process can recognize its own message. The Itai-Rodeh algorithm terminates with probability one, and eventually, exactly one leader is elected. Expected number of messages is at most $O(n^2)$.
+Processes select random identities from a finite domain (of size bigger than $1$). Processes with the largest identities start another new election rounds, select new identities, and continue broadcasting messages until a leader is elected. Processes with smaller identities became passive that only pass on the messages they receive. It is assumed that the size of the ring is known to all processes so that each process can recognize its own message. The Itai-Rodeh algorithm terminates with probability one, and eventually, exactly one leader is elected. The expected number of messages is at most $O(n^2)$.
 
 \subsection*{The algorithm}
 \subsubsection*{Process $i$ maintains:}
@@ -60,7 +60,7 @@ Processes select random identities from a finite domain (of size bigger than $1$
 \end{itemize}
 
 \subsubsection*{Procedures}
-Precise description can be found on page 5 here:\cite{fokkink2005simplifying}. I will only describe an algorithm with words for simplicity. \\
+Precise description can be found on page 5 in \cite{fokkink2005simplifying}. I will only describe an algorithm with words for simplicity.
 
 \textbf{Initialization:} all processes are active, and each process pi randomly selects its identity $id_i$ and sends the message $(id_i,\ 1,\ 1,\ true)$
 
@@ -80,7 +80,7 @@ Precise description can be found on page 5 here:\cite{fokkink2005simplifying}. I
 \subsection*{Correctness}
 First, let's consider a simpler case in which the algorithm was lucky, and each process's identity is different. Then we would get a problem of leader election for a unidirectional ring with asynchronous communication but this time with unique identities. No $bit$ would change. No process would advance to round 2. Itai-Rodeh algorithm would be reduced to Chang and Roberts algorithm for leader selection.
 
-In the general case, an algorithm has $round$'s and $bit$'s are tracking information about duplicate $id$'s.  On the ring, until a leader is elected there always exist a message with lexicographically largest pair $(round,\ id)$ that travels to its owner (maybe a few of them). If there exists at least one process lexicographically smaller than this message and it reaches him, then one more process will become passive bringing us a step closer to electing a leader. Otherwise, all the processes will move to the next round and with some luck, some processes will become passive. Eventually, the leader will be elected. 
+In the general case, an algorithm has $round$'s and $bit$'s are tracking information about duplicate $id$'s.  On the ring, until a leader is elected there always exists a message with lexicographically largest pair $(round,\ id)$ that travels to its owner (maybe a few of them). If there exists at least one process lexicographically smaller than this message and it reaches him, then one more process will become passive bringing us a step closer to electing a leader. Otherwise, all the processes will move to the next round and with some luck, some processes will become passive. Eventually, the leader will be elected. 
 
 If there exist at least $2$ active processes in the same round and the domain of drawing identities is of size $2$ then the probability that they drew different $id$'s is at least $\frac{1}{2}$. Furthermore, the probability that a lexicographically bigger message reaches a lexicographically smaller process to make him passive is at least $\frac{1}{2}$. With a number of rounds converging on infinity probability of a single process becoming passive converges to $1$. With a finite number of processes probability of algorithm terminating equals $1$.
 

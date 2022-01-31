@@ -160,7 +160,3 @@ func RunAsyncItaiRodeh(n int) (int, int) {
 	log.Println("Single leader selected: ", checkSingleLeaderElected(vertices))
 	return runner.GetStats()
 }
-
-func wtf() {
-
-}

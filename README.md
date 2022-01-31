@@ -26,6 +26,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 #### Synchronized undirected graph
 1. Yo-Yo algorithm
 
+#### Asynchronous directed ring
+1. Itai-Rodeh algorithm
+
 #### Asynchronous undirected ring
 1. Stages with feedback (Korach-Rotem-Santoro) algorithm
 
