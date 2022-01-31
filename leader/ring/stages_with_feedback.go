@@ -213,7 +213,7 @@ func RunStagesWithFeedback(nodes []lib.Node, runner lib.Runner) (int, int) {
 		go runStagesWithFeedback(node)
 	}
 
-	runner.Run()
+	runner.Run(true)
 	checkSingleLeaderElected(nodes)
 
 	return runner.GetStats()

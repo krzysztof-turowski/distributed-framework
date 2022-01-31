@@ -7,6 +7,7 @@ runners:
 
 async_undirected_ring_leader_example:
 	go run example/undirected_ring_leader_test.go 10
+	go run example/async_directed_ring_itai_rodeh.go 10
 
 sync_directed_hypercube_leader_example:
 	go run example/sync_directed_hypercube_leader.go 6

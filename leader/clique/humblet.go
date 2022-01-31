@@ -40,7 +40,7 @@ func RunHumblet(nodes []lib.Node, runner lib.Runner) (int, int) {
 		go runHumblet(node)
 	}
 
-	runner.Run()
+	runner.Run(true)
 	checkSingleLeaderElected(nodes)
 
 	return runner.GetStats()

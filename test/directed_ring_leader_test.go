@@ -66,3 +66,10 @@ func BenchmarkDirectedRingPeterson(b *testing.B) {
 		directed_ring.RunPeterson(1000)
 	}
 }
+
+func BenchmarkAsyncDirectedRingItaiRodeh(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		directed_ring.RunAsyncItaiRodeh(1000)
+	}
+}

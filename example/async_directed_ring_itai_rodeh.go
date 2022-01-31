@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	
+
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring"
-	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 func main() {
@@ -21,13 +20,5 @@ func main() {
 		return
 	}
 
-	fmt.Println("Building Directed Ring...")
-
-	nodes, runner := lib.BuildDirectedRing(n)
-
-	fmt.Println("\nRunning...")
-
-	directed_ring.RunAsyncItaiRodeh(nodes, runner)
-
-	fmt.Println("\nFinished")
+	directed_ring.RunAsyncItaiRodeh(n)
 }
