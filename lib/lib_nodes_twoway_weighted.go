@@ -1,6 +1,8 @@
 package lib
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 type twoWayWeightedGraphNode struct {
 	node    *twoWayNode
@@ -65,6 +67,10 @@ func (v *twoWayWeightedGraphNode) StartProcessing() {
 
 func (v *twoWayWeightedGraphNode) FinishProcessing(finish bool) {
 	v.node.FinishProcessing(finish)
+}
+
+func (v *twoWayWeightedGraphNode) IgnoreFutureMessages() {
+	v.node.IgnoreFutureMessages()
 }
 
 func (v *twoWayWeightedGraphNode) Close() {

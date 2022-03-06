@@ -74,6 +74,9 @@ func (v *testNode) StartProcessing() {
 func (v *testNode) FinishProcessing(finish bool) {
 }
 
+func (v *testNode) IgnoreFutureMessages() {
+}
+
 func (v *testNode) Close() {
 }
 

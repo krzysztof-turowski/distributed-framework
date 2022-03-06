@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/krzysztof-turowski/distributed-framework/consensus/sync_phase_king"
+	"github.com/krzysztof-turowski/distributed-framework/consensus/sync_single_bit"
 	"os"
 	"strconv"
 
@@ -18,5 +18,5 @@ func main() {
 	}
 	vertices, synchronizer := lib.BuildCompleteGraphWithLoops(n, true, lib.GetGenerator())
 
-	sync_phase_king.Run(vertices, synchronizer, t, V, sync_phase_king.EachMessageRandom(n, t))
+	sync_single_bit.Run(vertices, synchronizer, t, V, sync_single_bit.EachMessageRandom(n, t))
 }

@@ -1,10 +1,9 @@
-package sync_ben_or
+package sync_single_bit
 
 import (
 	"encoding/json"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"log"
-	"math/rand"
 )
 
 /* TYPES */
@@ -12,18 +11,18 @@ import (
 type ExchangeRound int
 
 const (
-	ER0     ExchangeRound = iota // start to 1st send
-	ER1                          // 1st receive to 2nd send
-	ER2                          // 2nd receive to 1st send
-	ER1Done                      // 1st receive to 2nd send (without decision change)
-	ER2Done                      // 2nd receive to end (without decision change)
+	ER0 ExchangeRound = iota // start to 1st send
+	ER1                      // 1st receive to 2nd send
+	ER2                      // 2nd receive to 1st send
 )
 
 type State struct {
 	N             int
 	T             int
+	Phase         int
 	ExchangeRound ExchangeRound
 	V             int
+	C             int
 	Msgs          []*Message
 }
 
@@ -37,8 +36,10 @@ func newState(n int, t int, V int) *State {
 	var s State
 	s.N = n
 	s.T = t
+	s.Phase = 1
 	s.ExchangeRound = ER0
 	s.V = V
+	s.C = 0
 	return &s
 }
 
@@ -66,11 +67,7 @@ func sendEmpty(v lib.Node, dest int) {
 
 func broadcast(v lib.Node, msg *Message) {
 	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		if i != v.GetIndex()-1 {
-			send(v, msg, i)
-		} else {
-			sendEmpty(v, i)
-		}
+		send(v, msg, i)
 	}
 }
 
@@ -100,7 +97,7 @@ func receive(v lib.Node) []*Message {
 func countMessages(msgs []*Message, k int) int {
 	r := 0
 	for _, msg := range msgs {
-		if msg != nil && msg.V == k {
+		if msg.V == k {
 			r++
 		}
 	}
@@ -114,64 +111,37 @@ func er0(v lib.Node, s *State) {
 
 func er1(v lib.Node, s *State) {
 	s.Msgs = receive(v)
-
-	var C [3]int
-	for k := 0; k <= 1; k++ {
-		C[k] = countMessages(s.Msgs, k)
+	s.C = countMessages(s.Msgs, 1)
+	if 2*s.C >= s.N {
+		s.V = 1
+	} else {
+		s.V = 0
+		s.C = s.N - s.C
 	}
-
-	if 2*C[0] > s.N+s.T {
-		broadcast(v, &Message{V: 0})
-	} else if 2*C[1] > s.N+s.T {
-		broadcast(v, &Message{V: 1})
+	if s.Phase == v.GetIndex() {
+		broadcast(v, &Message{V: s.V})
 	} else {
 		broadcastEmpty(v)
 	}
-
 	s.ExchangeRound = ER2
 }
 
-func er2(v lib.Node, s *State) {
+func er2(v lib.Node, s *State) bool {
 	s.Msgs = receive(v)
+	msg := s.Msgs[s.Phase-1]
 
-	var D [3]int
-	for k := 0; k <= 1; k++ {
-		D[k] = countMessages(s.Msgs, k)
+	if 4*s.C < 3*s.N {
+		s.V = msg.V
 	}
 
-	done := false
-	if D[0] >= s.T+1 || D[1] >= s.T+1 {
-		if D[0] >= s.T+1 {
-			s.V = 0
-		} else if D[1] >= s.T+1 {
-			s.V = 1
-		}
-		if 2*(D[0]+D[1]) > s.N+s.T {
-			done = true
-		}
-	} else {
-		s.V = rand.Intn(2)
+	s.Phase++
+	if s.Phase > s.T+1 {
+		return true
 	}
 
 	broadcast(v, &Message{V: s.V})
-
-	if done {
-		s.ExchangeRound = ER1Done
-	} else {
-		s.ExchangeRound = ER1
-	}
-}
-
-func er1done(v lib.Node, s *State) {
-	v.IgnoreFutureMessages()
-	log.Println("Node", v.GetIndex(), "ignores incoming messages from now")
-
-	broadcast(v, &Message{V: s.V})
-	s.ExchangeRound = ER2Done
-}
-
-func er2done(v lib.Node, s *State) {
-	broadcast(v, &Message{V: s.V})
+	s.ExchangeRound = ER1
+	return false
 }
 
 func process(v lib.Node) bool {
@@ -183,12 +153,7 @@ func process(v lib.Node) bool {
 	case ER1:
 		er1(v, s)
 	case ER2:
-		er2(v, s)
-	case ER1Done:
-		er1done(v, s)
-	case ER2Done:
-		er2done(v, s)
-		finish = true
+		finish = er2(v, s)
 	}
 	setState(v, s)
 
@@ -215,6 +180,7 @@ func runFaulty(v lib.Node, faultyBehaviour func(lib.Node) bool) {
 
 func check(vertices []lib.Node, V []int) int {
 	consensus := getState(vertices[0]).V
+
 	for _, v := range vertices[1:] {
 		if getState(v).V != consensus {
 			panic("Agreement not reached")
