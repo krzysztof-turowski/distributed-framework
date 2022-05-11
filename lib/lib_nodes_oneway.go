@@ -94,6 +94,14 @@ func (v *oneWayNode) FinishProcessing(finish bool) {
 	v.stats.sentMessages, v.stats.receivedMessages = 0, 0
 }
 
+func (v *oneWayNode) IgnoreFutureMessages() {
+	go func() {
+		for {
+			_, _, _ = reflect.Select(v.inNeighborsCases)
+		}
+	}()
+}
+
 func (v *oneWayNode) Close() {
 	for _, channel := range v.outNeighborsChannels {
 		close(channel)
