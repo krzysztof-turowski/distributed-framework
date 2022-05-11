@@ -81,15 +81,13 @@ func broadcastEmpty(v lib.Node) {
 }
 
 func receive(v lib.Node) []*Message {
-	var msgs []*Message
+	msgs := make([]*Message, v.GetInChannelsCount())
 
 	for i := 0; i < v.GetInChannelsCount(); i++ {
 		msgAsJson := v.ReceiveMessage(i)
-		msgs = append(msgs, &Message{})
 		if msgAsJson != nil {
+			msgs[i] = &Message{}
 			json.Unmarshal(msgAsJson, msgs[i])
-		} else {
-			msgs[i] = nil
 		}
 	}
 	return msgs

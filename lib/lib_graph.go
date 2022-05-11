@@ -253,6 +253,7 @@ func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
 	vertices, runner := BuildHypercube(dim, oriented)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildCompleteGraphWithLoops(n int, oriented bool, indexGenerator Generator) ([]Node, Synchronizer) {
 	vertices, synchronizer := BuildSynchronizedEmptyDirectedGraph(n, indexGenerator)
 	chans := getSynchronousChannels(n * n)
