@@ -16,11 +16,11 @@ func TestBenOr(t *testing.T) {
 	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}
 	for iteration := 0; iteration < 500; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehaviour(n, f, &sync_ben_or.Random{}), f)
+		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehavior(n, f, &sync_ben_or.Random{}), f)
 	}
 	for iteration := 0; iteration < 500; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehaviour(n, f, &sync_ben_or.Optimal{}), f)
+		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehavior(n, f, &sync_ben_or.Optimal{}), f)
 	}
 }
 
@@ -30,7 +30,7 @@ func BenchmarkBenOr(b *testing.B) {
 	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}
 	for iteration := 0; iteration < b.N; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehaviour(n, f, &sync_ben_or.Random{}), f)
+		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehavior(n, f, &sync_ben_or.Random{}), f)
 	}
 }
 
@@ -40,10 +40,10 @@ func TestPhaseKing(t *testing.T) {
 	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1}
 	for iteration := 0; iteration < 500; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(10, true, lib.GetGenerator())
-		sync_phase_king.Run(n, s, V, sync_phase_king.GetFaultyBehaviour(n, f, &sync_phase_king.Random{}), f)
+		sync_phase_king.Run(n, s, V, sync_phase_king.GetFaultyBehavior(n, f, &sync_phase_king.Random{}), f)
 	}
 	n, s := lib.BuildCompleteGraphWithLoops(10, true, lib.GetGenerator())
-	sync_phase_king.Run(n, s, V, sync_phase_king.GetFaultyBehaviour(n, f, &sync_phase_king.Optimal{}), f)
+	sync_phase_king.Run(n, s, V, sync_phase_king.GetFaultyBehavior(n, f, &sync_phase_king.Optimal{}), f)
 }
 
 func BenchmarkPhaseKing(b *testing.B) {
@@ -52,7 +52,7 @@ func BenchmarkPhaseKing(b *testing.B) {
 	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}
 	for iteration := 0; iteration < b.N; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_phase_king.Run(n, s, V, sync_phase_king.GetFaultyBehaviour(n, f, &sync_phase_king.Random{}), f)
+		sync_phase_king.Run(n, s, V, sync_phase_king.GetFaultyBehavior(n, f, &sync_phase_king.Random{}), f)
 	}
 }
 
@@ -62,10 +62,10 @@ func TestSingleBit(t *testing.T) {
 	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1}
 	for iteration := 0; iteration < 500; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(9, true, lib.GetGenerator())
-		sync_single_bit.Run(n, s, V, sync_single_bit.GetFaultyBehaviour(n, f, &sync_single_bit.Random{}), f)
+		sync_single_bit.Run(n, s, V, sync_single_bit.GetFaultyBehavior(n, f, &sync_single_bit.Random{}), f)
 	}
 	n, s := lib.BuildCompleteGraphWithLoops(9, true, lib.GetGenerator())
-	sync_single_bit.Run(n, s, V, sync_single_bit.GetFaultyBehaviour(n, f, &sync_single_bit.Optimal{}), f)
+	sync_single_bit.Run(n, s, V, sync_single_bit.GetFaultyBehavior(n, f, &sync_single_bit.Optimal{}), f)
 }
 
 func BenchmarkSingleBit(b *testing.B) {
@@ -74,6 +74,6 @@ func BenchmarkSingleBit(b *testing.B) {
 	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}
 	for iteration := 0; iteration < b.N; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_single_bit.Run(n, s, V, sync_single_bit.GetFaultyBehaviour(n, f, &sync_single_bit.Random{}), f)
+		sync_single_bit.Run(n, s, V, sync_single_bit.GetFaultyBehavior(n, f, &sync_single_bit.Random{}), f)
 	}
 }

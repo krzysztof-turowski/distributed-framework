@@ -5,10 +5,10 @@ import (
 	"log"
 )
 
-// GetFaultyBehaviour
+// GetFaultyBehavior
 // Faulty processors share common data.
 // First of them is responsible for finding out when to finish.
-func GetFaultyBehaviour(nodes []lib.Node, faultyIndices map[int]int, strategy Strategy) func(lib.Node) bool {
+func GetFaultyBehavior(nodes []lib.Node, faultyIndices map[int]int, strategy Strategy) func(lib.Node) bool {
 
 	type State struct {
 		invocation      int
@@ -21,8 +21,8 @@ func GetFaultyBehaviour(nodes []lib.Node, faultyIndices map[int]int, strategy St
 	}
 	someoneIsDone := false
 
-	return func(v lib.Node) bool {
-		s := states[v.GetIndex()-1]
+	return func(node lib.Node) bool {
+		s := states[node.GetIndex()-1]
 		s.invocation++
 
 		if s.exchangeRound == ER1 && someoneIsDone {
@@ -31,18 +31,18 @@ func GetFaultyBehaviour(nodes []lib.Node, faultyIndices map[int]int, strategy St
 
 		switch s.exchangeRound {
 		case ER0:
-			strategy.er0(v, nodes, faultyIndices, nil)
+			strategy.er0(node, nodes, faultyIndices, nil)
 			s.exchangeRound = ER1
 		case ER1:
-			for i, msg := range strategy.er1(v, nodes, faultyIndices, receive(v)) {
+			for i, msg := range strategy.er1(node, nodes, faultyIndices, receive(node)) {
 				if msg != nil {
 					states[i].fakeDecidedMsgs++
 				}
 			}
 			s.exchangeRound = ER2
 		case ER2:
-			msgs := receive(v)
-			if faultyIndices[v.GetIndex()] == 1 {
+			msgs := receive(node)
+			if faultyIndices[node.GetIndex()] == 1 {
 				realDecidedMsgs := 0
 				for i := 0; i < len(nodes); i++ {
 					if _, ok := faultyIndices[i+1]; !ok {
@@ -63,16 +63,16 @@ func GetFaultyBehaviour(nodes []lib.Node, faultyIndices map[int]int, strategy St
 					states[i].fakeDecidedMsgs = 0
 				}
 			}
-			strategy.er0(v, nodes, faultyIndices, msgs)
+			strategy.er0(node, nodes, faultyIndices, msgs)
 			s.exchangeRound = ER1
 		case ER1Done:
-			v.IgnoreFutureMessages()
-			log.Println("Node", v.GetIndex(), "ignores incoming messages from now")
+			node.IgnoreFutureMessages()
+			log.Println("Node", node.GetIndex(), "ignores incoming messages from now")
 
-			strategy.er1(v, nodes, faultyIndices, nil)
+			strategy.er1(node, nodes, faultyIndices, nil)
 			s.exchangeRound = ER2Done
 		case ER2Done:
-			strategy.er0(v, nodes, faultyIndices, nil)
+			strategy.er0(node, nodes, faultyIndices, nil)
 			return true
 		}
 
@@ -81,6 +81,6 @@ func GetFaultyBehaviour(nodes []lib.Node, faultyIndices map[int]int, strategy St
 }
 
 type Strategy interface {
-	er0(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message)
-	er1(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message) []*Message
+	er0(node lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message)
+	er1(node lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message) []*Message
 }

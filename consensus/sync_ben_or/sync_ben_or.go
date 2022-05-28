@@ -42,49 +42,49 @@ func newState(n int, t int, V int) *State {
 	return &s
 }
 
-func getState(v lib.Node) *State {
+func getState(node lib.Node) *State {
 	var s State
-	json.Unmarshal(v.GetState(), &s)
+	json.Unmarshal(node.GetState(), &s)
 	return &s
 }
 
-func setState(v lib.Node, s *State) {
+func setState(node lib.Node, s *State) {
 	sAsJson, _ := json.Marshal(*s)
-	v.SetState(sAsJson)
+	node.SetState(sAsJson)
 }
 
 /* MESSAGE METHODS */
 
-func send(v lib.Node, msg *Message, dest int) {
+func send(node lib.Node, msg *Message, dest int) {
 	msgAsJson, _ := json.Marshal(msg)
-	v.SendMessage(dest, msgAsJson)
+	node.SendMessage(dest, msgAsJson)
 }
 
-func sendEmpty(v lib.Node, dest int) {
-	v.SendMessage(dest, nil)
+func sendEmpty(node lib.Node, dest int) {
+	node.SendMessage(dest, nil)
 }
 
-func broadcast(v lib.Node, msg *Message) {
-	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		if i != v.GetIndex()-1 {
-			send(v, msg, i)
+func broadcast(node lib.Node, msg *Message) {
+	for i := 0; i < node.GetOutChannelsCount(); i++ {
+		if i != node.GetIndex()-1 {
+			send(node, msg, i)
 		} else {
-			sendEmpty(v, i)
+			sendEmpty(node, i)
 		}
 	}
 }
 
-func broadcastEmpty(v lib.Node) {
-	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		sendEmpty(v, i)
+func broadcastEmpty(node lib.Node) {
+	for i := 0; i < node.GetOutChannelsCount(); i++ {
+		sendEmpty(node, i)
 	}
 }
 
-func receive(v lib.Node) []*Message {
-	msgs := make([]*Message, v.GetInChannelsCount())
+func receive(node lib.Node) []*Message {
+	msgs := make([]*Message, node.GetInChannelsCount())
 
-	for i := 0; i < v.GetInChannelsCount(); i++ {
-		msgAsJson := v.ReceiveMessage(i)
+	for i := 0; i < node.GetInChannelsCount(); i++ {
+		msgAsJson := node.ReceiveMessage(i)
 		if msgAsJson != nil {
 			msgs[i] = &Message{}
 			json.Unmarshal(msgAsJson, msgs[i])
@@ -105,13 +105,13 @@ func countMessages(msgs []*Message, k int) int {
 	return r
 }
 
-func er0(v lib.Node, s *State) {
-	broadcast(v, &Message{V: s.V})
+func er0(node lib.Node, s *State) {
+	broadcast(node, &Message{V: s.V})
 	s.ExchangeRound = ER1
 }
 
-func er1(v lib.Node, s *State) {
-	s.Msgs = receive(v)
+func er1(node lib.Node, s *State) {
+	s.Msgs = receive(node)
 
 	var C [3]int
 	for k := 0; k <= 1; k++ {
@@ -119,18 +119,18 @@ func er1(v lib.Node, s *State) {
 	}
 
 	if 2*C[0] > s.N+s.T {
-		broadcast(v, &Message{V: 0})
+		broadcast(node, &Message{V: 0})
 	} else if 2*C[1] > s.N+s.T {
-		broadcast(v, &Message{V: 1})
+		broadcast(node, &Message{V: 1})
 	} else {
-		broadcastEmpty(v)
+		broadcastEmpty(node)
 	}
 
 	s.ExchangeRound = ER2
 }
 
-func er2(v lib.Node, s *State) {
-	s.Msgs = receive(v)
+func er2(node lib.Node, s *State) {
+	s.Msgs = receive(node)
 
 	var D [3]int
 	for k := 0; k <= 1; k++ {
@@ -151,7 +151,7 @@ func er2(v lib.Node, s *State) {
 		s.V = rand.Intn(2)
 	}
 
-	broadcast(v, &Message{V: s.V})
+	broadcast(node, &Message{V: s.V})
 
 	if done {
 		s.ExchangeRound = ER1Done
@@ -160,69 +160,69 @@ func er2(v lib.Node, s *State) {
 	}
 }
 
-func er1done(v lib.Node, s *State) {
-	v.IgnoreFutureMessages()
-	log.Println("Node", v.GetIndex(), "ignores incoming messages from now")
+func er1done(node lib.Node, s *State) {
+	node.IgnoreFutureMessages()
+	log.Println("Node", node.GetIndex(), "ignores incoming messages from now")
 
-	broadcast(v, &Message{V: s.V})
+	broadcast(node, &Message{V: s.V})
 	s.ExchangeRound = ER2Done
 }
 
-func er2done(v lib.Node, s *State) {
-	broadcast(v, &Message{V: s.V})
+func er2done(node lib.Node, s *State) {
+	broadcast(node, &Message{V: s.V})
 }
 
-func process(v lib.Node) bool {
-	s := getState(v)
+func process(node lib.Node) bool {
+	s := getState(node)
 	finish := false
 	switch s.ExchangeRound {
 	case ER0:
-		er0(v, s)
+		er0(node, s)
 	case ER1:
-		er1(v, s)
+		er1(node, s)
 	case ER2:
-		er2(v, s)
+		er2(node, s)
 	case ER1Done:
-		er1done(v, s)
+		er1done(node, s)
 	case ER2Done:
-		er2done(v, s)
+		er2done(node, s)
 		finish = true
 	}
-	setState(v, s)
-	log.Println("Node", v.GetIndex(), "is about to finish ER =", s.ExchangeRound, "with V =", s.V)
+	setState(node, s)
+	log.Println("Processor", node.GetIndex(), "about to finish er", s.ExchangeRound, "with V =", s.V)
 
 	return finish
 }
 
-func run(v lib.Node, N int, T int, V int) {
-	setState(v, newState(N, T, V))
+func run(node lib.Node, N int, T int, V int) {
+	setState(node, newState(N, T, V))
 
 	for finish := false; !finish; {
-		v.StartProcessing()
-		finish = process(v)
-		v.FinishProcessing(finish)
+		node.StartProcessing()
+		finish = process(node)
+		node.FinishProcessing(finish)
 	}
 }
 
-func runFaulty(v lib.Node, faultyBehaviour func(lib.Node) bool) {
+func runFaulty(node lib.Node, faultyBehavior func(lib.Node) bool) {
 	for finish := false; !finish; {
-		v.StartProcessing()
-		finish = faultyBehaviour(v)
-		v.FinishProcessing(finish)
+		node.StartProcessing()
+		finish = faultyBehavior(node)
+		node.FinishProcessing(finish)
 	}
 }
 
 func check(nodes []lib.Node, V []int, faultyIndices map[int]int) int {
 	var consensus int
-	for i, v := range nodes {
+	for i, node := range nodes {
 		if _, ok := faultyIndices[i+1]; !ok {
-			consensus = getState(v).V
+			consensus = getState(node).V
 			break
 		}
 	}
 
-	for i, v := range nodes {
-		if _, ok := faultyIndices[i+1]; !ok && getState(v).V != consensus {
+	for i, node := range nodes {
+		if _, ok := faultyIndices[i+1]; !ok && getState(node).V != consensus {
 			panic("Agreement not reached")
 		}
 	}
@@ -238,17 +238,17 @@ func Run(
 	nodes []lib.Node,
 	synchronizer lib.Synchronizer,
 	V []int,
-	faultyBehaviour func(lib.Node) bool,
+	faultyBehavior func(lib.Node) bool,
 	faultyIndices map[int]int,
 ) (int, int) {
 
-	for i, v := range nodes {
+	for i, node := range nodes {
 		if _, ok := faultyIndices[i+1]; !ok {
-			log.Println("Correct processor", v.GetIndex(), "about to run")
-			go run(v, len(nodes), len(faultyIndices), V[i])
+			log.Println("Correct processor", node.GetIndex(), "about to run")
+			go run(node, len(nodes), len(faultyIndices), V[i])
 		} else {
-			log.Println("Faulty processor", v.GetIndex(), "about to run")
-			go runFaulty(v, faultyBehaviour)
+			log.Println("Faulty processor", node.GetIndex(), "about to run")
+			go runFaulty(node, faultyBehavior)
 		}
 	}
 	synchronizer.Synchronize(0)

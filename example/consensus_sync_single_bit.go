@@ -33,5 +33,5 @@ func main() {
 	}
 
 	sync_single_bit.Run(nodes, synchronizer, V,
-		sync_single_bit.GetFaultyBehaviour(nodes, faultyIndices, strategy), faultyIndices)
+		sync_single_bit.GetFaultyBehavior(nodes, faultyIndices, strategy), faultyIndices)
 }

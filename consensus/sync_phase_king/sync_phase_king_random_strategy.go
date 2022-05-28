@@ -8,20 +8,20 @@ import (
 type Random struct {
 }
 
-func (r *Random) er0(v lib.Node, _ []lib.Node, _ map[int]int, _ []*Message) {
-	broadcastRandomMsgs(v, 2)
+func (r *Random) er0(node lib.Node, _ []lib.Node, _ map[int]int, _ []*Message) {
+	broadcastRandomMsgs(node, 2)
 }
 
-func (r *Random) er1(v lib.Node, _ []lib.Node, _ map[int]int, _ []*Message) {
-	broadcastRandomMsgs(v, 3)
+func (r *Random) er1(node lib.Node, _ []lib.Node, _ map[int]int, _ []*Message) {
+	broadcastRandomMsgs(node, 3)
 }
 
-func (r *Random) er2(v lib.Node, _ []lib.Node, _ map[int]int, _ []*Message) {
-	broadcastRandomMsgs(v, 2)
+func (r *Random) er2(node lib.Node, _ []lib.Node, _ map[int]int, _ []*Message) {
+	broadcastRandomMsgs(node, 2)
 }
 
-func broadcastRandomMsgs(v lib.Node, r int) {
-	for i := 0; i < v.GetOutChannelsCount(); i++ {
-		send(v, &Message{V: rand.Intn(r)}, i)
+func broadcastRandomMsgs(node lib.Node, r int) {
+	for i := 0; i < node.GetOutChannelsCount(); i++ {
+		send(node, &Message{V: rand.Intn(r)}, i)
 	}
 }

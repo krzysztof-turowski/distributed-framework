@@ -8,7 +8,7 @@ import (
 type Optimal struct {
 }
 
-func (r *Optimal) er0(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, _ []*Message) {
+func (r *Optimal) er0(node lib.Node, nodes []lib.Node, faultyIndices map[int]int, _ []*Message) {
 	vals := peekV(nodes)
 	var E int
 	for _, val := range vals {
@@ -16,19 +16,19 @@ func (r *Optimal) er0(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, _
 			E++
 		}
 	}
-	if j := faultyIndices[v.GetIndex()]; 4*(j+E) < 3*len(nodes) {
-		broadcast(v, &Message{V: 0})
+	if j := faultyIndices[node.GetIndex()]; 4*(j+E) < 3*len(nodes) {
+		broadcast(node, &Message{V: 0})
 	} else {
-		broadcast(v, &Message{V: 1})
+		broadcast(node, &Message{V: 1})
 	}
 }
 
-func (r *Optimal) er1(v lib.Node, _ []lib.Node, faultyIndices map[int]int, _ []*Message) {
+func (r *Optimal) er1(node lib.Node, _ []lib.Node, faultyIndices map[int]int, _ []*Message) {
 	for i := 0; i < len(faultyIndices)+1; i++ {
-		send(v, &Message{V: 0}, i)
+		send(node, &Message{V: 0}, i)
 	}
-	for i := len(faultyIndices) + 1; i < v.GetOutChannelsCount(); i++ {
-		send(v, &Message{V: 1}, i)
+	for i := len(faultyIndices) + 1; i < node.GetOutChannelsCount(); i++ {
+		send(node, &Message{V: 1}, i)
 	}
 }
 

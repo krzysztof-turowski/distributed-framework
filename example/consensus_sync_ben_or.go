@@ -32,5 +32,5 @@ func main() {
 	}
 
 	sync_ben_or.Run(nodes, synchronizer, V,
-		sync_ben_or.GetFaultyBehaviour(nodes, faultyIndices, strategy), faultyIndices)
+		sync_ben_or.GetFaultyBehavior(nodes, faultyIndices, strategy), faultyIndices)
 }

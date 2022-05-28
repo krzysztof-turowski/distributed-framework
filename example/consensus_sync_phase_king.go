@@ -33,5 +33,5 @@ func main() {
 	}
 
 	sync_phase_king.Run(nodes, synchronizer, V,
-		sync_phase_king.GetFaultyBehaviour(nodes, faultyIndices, strategy), faultyIndices)
+		sync_phase_king.GetFaultyBehavior(nodes, faultyIndices, strategy), faultyIndices)
 }
