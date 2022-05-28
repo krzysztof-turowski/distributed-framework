@@ -12,17 +12,25 @@ import (
 
 func TestBenOr(t *testing.T) {
 	checkLogOutput()
+	f := map[int]int{1: 1, 2: 2}
+	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}
 	for iteration := 0; iteration < 50; iteration++ {
-		v, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_ben_or.Run(v, s, 2, []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}, sync_ben_or.EachMessageRandom(11, 2))
+		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
+		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehaviour(n, f, &sync_ben_or.Random{}), f)
+	}
+	for iteration := 0; iteration < 50; iteration++ {
+		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
+		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehaviour(n, f, &sync_ben_or.Optimal{}), f)
 	}
 }
 
 func BenchmarkBenOr(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
+	f := map[int]int{1: 1, 2: 2}
+	V := []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}
 	for iteration := 0; iteration < b.N; iteration++ {
-		v, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
-		sync_ben_or.Run(v, s, 2, []int{0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0}, sync_ben_or.EachMessageRandom(11, 2))
+		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
+		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehaviour(n, f, &sync_ben_or.Random{}), f)
 	}
 }
 
