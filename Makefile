@@ -36,7 +36,8 @@ graphs_mis_example:
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Optimal
-	go run example/consensus_sync_phase_king.go 10 3 0 1 0 1 0 1 1 0 0 0
+	go run example/consensus_sync_phase_king.go 10 3  0 1 0 1 0 1 1 0 0 0  1 2 3  Random
+	go run example/consensus_sync_phase_king.go 10 3  0 1 0 1 0 1 1 0 0 0  1 2 3  Optimal
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
 

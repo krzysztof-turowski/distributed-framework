@@ -196,33 +196,46 @@ func runFaulty(v lib.Node, faultyBehaviour func(lib.Node) bool) {
 	}
 }
 
-func check(vertices []lib.Node, V []int) int {
-	consensus := getState(vertices[0]).V
-	for _, v := range vertices[1:] {
-		if getState(v).V != consensus {
+func check(nodes []lib.Node, V []int, faultyIndices map[int]int) int {
+	var consensus int
+	for i, v := range nodes {
+		if _, ok := faultyIndices[i+1]; !ok {
+			consensus = getState(v).V
+			break
+		}
+	}
+
+	for i, v := range nodes {
+		if _, ok := faultyIndices[i+1]; !ok && getState(v).V != consensus {
 			panic("Agreement not reached")
 		}
 	}
-	for _, v := range V {
-		if v == consensus {
+	for i, v := range V {
+		if _, ok := faultyIndices[i+1]; !ok && v == consensus {
 			return consensus
 		}
 	}
 	panic("Agreement not valid")
 }
 
-func Run(vertices []lib.Node, synchronizer lib.Synchronizer, T int, V []int, faultyBehaviour func(lib.Node) bool) (int, int) {
-	N := len(vertices)
-	for i, v := range vertices {
-		if i >= T {
+func Run(
+	nodes []lib.Node,
+	synchronizer lib.Synchronizer,
+	V []int,
+	faultyBehaviour func(lib.Node) bool,
+	faultyIndices map[int]int,
+) (int, int) {
+
+	for i, v := range nodes {
+		if _, ok := faultyIndices[i+1]; !ok {
 			log.Println("Correct processor", v.GetIndex(), "about to run")
-			go run(v, N, T, V[i])
+			go run(v, len(nodes), len(faultyIndices), V[i])
 		} else {
 			log.Println("Faulty processor", v.GetIndex(), "about to run")
 			go runFaulty(v, faultyBehaviour)
 		}
 	}
 	synchronizer.Synchronize(0)
-	log.Println("Correct processors agreed on", check(vertices[T:], V[T:]))
+	log.Println("Correct processors agreed on", check(nodes, V, faultyIndices))
 	return synchronizer.GetStats()
 }

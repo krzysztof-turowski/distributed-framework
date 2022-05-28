@@ -2,26 +2,53 @@ package sync_phase_king
 
 import (
 	"github.com/krzysztof-turowski/distributed-framework/lib"
-	"math/rand"
 )
 
-/* FAULTY BEHAVIOURS FACTORIES */
+func GetFaultyBehaviour(nodes []lib.Node, faultyIndices map[int]int, strategy Strategy) func(lib.Node) bool {
 
-func EachMessageRandom(N int, T int) func(lib.Node) bool {
-	var count = make([]int, N)
-	return func(v lib.Node) bool {
-		index := v.GetIndex()
-		count[index]++
-		if count[index] > 1 {
-			receive(v)
-		}
-		if count[index] > 3*(T+1) {
-			return true
-		} else {
-			for i := 0; i < v.GetOutChannelsCount(); i++ {
-				send(v, &Message{V: rand.Intn(3)}, i)
-			}
-			return false
-		}
+	type State struct {
+		phase         int
+		exchangeRound ExchangeRound
 	}
+	states := make([]*State, len(nodes))
+	for i := 0; i < len(nodes); i++ {
+		states[i] = &State{phase: 1, exchangeRound: ER0}
+	}
+
+	return func(v lib.Node) bool {
+		s := states[v.GetIndex()-1]
+
+		switch s.exchangeRound {
+		case ER0:
+			strategy.er0(v, nodes, faultyIndices, nil)
+			s.exchangeRound = ER1
+		case ER1:
+			strategy.er1(v, nodes, faultyIndices, receive(v))
+			s.exchangeRound = ER2
+		case ER2:
+			msgs := receive(v)
+			if s.phase == v.GetIndex() {
+				strategy.er2(v, nodes, faultyIndices, msgs)
+			} else {
+				broadcastEmpty(v)
+			}
+			s.exchangeRound = ER3
+		case ER3:
+			msgs := receive(v)
+			s.phase++
+			if s.phase > len(faultyIndices)+1 {
+				return true
+			}
+			strategy.er0(v, nodes, faultyIndices, msgs)
+			s.exchangeRound = ER1
+		}
+
+		return false
+	}
+}
+
+type Strategy interface {
+	er0(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message)
+	er1(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message)
+	er2(v lib.Node, nodes []lib.Node, faultyIndices map[int]int, msgs []*Message)
 }
