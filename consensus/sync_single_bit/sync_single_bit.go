@@ -133,6 +133,7 @@ func er2(node lib.Node, s *State) bool {
 	}
 
 	s.Phase++
+	log.Println("Processor", node.GetIndex(), "about to finish phase with V =", s.V)
 	if s.Phase > s.T+1 {
 		return true
 	}
@@ -154,7 +155,6 @@ func process(node lib.Node) bool {
 		finish = er2(node, s)
 	}
 	setState(node, s)
-	log.Println("Processor", node.GetIndex(), "about to finish er", s.ExchangeRound, "with V =", s.V)
 
 	return finish
 }

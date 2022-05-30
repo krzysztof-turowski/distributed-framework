@@ -151,6 +151,8 @@ func er2(node lib.Node, s *State) {
 		s.V = rand.Intn(2)
 	}
 
+	log.Println("Processor", node.GetIndex(), "about to finish phase with V =", s.V)
+
 	broadcast(node, &Message{V: s.V})
 
 	if done {
@@ -189,7 +191,6 @@ func process(node lib.Node) bool {
 		finish = true
 	}
 	setState(node, s)
-	log.Println("Processor", node.GetIndex(), "about to finish er", s.ExchangeRound, "with V =", s.V)
 
 	return finish
 }

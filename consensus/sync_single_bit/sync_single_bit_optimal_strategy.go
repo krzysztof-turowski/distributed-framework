@@ -23,11 +23,11 @@ func (r *Optimal) er0(node lib.Node, nodes []lib.Node, faultyIndices map[int]int
 	}
 }
 
-func (r *Optimal) er1(node lib.Node, _ []lib.Node, faultyIndices map[int]int, _ []*Message) {
-	for i := 0; i < len(faultyIndices)+1; i++ {
+func (r *Optimal) er1(node lib.Node, nodes []lib.Node, _ map[int]int, _ []*Message) {
+	for i := 0; i < len(nodes)/2; i++ {
 		send(node, &Message{V: 0}, i)
 	}
-	for i := len(faultyIndices) + 1; i < node.GetOutChannelsCount(); i++ {
+	for i := len(nodes) / 2; i < node.GetOutChannelsCount(); i++ {
 		send(node, &Message{V: 1}, i)
 	}
 }
