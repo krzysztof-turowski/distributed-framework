@@ -3,6 +3,7 @@ package sync_ben_or
 import (
 	"encoding/json"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
+	"time"
 )
 
 type Optimal struct {
@@ -16,7 +17,7 @@ func (r *Optimal) er0(node lib.Node, nodes []lib.Node, faultyIndices map[int]int
 			E++
 		}
 	}
-	if j := faultyIndices[node.GetIndex()]; j+E <= (len(nodes)+len(faultyIndices))/2 {
+	if j := faultyIndices[node.GetIndex()]; 2*(j+E) <= (len(nodes) + len(faultyIndices)) {
 		broadcast(node, &Message{V: 0})
 	} else {
 		broadcast(node, &Message{V: 1})
@@ -34,9 +35,10 @@ type maybeInt struct {
 }
 
 func peekV(nodes []lib.Node) []maybeInt {
+	time.Sleep(10 * time.Millisecond) // avoids race condition with SetState() in other nodes
 	allV := make([]maybeInt, len(nodes))
 	for i, node := range nodes {
-		if node.GetState() == nil {
+		if len(node.GetState()) == 0 {
 			allV[i] = maybeInt{null: true}
 		} else {
 			var s State

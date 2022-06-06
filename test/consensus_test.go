@@ -18,7 +18,7 @@ func TestBenOr(t *testing.T) {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
 		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehavior(n, f, &sync_ben_or.Random{}), f)
 	}
-	for iteration := 0; iteration < 500; iteration++ {
+	for iteration := 0; iteration < 10; iteration++ {
 		n, s := lib.BuildCompleteGraphWithLoops(11, true, lib.GetGenerator())
 		sync_ben_or.Run(n, s, V, sync_ben_or.GetFaultyBehavior(n, f, &sync_ben_or.Optimal{}), f)
 	}

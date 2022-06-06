@@ -3,6 +3,7 @@ package sync_phase_king
 import (
 	"encoding/json"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
+	"time"
 )
 
 type Optimal struct {
@@ -42,9 +43,10 @@ type maybeInt struct {
 }
 
 func peekV(nodes []lib.Node) []maybeInt {
+	time.Sleep(10 * time.Millisecond) // avoids race condition with SetState() in other nodes
 	allV := make([]maybeInt, len(nodes))
 	for i, node := range nodes {
-		if node.GetState() == nil {
+		if len(node.GetState()) == 0 {
 			allV[i] = maybeInt{null: true}
 		} else {
 			var s State

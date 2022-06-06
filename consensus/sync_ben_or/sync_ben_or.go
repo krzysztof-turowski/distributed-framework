@@ -171,6 +171,7 @@ func er1done(node lib.Node, s *State) {
 }
 
 func er2done(node lib.Node, s *State) {
+	log.Println("Processor", node.GetIndex(), "about to finish phase with V =", s.V)
 	broadcast(node, &Message{V: s.V})
 }
 
