@@ -15,7 +15,22 @@ func main() {
 		v, _ := strconv.Atoi(os.Args[i])
 		V = append(V, v)
 	}
-	vertices, synchronizer := lib.BuildCompleteGraphWithLoops(n, true, lib.GetGenerator())
+	nodes, synchronizer := lib.BuildCompleteGraphWithLoops(n, true, lib.GetGenerator())
+	faultyIndices := make(map[int]int)
+	for i := n + 3; i < n+3+t; i++ {
+		x, _ := strconv.Atoi(os.Args[i])
+		faultyIndices[x] = len(faultyIndices) + 1
+	}
+	var strategy sync_ben_or.Strategy
+	switch os.Args[n+3+t] {
+	case "Random":
+		strategy = &sync_ben_or.Random{}
+	case "Optimal":
+		strategy = &sync_ben_or.Optimal{}
+	default:
+		panic("Strategy not supported")
+	}
 
-	sync_ben_or.Run(vertices, synchronizer, t, V, sync_ben_or.EachMessageRandom(n, t))
+	sync_ben_or.Run(nodes, synchronizer, V,
+		sync_ben_or.GetFaultyBehavior(nodes, faultyIndices, strategy), faultyIndices)
 }
