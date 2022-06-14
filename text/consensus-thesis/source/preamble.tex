@@ -1,0 +1,63 @@
+\usepackage[backend=biber, style=alphabetic,]{biblatex}
+\usepackage[english]{babel}
+\usepackage{algorithm,algpseudocode}
+\usepackage{float}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{thmtools}
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[nameinlink]{cleveref}
+\usepackage{csquotes}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+
+\Crefname{ALC@unique}{line}{lines}
+\makeatletter
+\newcounter{HALG@line}
+\renewcommand{\theHALG@line}{\thealgorithm.\arabic{ALG@line}}
+\makeatother
+
+\algnewcommand{\Downto}{\textbf{downto }}
+\algnewcommand{\By}{\textbf{by }}
+\algnewcommand{\To}{\textbf{to }}
+\algnewcommand{\Or}{\textbf{or }}
+\algnewcommand{\Andt}{\textbf{and }}
+
+\addbibresource{bibliography.bib}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition} 
+\newtheorem{example}[theorem]{Example} 
+\newtheorem{observation}[theorem]{Observation} 
+
+\babelhyphenation[english]{strat-e-gy}
+\babelhyphenation[english]{strate-gies}
+
+\makeatletter
+\newenvironment{breakablealgorithm}
+{
+    \begin{center}
+        \refstepcounter{algorithm}
+        \renewcommand{\caption}[1]
+        {
+            \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##1}
+            \parbox{\textwidth}
+            % Makes a unbreakable block and can also be done by `minipage`.
+            {
+                \hrule height.8pt depth0pt \kern2pt
+                {\raggedright\textbf{\fname@algorithm~\thealgorithm} ##1\par}
+                \kern2pt\hrule\kern2pt
+            }
+        }
+}
+{
+        \kern2pt\hrule\relax
+    \end{center}
+}
+\makeatother
+
+\emergencystretch 3em

@@ -1,0 +1,11 @@
+There are several details we have to agree upon before discussing protocols for solving the distributed consensus. In this work we introduce the following notation and assumptions.
+
+\begin{description}
+    \item[Identifiers] Each processor has its unique identifier. It is an integer value between $1$ and the total number of the processors.
+    \item[Failures] Each faulty processor can behave arbitrarily. It can, but it does not have to, send messages to some or all other processors. In particular, it can stop doing anything. Note that this behavior can sometimes expose the processor's faultiness. It is why, when designing faulty behavior strategies, we make sure that the faulty processor sends messages that it could legally send as a correct processor.
+    \item[Full connectivity] Each pair of processors is connected directly by reliable channels (including self-links). Every processor knows the identifier of the processor on the other end of each channel connected to it. It is achieved by storing the array of channels, in which the $i$-th entry is the channel connected to the processor with the id $i$.
+    \item[Sender authentication] It is always known which processor sent a given message.
+    \item[Synchronous model] The processors are embedded in the synchronized model \cite{L96}. Most of the time they do so in order to send messages in rounds. We can then force messages sent in a round to be received in the same round. The synchronization takes place when some processor tries to receive a message. Before it happens, the system waits a reasonable amount of time until all other processors report readiness to receive a message and then all the processors receive the messages simultaneously.
+    \item[Large processing power of processors] The processors are fast enough to assume that local computation happens in a negligible amount of time and communication time is a real bottleneck. They are also sufficiently fast to break any cryptography system based on a time-consuming problem.
+    \item[Boolean agreement value] The initial values are binary for simplification. If we wanted to solve the problem for bigger values, we could encode them in binary and run a few instances of a protocol in parallel.
+\end{description}

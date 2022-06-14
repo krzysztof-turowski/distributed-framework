@@ -1,0 +1,29 @@
+\documentclass [11pt]{report}
+\input{preamble.tex}
+
+\title{Distributed Consensus Protocols}
+\author{Mateusz Pach}
+
+\begin{document}
+\input{title}
+
+\begin{abstract}
+    The distributed consensus is the problem of reaching a consensus between correct processors in the presence of indistinguishable faulty processors that can behave arbitrarily. We implement chosen protocols solving the problem in the Go programming language and compare them later considering different strategies for the faulty processors.
+\end{abstract}
+
+\listofalgorithms
+\tableofcontents
+
+\chapter{Introduction}
+\input{introduction/main}
+
+\chapter{Protocols}
+\input{protocols/main}
+
+\chapter{Comparison}
+\input{comparison/main}
+
+\medskip
+
+\printbibliography
+\end{document}
