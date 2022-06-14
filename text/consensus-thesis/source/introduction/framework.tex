@@ -1,0 +1,24 @@
+To simulate chosen protocols in a practical environment we implement them in the Go Programming Language \cite{DK15}. The implementations use Distributed Framework \cite{Tur+22} and are incorporated into its repository. We are going to describe how the framework works before heading into details of our implementations. 
+
+The crucial part of the framework is a library that enables its users to simulate distributed protocols, which are usually run on multiple processors, on a single processor by using Go language-specific features like simple in use and efficient goroutines and channels. Any user of the framework, besides adding his protocol, needs to only care about setting up a relevant network and a type of communication. Let us list the most important elements of the library.
+
+\begin{description}
+    \item[Nodes] Each simulated processor is represented by an object of type \texttt{Node}. In particular, nodes provide \texttt{SendMessage()} and \texttt{ReceiveMessage()} methods used for communication. Moreover, they allow to conveniently share relevant data between rounds and with external observer using \texttt{SetState()} and \texttt{GetState()} methods.
+    
+    \item[Graph] The nodes can be connected in multiple ways with the use of included graph building functions family. In our code, we are going to use \texttt{BuildCompleteGraphWithLoops()} which accordingly to its name constructs and returns a list of nodes connected by channels in a complete graph with loops. It also returns an instance of \texttt{Synchronizer} corresponding to the created graph.
+
+    \item[Synchronizer] Type \texttt{Synchronizer} provides a mechanism of synchronization. Its \texttt{Synchronize()} method initialize a process. Then, at the beginning of each round nodes need to call \texttt{StartProcessing()} method and \texttt{FinishProcessing()} method at the end of it. The synchronizer assures that no two nodes are in different rounds, by suspending nodes with \texttt{StartProcessing()} until every node calls \texttt{FinishProcessing()} in the previous round (if only such exists). The synchronizer also counts the number of rounds and messages sent within all the rounds. One can obtain these statistics using \texttt{GetStats()} method.
+\end{description}
+
+
+
+Besides the library, the framework contains numerous implementations of protocols. These are mainly for the leader election problem on different networks or for some graph problems (e.g. independent set, minimum-weight spanning tree). It also includes the Ben-Or's protocol implementation. As mentioned earlier, in this work we contribute to the Distributed Framework project by opening several accepted pull requests in which we complete items as follows \cite{Pac22a, Pac22b, Pac22c, Pac22d}.
+
+\begin{enumerate}
+    \item Organizing and incorporating a unified naming convention for the files in the repository.
+    \item Adding the single-bit message protocol.
+    \item Adding the phase king protocol.
+    \item Refactoring the existing Ben-Or's protocol and unifying it with other distributed consensus protocols.
+    \item Adding the faulty behavior strategies for all the implemented distributed consensus protocols.
+    \item Adding the text of current thesis with the script for reproducing the presented figures.
+\end{enumerate}

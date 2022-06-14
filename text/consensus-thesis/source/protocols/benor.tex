@@ -1,0 +1,154 @@
+In \cite{Ben83} Ben-Or proposed another protocol. Its resiliency is $5t+1$, the expected number of message exchange rounds is exponential and the maximal message length is $1$. It requires polynomial computation per processor. The protocol is probabilistic and it allows it to reach consensus in a constant expected number of message exchange rounds provided we allow $\Omega(t^2)$ resiliency. We present a simplified version of it, as the original one worked in the asynchronous model.
+
+\subsection{Pseudocode}
+In this section we modify how \textsc{Broadcast($x$)} works in a way that now the processor calling it does not send a message to itself.
+\begin{breakablealgorithm} \label{bo:code}
+  \caption{Ben-Or's protocol: code for processor $i$.}
+  \begin{algorithmic}[1]
+    \State $V \gets v_i$
+    \While{$True$}
+        \State \Call{Broadcast}{$V$} \label{bo:code:er0_broadcast}
+        \\
+        \State $msgs \gets$ \Call{Receive}{\null} \label{bo:code:er1_receive}
+        \For{$k \gets 0$ \To $1$}
+            \State $C(k) \gets$ the number of $k$'s in $msgs$ \label{bo:code:er1_count}
+        \EndFor
+        \If{$C(0) > (n+t)/2$} \label{bo:code:er1_if1}
+            \State \Call{Broadcast}{$0$} \label{bo:code:er1_broadcast0}
+        \ElsIf{$C(1) > (n+t)/2$} \label{bo:code:er1_if2}
+            \State \Call{Broadcast}{$1$} \label{bo:code:er1_broadcast1}
+        \EndIf
+        \\ 
+        \State $msgs \gets$ \Call{Receive}{\null} \label{bo:code:er2_receive}
+        \For{$k \gets 0$ \To $1$}
+            \State $D(k) \gets$ the number of $k$'s in $msgs$ \label{bo:code:er2_count}
+        \EndFor
+        \If{$D(0) \geq t+1$ \Or $D(1) \geq t+1$} 
+            \If{$D(0) \geq t+1$}
+                \State $V \gets 0$ \label{bo:code:er2_vgets0}
+            \EndIf
+            \If{$D(1) \geq t+1$}
+                \State $V \gets 1$ \label{bo:code:er2_vgets1}
+            \EndIf
+            \If{$D(0)+D(1) > (n+t)/2$}
+                \State ignore future alternations of $V$ value \label{bo:code:er2_ignore}
+                \State finish after next phase \label{bo:code:er2_finish}
+            \EndIf
+        \Else
+            \State $V \gets $ $0$ or $1$ with equal probability \label{bo:code:er2_random}
+        \EndIf
+    \EndWhile
+  \end{algorithmic}
+\end{breakablealgorithm}
+
+\subsection{Correctness}
+The protocol runs in phases, each consisting of two message exchange rounds. Each processor has a local variable $V$ which can obtain values from $\{0,1\}$ and two arrays $C$ and $D$ counting messages with different values received from the other processors in the first and the second message exchange round respectively. Variables $V$ are set to the initial values at the beginning. We proceed to the proofs of the following lemmas.
+
+\begin{lemma}\label{bo:lem:preserve}
+If all correct processors have the same values $V$ before the phase, then the values are preserved after the phase and it's their second last phase.
+\end{lemma}
+\begin{proof}
+All correct processors broadcast the same value of $V$ equal to $v$ at the beginning. It means $C(v)$ is set to at least $n-t$ at \cref{bo:code:er1_count}. But $n-t \geq (n-t)/2$, so everyone broadcasts the same $v$ again at \cref{bo:code:er1_broadcast0} or \cref{bo:code:er1_broadcast1}. Then, $D(v)$ is set to at least $n-t$ and $D(v')$ is set to at most $t$ at \cref{bo:code:er2_count} for any $v'\neq v$. It means the value of $V$ is not altered at \cref{bo:code:er2_vgets0,bo:code:er2_vgets1}. We assumed that $n>5t$, so $n-t\geq (n+t)/2$, which means \cref{bo:code:er2_ignore} is executed. It implies $V$ is never changed during this and future phases. \Cref{bo:code:er2_finish} assures it is the second last phase.
+\end{proof}
+
+\begin{lemma}\label{bo:lem:oneassign}
+If for any correct processor $D(v) \geq t+1$ for some $v \in \{0, 1\}$, then for none of the correct processors $D(\neg v) \geq t+1$ after \cref{bo:code:er2_count}.
+\end{lemma}
+\begin{proof}
+Assume, to the contrary, that it's not the case. It means that at least one correct processor sends $0$ and at least one correct processor sends $1$ in the second message exchange round. Thus, there's a correct processor executing \cref{bo:code:er1_broadcast0} and a correct processor executing \cref{bo:code:er1_broadcast1}. Therefore, there are more than $n-t$ messages from the correct processors in the first message exchange round, which is a contradiction.
+\end{proof}
+
+\begin{lemma}\label{bo:lem:agreement}
+If some correct processor reaches \cref{bo:code:er2_ignore,bo:code:er2_finish}, then the rest of correct processors reach these lines in the same or next phase. Once all of the correct processors reach these lines, all of them have the same value $V$.
+\end{lemma}
+\begin{proof}
+If there's such a processor, then it receives more than $(n+t)/2$ messages in the second message exchange round and $(n-t)/2$ of them are from the correct processors. Let's assume $V=v$ in that processor when it reaches \cref{bo:code:er2_ignore,bo:code:er2_finish}. Due to \Cref{bo:lem:oneassign} the processor receives at most $t$ messages with $v'$, such that $v'\neq v$, in the second message exchange round. Thus, the number of messages $v$ from the correct processors in that round is at least $(n-t)/2-t$. And $(n-t)/2-t\geq t+1$, as $n>5t$. It implies all the correct processors set $V$ to $v$ at \cref{bo:code:er2_vgets0,bo:code:er2_vgets1}. Also, they don't set $V$ to $v'$ since \Cref{bo:lem:oneassign} holds. That means all the correct processors reaching \cref{bo:code:er2_ignore,bo:code:er2_finish} in this phase have $V=v$. Moreover, all of the correct processors start the next phase with the same value and applying \Cref{bo:lem:preserve} we deduce they preserve that value and reach \cref{bo:code:er2_ignore,bo:code:er2_finish}.
+\end{proof}
+
+\Cref{bo:lem:preserve} does not only guarantee the validity, but also implies it is enough to reach the agreement once, in any phase. \Cref{bo:lem:agreement} implies the agreement is reached once all the correct processors terminate. From \Cref{bo:lem:oneassign}, it follows that the probability of all the correct processors having the same values $V$ at the beginning of any phase (excluding the first one) is at least $2^{t-n}$. Thus, with probability equal to $1$, after an exponential expected number of phases, all the correct processors must terminate. Hence, we proved that the protocol is correct.
+
+\subsection{Optimal faulty behavior strategy}
+By \Cref{bo:lem:preserve} and \Cref{bo:lem:agreement} we know that the faulty processors can have an impact only if the correct processors are not in the agreement before the given phase and no correct processor has reached \cref{bo:code:er2_ignore,bo:code:er2_finish}. Moreover, they can prevent the agreement in a given phase only if
+\begin{align}
+    \mu \leq (n+t)/2, \label{boofb:eq:cond}
+\end{align}
+where $\mu=max(c_0, c_1)$ and $c_i$ denotes number of correct processors starting with value of $V$ equal to $i$ in this phase. Indeed, if \cref{boofb:eq:cond} holds, then at least $(n+t)/2$ correct processors broadcast the same value in the second message exchange round. In such case, $D(k)\geq t+1$ at \cref{bo:code:er2_count} for some $k$, as $(n+t)/2 > t+1$ when $n>5t$ and $t\geq 1$. Moreover, $D(0)+D(1)\geq (n+t)/2$ holds at \cref{bo:code:er2_count}. Therefore, an agreement is obtained and \cref{bo:code:er2_ignore,bo:code:er2_finish} are reached.
+
+Assume these necessary conditions are met. Obviously, the goal of the faulty behavior strategy is to not let any correct processor reach \cref{bo:code:er2_ignore,bo:code:er2_finish}. If the strategy succeeds, then at the beginning of the next phase, either all the correct processors have new random values of $V$ or some of them have values of $V$ assigned at \cref{bo:code:er2_vgets0} or \cref{bo:code:er2_vgets1}.
+
+Due to \Cref{bo:lem:oneassign} all the processors with values assigned at \cref{bo:code:er2_vgets0,bo:code:er2_vgets1} have the same value.
+Thus, the strategy should force all the correct processors to get new random values of $V$ before the next phase, as otherwise we increase the probability of not satisfying the condition at \cref{boofb:eq:cond} in the next phase. If we manage to find such a strategy, then we can treat the phases independently.
+This strategy should minimize the number of messages sent in the second message exchange round by both (a) not sending the messages from the faulty processors and (b) reducing the messages sent from the correct processors. This reduction is maximal when, in the first message exchange round, the faulty processors send messages $0$ and $1$ in such a way that they help violate the conditions at \cref{bo:code:er1_if1,bo:code:er1_if2} in the correct processors. Ideally, the faulty processors should not be sending any messages in the first message exchange round, but they all have to send them to avoid exposure. Thus, we obtain the following strategy.
+
+\begin{breakablealgorithm}
+  \caption{Ben-Or's protocol: optimal faulty behavior strategy.}
+  \begin{algorithmic}[1]
+    \While{$True$}
+        \State $vals \gets$ \Call{PeekV}{\null}
+        \State $E \gets$ the number of $0$'s in $vals$
+        \If{$j+E\leq(n+t)/2$} \label{boofb:code:er0_if}
+            \State \Call{Broadcast}{$0$}
+        \Else
+            \State \Call{Broadcast}{$1$}
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+        \\
+        \State \Call{Receive}{\null}
+    \EndWhile
+  \end{algorithmic}
+\end{breakablealgorithm}
+
+\begin{lemma}\label{boofb:lem:correct}
+The strategy succeeds to delay the agreement if the condition at \cref{boofb:eq:cond} is met.
+\end{lemma}
+\begin{proof}
+If the condition is met then the strategy restrains the correct processors from sending any messages in the second message exchange round. It means they cannot reach \cref{bo:code:er2_ignore,bo:code:er2_finish}.
+\end{proof}
+
+Like every correct processor, the faulty processor using this strategy always sends the messages in the first message exchange round. Therefore, the strategy does not trivially expose the faulty processor.
+
+Condition at \cref{boofb:eq:cond} and \Cref{boofb:lem:correct} imply the strategy does not always prevent the agreement, but the more faulty processors there are, the higher probability is they manage to prevent the agreement. Due to earlier observations, it is also the best strategy that can be found.
+
+\subsection{Random faulty behavior strategy}
+For the sake of future comparisons we also propose a straightforward random faulty behavior strategy.
+\begin{breakablealgorithm}
+  \caption{Ben-Or's protocol: random faulty behavior strategy.}
+  \begin{algorithmic}[1]
+    \While{$True$}
+        \For{$k \gets 1$ \To $n$}
+            \If{$k\neq i$}
+                \State \Call{Send}{$0$ or $1$ with equal probability}
+            \EndIf
+        \EndFor
+        \\
+        \State \Call{Receive}{\null}
+        \For{$k \gets 1$ \To $n$}
+            \State $x \gets$ $0$ or $1$ or $2$ with equal probability
+            \If{$k\neq i$ \Andt $x\neq 2$}
+                \State \Call{Send}{$x$}
+            \EndIf
+        \EndFor
+        \\
+        \State \Call{Receive}{\null}
+    \EndWhile
+  \end{algorithmic}
+\end{breakablealgorithm}
+Due to the same reasons as the optimal strategy, this strategy does not trivially expose the faulty processor.
+
+\subsection{Implementation}
+There are $5$ files directly connected to the protocol.
+\begin{itemize}
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_ben_or/sync_ben_or.go}{\texttt{sync\_ben\_or.go}} contains the protocol.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_ben_or/sync_ben_or_faulty_behavior.go}{\texttt{sync\_ben\_or\_faulty\_behavior.go}} contains a faulty behavior factory.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_ben_or/sync_ben_or_optimal_strategy.go}{\texttt{sync\_ben\_or\_optimal\_strategy.go}} contains the optimal faulty behavior strategy. 
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_ben_or/sync_ben_or_random_strategy.go}{\texttt{sync\_ben\_or\_random\_strategy.go}} contains the random faulty behavior strategy.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/example/consensus_sync_ben_or.go}{\texttt{example/consensus\_sync\_ben\_or.go}} contains an example of usage.
+\end{itemize}
+The implementation is again similar to the ones of the previous protocols. There are three fragments corresponding to the parts of pseudocode in \cref{bo:code} labelled as follows.
+\begin{itemize}
+    \item \texttt{ER0} -- code at \cref{bo:code:er0_broadcast}.
+    \item \texttt{ER1} -- code from \cref{bo:code:er1_receive} to \cref{bo:code:er1_broadcast1}.
+    \item \texttt{ER2} -- code from \cref{bo:code:er2_receive} to \cref{bo:code:er0_broadcast}.
+\end{itemize}
+These are not the only ones, however. As mentioned earlier the framework's library requires that every node $v$ sends a message to nodes that call \texttt{receiveMessage($v$)}. This causes a problem, since the correct processors do not finish at the same phase. We solve this issue by exploiting \Cref{bo:lem:agreement}. Every correct processor reaching \cref{bo:code:er2_ignore,bo:code:er2_finish}, instead of running \texttt{ER1} and \texttt{ER2} fragments next, runs \texttt{ER1Done} and \texttt{ER2Done} fragments. These are modifications of the former ones which ignore received messages, do not require any messages sent to them (including $nil$ messages) and do not change the value of $V$. It is possible thanks to \texttt{IgnoreFutureMessages()} method which starts an additional goroutine for every node to receive any messages from channels addressed to the given node in an infinite loop. After executing \texttt{ER2Done} fragment, the processor finishes.

@@ -1,0 +1,20 @@
+Reliable distributed systems must be resilient to malfunctions of their components. Such components may send conflicting information across the system. Lamport, Shostak and Pease in \cite{LSP82} proposed a way to avoid conflicts of this type by introducing and solving the Byzantine Generals Problem. The name refers to the following analogy with the Byzantine army: imagine several divisions of the Byzantine army camping outside an enemy city. Every division has its own general. After examining the city each general proposes to attack or to retreat by sending messengers to other generals. Obviously, to maximize the outcome the army should agree on their move. It is not that easy as some of the generals are traitors who can manipulate the others by sending conflicting propositions.
+
+Therefore, the generals need an algorithm which assures that
+\begin{enumerate}
+    \item every loyal general decides on the same plan,
+    \item and small number of traitors cannot make the loyal generals adopt a wrong plan.
+\end{enumerate}
+
+The idea for such algorithm is as follows. Let each general obtain the same information about the real propositions of the others. Then, each of them can apply the same rule to make their decision. For example, take the proposition which occurred the most often. The first condition must be met then and the second one as well, unless the numbers of propositions of both types are similar. In such case neither plan can really be wrong. Thus, we now can focus on exchanging the propositions. It would be enough to find a way in which a chosen loyal general's proposition can reach all the loyal generals. In case the general was not loyal we want all the loyal generals to at least agree on one arbitrary proposition from this traitor. We can then apply such a procedure to propagate the propositions of all the generals. The procedure is a solution to the aforementioned Byzantine generals problem.
+
+Let us introduce a formal definition of the Byzantine generals formulated in the terminology of correct and faulty processors, similarly as in \cite{KS08}.
+
+\begin{definition}[Byzantine generals problem]
+We are given $n$ processors. Amongst them, $t$ are faulty and the rest is correct. There is also an input source with an initial value $v_s$ which may be either correct or faulty. The input source broadcasts $v_s$ at the beginning to everyone, unless it's faulty and broadcasts arbitrary values. The processors, being able to communicate, must agree on a certain value $v$, subject to the following conditions.
+\begin{itemize}
+    \item \emph{Agreement} -- All correct processors must agree on the same value $v$.
+    \item \emph{Validity} -- If the input source is correct, then $v$, the agreed upon value by all the correct processors, must be the same as the initial value of the input source $v_s$.
+    \item \emph{Termination} -- Each correct processor must eventually decide on a value $v$.
+\end{itemize}
+\end{definition}

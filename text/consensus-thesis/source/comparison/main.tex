@@ -1,0 +1,71 @@
+We want to measure how quickly correct processors reach the agreement in various conditions. We could do so by comparing how many phases each protocol has to run. However, it would be interesting only for the Ben-Or's protocol, as the other two always run exactly for $t+1$ phases. The fact they always require such number of phases does not mean they do not reach the agreement earlier. Indeed, they do so very often, for example when any processor with an id lower than $t+1$ happens to be a correct processor.
+Potentially, there are some applications, in which we do not care about the time needed for the correct processors to be able to assure us that they solved the distributed consensus problem, but only about the time they really used to solve the problem. It is why, instead of counting all the phases performed by a given protocol in some run, we count only the phases before reaching the agreement. In practice, we achieve that by analyzing logged values of $V$ from the correct processors throughout the whole run.
+
+In the comparisons we use notation as follows.
+\begin{description}
+\item[$n$] -- the number of the processors.
+\item[$t$] -- the number of the faulty processors.
+\item[$b$] -- the percentage of the correct processors initialized with $0$ within all the correct processors.
+\item[$p$] -- the number of the phases before reaching the agreement.
+\end{description}
+
+To make the comparisons we perform runs of the protocols in several setups. In all of them $n=40$. Because results may depend on randomness, each run of the Ben-Or's protocol is repeated 5 times and the average of the results is taken. Similarly, every run with a random faulty behavior strategy is repeated 5 times and the average of the results is taken. It means that every run of the Ben-Or's protocol with a random faulty behavior strategy is repeated 25 times. Whenever we mention $b$ or \textit{all $b$}, we mean one or all of the $b\in[0,0.1,0.2,0.3,0.4,0.5]$, respectively. Note that due to the symmetry of the correct processors it is enough to test any permutation of the initial values for a given $b$.
+
+\section{Optimal vs. random faulty behavior strategy}
+We have devoted a significant part of this work to finding the optimal faulty behavior strategies. A natural idea is to check their effectiveness compared to any other strategies. We compare them with the earlier described random strategies, which are one of the potential strategies one can effortlessly come up with. 
+
+\subsection{Setups}
+We aim to show when the difference between the efficiencies of optimal and random faulty behaviour strategies is the largest, so in every setup the faulty processors get the lowest ids.
+For each of the protocols, runs are performed in the same setups using both strategies. Firstly, for a given legal $t$ the protocol is run with all $b$ and the average of the results is taken. It is how we obtain the left-hand side plots in \cref{fig:plot1}. Secondly, for a given $b$ the protocol is run with all legal $t$ and the average of the results is taken. This way we obtain the right-hand side plots in \cref{fig:plot1}.
+
+\subsection{Results}
+As expected, for all the setups the optimal strategy is always similar to or better than the random one. The more faulty processors there is the bigger difference in effectiveness is observed. It is especially a case in the Ben-Or's protocol where $p$ grows exponentially with respect to $t$ in the setup with the optimal strategy and does not seem to grow in the setup with the random strategy. Moreover, $p$ is highly dependent on $b$ in all the protocols. The closer $b$ is to $0.5$ the more effective the faulty behavior strategy is. The optimal faulty behavior strategies outperform the random ones the most for $b=0.15, b=0.1, b=0.4$ in the single-bit message, phase king and Ben-Or's protocols, respectively. 
+
+\begin{figure}[H]
+    \caption{Strategies vs. number of faulty processors (left) and percentage of zero-initialized correct processors (right) }
+    \begin{center}
+        \input{plot12.pgf}
+    \end{center}\label{fig:plot1}
+\end{figure}
+
+
+\section{Protocols vs. random faulty behavior strategy}
+We may also want to consider which of the described protocols is the most effective under similar conditions. In this section, we examine how the protocols cope with random faulty behaviors which can model the case of "naturally" malfunctioning processors rather than ones intentionally designed to cause the longest delay in reaching the agreement.
+
+\subsection{Setups}
+For each of the protocols, runs are performed in the same setups using the random strategy. Firstly, for a given legal $t$ the protocol is run with all $b$ and the average of the results is taken. It is how we obtain the left-hand side plot in \cref{fig:plot2}. Secondly, for a given $b$ the protocol is run with all legal $t$ and the average of the results is taken. This way we obtain the right-hand side plot in \cref{fig:plot2}. In the runs the faulty processors have random ids. Analogous runs are performed with the lowest ids assigned to the faulty processors and results are presented in \cref{fig:plot3}.
+\subsection{Results}
+\subsubsection{Faulty processors with random ids} 
+All of the protocols are observed to reach the agreement within the first two phases with respect to various $b$ and $t$. Greater $b$ and $t$ result in a bit greater $p$, especially in the case of the Ben-Or's protocol. The single-bit message and phase king protocols are a bit more resilient to the faulty behavior compared to the Ben-Or's protocol.
+\subsubsection{Faulty processors with the lowest ids}
+The phase king and single-bit message protocols reach the agreement within the number of phases proportional to $t$. However, the former needs more phases. The Ben-Or's protocol needs only $1$ phase for all $t$.
+The phase king protocol runs, for almost every $b$, result in the same constant $p$. The single-bit message protocol runs give similar results, but even smaller $p$ for $b<0.3$. The Ben-Or's protocol reaches the agreement within the first phase for all $b$ except $b\approx0.5$.
+The single-bit message and phase king protocols are less resilient to the faulty behavior compared to the Ben-Or's protocol.
+\newpage
+\begin{figure}[H]
+    \caption{Protocols vs. number of faulty processors (left) and percentage of zero-initialized correct processors (right). Faulty processors have random ids }
+    \begin{center}
+        \input{plot34True.pgf}
+    \end{center}\label{fig:plot2}
+\end{figure}
+\vspace*{-0.2in}
+\begin{figure}[H]
+    \caption{Protocols vs. number of faulty processors (left) and percentage of zero-initialized correct processors (right). Faulty processors have the lowest ids }
+    \begin{center}
+        \input{plot34False.pgf}
+    \end{center}\label{fig:plot3}
+\end{figure}
+
+\section{Protocols vs. optimal faulty behavior strategy}
+Finally, we consider which of the described protocols is the most effective when facing the optimal faulty behavior strategy. It can model the case of the faulty processors being intentionally designed to cause the longest delay in reaching the agreement.
+\subsection{Setups}
+For each of the protocols, runs are performed in the same setups using the respective optimal strategy. Firstly, for a given legal $t$ the protocol is run with all $b$ and the average of the results is taken. It is how we obtain the left-hand side plot in \cref{fig:plot4}. Secondly, for a given $b$ the protocol is run with all legal $t$ and the average of the results is taken. This way we obtain the right-hand side plot in \cref{fig:plot4}. In the runs, the faulty processors have the lowest ids, as it either increases or does not affect the effectiveness of the faulty strategies.
+\subsection{Results}
+All of the protocols are observed to reach the agreement within almost the same number of phases, proportional to $t$, except for the Ben-Or's protocol which needs twice more phases when run with a large $t$. The single-bit message and phase king protocols runs, for almost every $b$, result in the same constant $p$. The former one results in even smaller $p$ for $b<0.25$. On the other hand, the Ben-Or's protocol reaches the agreement within the first phase for $b\leq0.25$, but the $p$ grows exponentially for greater $b$ until $b\approx0.4$, after which the $p$ is almost constant.
+
+\begin{figure}[H]
+    \caption{Protocols vs. number of faulty processors (left) and percentage of zero-initialized correct processors (right). Faulty processors have random ids }
+    \begin{center}
+        \input{plot56.pgf}
+    \end{center}\label{fig:plot4}
+\end{figure}

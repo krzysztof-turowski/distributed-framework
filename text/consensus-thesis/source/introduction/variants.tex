@@ -1,0 +1,23 @@
+In other papers, we can find two other variants of the Byzantine generals problem. Let us introduce them in a similar way as in \cite{KS08}.
+
+\begin{definition}[Interactive consistency problem]
+We are given $n$ processors. Amongst them, $t$ are faulty and the rest is correct. Each processor $i$ has an initial value $v_i$, and all the correct processors must agree upon a set of values, with one value for each processor. The formal specification is as follows.
+\begin{itemize}
+    \item \emph{Agreement} -- All correct processor must agree on the same array of values $A[v_1, \ldots,v_n]$.
+    \item \emph{Validity} --  If processor $i$ is correct and its initial value is $v_i$, then all correct processors agree on $v_i$ for $A[i]$. If processor $j$ is faulty, then the correct processors can agree on any value for $A[j]$.
+    \item \emph{Termination} -- Each correct processor must eventually decide on the array $A$.
+\end{itemize}
+\end{definition}
+One can notice it is the same problem we earlier reduced to a few instances of the Byzantine generals problem. The array $A$ stores the agreed information about propositions of generals and $v_i$ is the original proposition of the $i$-th general.
+
+The second variant is of particular interest for us.
+\begin{definition}[Distributed consensus problem]\label{in:def:consensus}
+We are given $n$ processors. Amongst them, $t$ are faulty and the rest is correct. Each processor $i$ has an initial value $v_i$, and all the correct processes must agree upon a single value $v$, assuring following conditions.
+\begin{itemize}
+    \item \emph{Agreement} -- All correct processors must agree on the same value $v$.
+    \item \emph{Validity} --  If all the correct processors have the same initial value, then $v$,
+    the agreed upon value by all the correct processors, must be that same value.
+    \item \emph{Termination} -- Each correct processor must eventually decide on a value $v$.
+\end{itemize}
+\end{definition}
+This problem is very similar to the Byzantine generals problem. You can see the equivalence between them by treating the values received from the input source as the initial values $v_i$. Agreement and termination conditions are then the same. So is validity if we notice that the correct input source corresponds to equal initial values.

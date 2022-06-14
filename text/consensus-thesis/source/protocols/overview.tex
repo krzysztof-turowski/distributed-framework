@@ -1,0 +1,59 @@
+Many protocols for solving the distributed consensus problem have been proposed by now. To compare them we use the following parameters. 
+
+\begin{description}
+    \item[Resiliency]
+     Measures how many faulty processors a given protocol allows, by specifying a minimal number of all the processors in total if there are $t$ faulty ones among them. Its optimal value is proved to be $3t+1$ in \cite{BGP89}. The same authors show it is possible to practically reach $t$ resiliency, but it requires the use of cryptography.
+    \item[Number of message exchange rounds] Denotes how many times processors need to synchronize and exchange their messages. Fischer and Lynch proved in \cite{FL82} that at least $t+1$ message exchange rounds are needed to always reach the agreement in a deterministic way.
+    \item[Maximal message size] By this parameter we measure what is the maximal size (number of bits) of a message sent in each round. Its optimum is $1$, as the processors need to exchange information.
+    \item[Local computation] Denotes the complexity of the local computation in every processor running a given protocol.
+    \item[Synchronous vs. Asynchronous model] We have promised to consider the synchronous model. There are however protocols working in a harder, asynchronous one, in which the processors cannot synchronize. Interestingly, the protocols in the asynchronous model cannot assure termination and most they can assure is a termination with probability $1$ \cite{FLP85}. One can always run such protocols in the synchronous model and even use the fact of running in the easier model to simplify the code. That is why we do not exclude protocols originally designed for the asynchronous model from our considerations.
+\end{description}
+
+Let us include a table summarizing the history of deterministic protocols solving the distributed consensus problem in the synchronous model composed by Garay and Moses in \cite{GM98}. Note that the table does not include all the protocols and in some of the referenced papers the problem may be referred to differently e.g. as the Byzantine agreement.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{||l|c|c|c||}
+\hline 
+Protocol & resiliency & rounds & messages \\ \hline\hline
+\cite{LSP82} & $3t+1$ &  $t+1$  & $\exp(n)$ \\ \hline
+\cite{DFFLS82,TPS85} & $3t+1$ &  $2t+c$  & $\text{poly}(n)$ \\ \hline
+\cite{Coa86} & $4t+1$ &  $t+\frac{t}{d}$  & $\mathcal{O}(n^d)$ \\ \hline
+\cite{DRS90,BD91,Coa93} & $\Omega(t^2)$ &  $t+1$  & $\text{poly}(n)$ \\ \hline
+\cite{BDDS87} & $3t+1$ &  $t+\frac{t}{d}$  & $\mathcal{O}(n^d)$ \\ \hline
+\cite{MW88} & $6t+1$ &  $t+1$  & $\text{poly}(n)$ \\ \hline
+\cite{BGP89} & $3t+1$ &  $t+\frac{t}{d}$  & $\mathcal{O}(c^d)$ \\ \hline
+\cite{BG89} & $4t+1$ &  $t+1$  & $\text{poly}(n)$ \\ \hline
+\cite{CW92} & $\Omega(t\log t)$ &  $t+1$  & $\text{poly}(n)$ \\ \hline
+\cite{BG91} & $(3+\epsilon)t$ &  $t+1$  & $\text{poly}(n)\mathcal{O}(2^{\frac{1}{e}})$ \\ \hline
+\cite{GM98} & $3t+1$ &  $t+1$  & $\text{poly}(n)$ \\ \hline
+\end{tabular}
+\caption{History of deterministic protocols for the distributed consensus problem}
+\label{tab:det_protocols}
+\end{table}
+
+% \begin{table}[H]
+% \centering
+% \begin{tabular}{||l|c c c c||}
+% \hline 
+% Protocol & resiliency & rounds & messages & computation \\ \hline\hline
+% \cite{LSP82} & $3t+1$ &  $t+1$  & $\exp(n)$ & $\exp(n)$  \\ \hline
+% \cite{DFFLS82,TPS85} & $3t+1$ &  $2t+c$  & $\text{poly}(n)$ & $\text{poly}(n)$ \\ \hline
+% \cite{Coa86} & $4t+1$ &  $t+\frac{t}{d}$  & $\mathcal{O}(n^d)$ & $\exp(n)$ \\ \hline
+% \cite{DRS90,BD91,Coa93} & $\Omega(t^2)$ &  $t+1$  & $\text{poly}(n)$ & $\text{poly}(n)$ \\ \hline
+% \cite{BDDS87} & $3t+1$ &  $t+\frac{t}{d}$  & $\mathcal{O}(n^d)$ & $\mathcal{O}(n^d)$ \\ \hline
+% \cite{MW88} & $6t+1$ &  $t+1$  & $\text{poly}(n)$ & $\text{poly}(n)$ \\ \hline
+% \cite{BGP89} & $3t+1$ &  $t+\frac{t}{d}$  & $\mathcal{O}(c^d)$ & $\mathcal{O}(c^d)$ \\ \hline
+% \cite{BG89} & $4t+1$ &  $t+1$  & $\text{poly}(n)$ & $\text{poly}(n)$ \\ \hline
+% \cite{CW92} & $\Omega(t\log t)$ &  $t+1$  & $\text{poly}(n)$ & $\text{poly}(n)$ \\ \hline
+% \cite{BG91} & $(3+\epsilon)t$ &  $t+1$  & $\text{poly}(n)\mathcal{O}(2^{\frac{1}{e}})$ & $\text{poly}(n)\mathcal{O}(2^{\frac{1}{e}})$ \\ \hline
+% \cite{GM98} & $3t+1$ &  $t+1$  & $\text{poly}(n)$ & $\text{poly}(n)$ \\ \hline
+% \end{tabular}
+% \caption{History of deterministic protocols for the distributed consensus problem}
+% \label{tab:det_protocols}
+% \end{table}
+
+
+As we already mentioned, the asynchronous model rejects a possibility of the existence of a deterministic protocol solving the problem. However, randomness can help us. Ben-Or was the first one to make use of it \cite{Ben83}. We do not provide a similar summarizing table for the randomized protocols, as it requires careful examination to avoid overlooking additional assumptions which are commonly added and are not contained in our model e.g. private communication channels or cryptography.
+
+Now, we are going to thoroughly describe, implement and compare variants of protocols proposed in \cite{BG89,BGP89,Ben83}.

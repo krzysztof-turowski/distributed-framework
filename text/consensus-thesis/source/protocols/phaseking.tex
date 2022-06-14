@@ -1,0 +1,137 @@
+In \cite{BGP89} Berman, Garay and Perry proposed the phase king protocol. Its resiliency is $3t+1$, the number of message exchange rounds is $3t+3$ and the maximal message length is $2$. It requires polynomial computation per processor. The protocol is deterministic.
+
+\subsection{Pseudocode}
+\begin{breakablealgorithm} \label{pk:code}
+  \caption{Phase king protocol: code for processor $i$.}
+  \begin{algorithmic}[1]
+    \State $V \gets v_i$
+    \For{$m \gets 1$ \To $t+1$}
+        \State \Call{Broadcast}{$V$} \label{pk:code:er0_broadcast}
+        \\
+        \State $msgs \gets$ \Call{Receive}{\null} \label{pk:code:er1_receive}
+        \State $V \gets 2$
+        \For{$k \gets 0$ \To $1$} 
+            \State $C(k) \gets$ the number of $k$'s in $msgs$
+            \If{$C(k) \geq n-t$} 
+                \State $V \gets k$ \label{pk:code:er1_vgetsk}
+            \EndIf
+        \EndFor
+        \State \Call{Broadcast}{$V$} \label{pk:code:er1_broadcast}
+        \\
+        \State $msgs \gets$ \Call{Receive}{\null} \label{pk:code:er2_receive}
+        \For{$k \gets 2$ \Downto $0$}
+            \State $D(k) \gets$ the number of $k$'s in $msgs$
+            \If{$D(k) > t$} 
+                \State $V \gets k$ \label{pk:code:er2_vgetsk}
+            \EndIf
+        \EndFor
+        \If{$m = i$}
+            \State \Call{Broadcast}{$V$} \label{pk:code:er2_broadcast}
+        \EndIf
+        \\
+        \State $msgs \gets$ \Call{Receive}{\null} \label{pk:code:er3_receive}
+        \If{$V = 2$ \Or $D(V) < n-t$} \label{pk:code:er3_if}
+            \State $V \gets \min(1, msgs(m))$ \label{pk:code:er3_vgetsmin}
+        \EndIf
+    \EndFor
+  \end{algorithmic}
+\end{breakablealgorithm}
+
+
+\subsection{Correctness}
+The protocol runs $t+1$ phases, each consisting of three message exchange rounds. Each processor has a local variable $V$ which can obtain values from $\{0,1,2\}$ and two arrays $C$ and $D$ counting messages with different values received from the other processors in the first and the second message exchange round respectively. Variables $V$ are set to the initial values at the beginning. In each phase a unique processor becomes a king of the phase (the phase number determines the id of the king). Let us now prove the following lemmas.
+\begin{lemma}\label{pk:lem:preserve}
+If all correct processors have the same values $V$ equal to $0$ or $1$ before the phase, then the values are preserved after the phase.
+\end{lemma} 
+\begin{proof}
+If all correct processors have the same values $V$ equal to $v\in\{0,1\}$ before the phase, then they all broadcast $v$ at the beginning and for each of them $C(v) \geq n-t$ holds meaning they all set $V$ to $v$ at \cref{pk:code:er1_vgetsk}. For each $k\neq v$ we know that $C(k) < n-t$, as otherwise $n\geq (n-t) + (n-t) - t = 2n-3t$, but we know it's impossible because $n>3t$. So $V$ is not set to any other value than $v$ at \cref{pk:code:er1_vgetsk}. It means the processors have the same values $V$ equal to $v$ before the second message exchange round and they all broadcast $v$ at \cref{pk:code:er1_broadcast}. For each of them $D(k)>t$ holds only for $k=v$, so their values $V$ remain the same before the third message exchange round. The third message exchange round does not alter values $V$, because $D(v)\geq n-t$ just like $C(v)\geq n-t$. It holds that $V$ is never altered in the correct processors, which concludes the proof.
+\end{proof}
+\begin{lemma}\label{pk:lem:king}
+If a king is a correct processor, then after its round all correct processors have the same values $V$ equal to $0$ or $1$.
+\end{lemma} 
+\begin{proof}
+The correct processors' $V$ variables are set to values $\{0,2\}$ or $\{1,2\}$ at \cref{pk:code:er1_vgetsk}. Otherwise, if there was a pair of correct processors which set $V=1$ and $V=2$ at \cref{pk:code:er1_vgetsk}, then $n\ge2(n-t)-t$, but $n\geq 3t+1$, which would mean $3t\ge n \ge 3t+1$, which is a contradiction. If the king is correct, then he broadcast his $V$ at \cref{pk:code:er2_broadcast}. Two cases may occur now. Either all the correct processors set $V$ to the same value from $\{0,1\}$ at \cref{pk:code:er3_vgetsmin} or there is some for which $V\neq2$ and $D(V)\ge n-t$ at \cref{pk:code:er3_if}. The later case implies that for each of the correct processor having $V\neq2$ at \cref{pk:code:er3_if} follows $D(V)>t$ (because there are $t$ faulty processors and $n\geq 3t+1$), meaning that the correct processors have $V$ already set to the same value from $\{0,1\}$ at \cref{pk:code:er2_vgetsk}, which completes the proof.
+\end{proof}
+\Cref{pk:lem:preserve} does not only assure the validity, but also implies it's enough to reach the agreement once, in any phase. At least one of $t+1$ kings must be correct, so due to \Cref{pk:lem:king}. and the previous sentence the correct processors must reach an agreement. A finite number of operations assures the termination. Thus, we derive a valid protocol.
+
+\subsection{Optimal faulty behavior strategy}
+Similarly as in the previous protocol, we have noticed in \Cref{pk:lem:preserve} that in the phase king protocol, once the correct processors reach the agreement, the faulty processors cannot ruin it. Thus again, the best they can do is not to allow reaching the agreement when one of them is the king of the phase and the agreement is not reached yet. They can do so provided no correct processor has been the king of the phase so far. This time, however, there are no additional requirements needed to construct a faulty behavior strategy, which delays the agreement.
+
+\begin{breakablealgorithm}
+  \caption{Phase king protocol: optimal faulty behavior strategy.}
+  \begin{algorithmic}[1]
+    \For{$m \gets 1$ \To $t+1$}
+        \State $vals \gets$ \Call{PeekV}{\null}
+        \State $E \gets$ the number of $0$'s in $vals$
+        \If{$j+E<n-t$} \label{pkofb:code:er0_if}
+            \State \Call{Broadcast}{$0$}
+        \Else
+            \State \Call{Broadcast}{$1$}
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+        \State \Call{Broadcast}{$2$}
+        \\
+        \State \Call{Receive}{\null}
+        \If{$m = i$}
+            \For{$k \gets 1$ \To $t+1$}
+                \State \Call{Send}{$0$}
+            \EndFor
+            \For{$k \gets t+2$ \To $n$}
+                \State \Call{Send}{$1$}
+            \EndFor
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+    \EndFor
+  \end{algorithmic}
+\end{breakablealgorithm}
+
+There are less than $n-t$ messages with the value $0$ sent in the first message exchange round, because of the condition at \cref{pkofb:code:er0_if}. There are less than $n-t$ messages with value $1$ sent in this round, as the strategy emits such messages only when it cannot send ones with value $0$. If in such case there were at least $n-t$ messages with value $1$, it would mean $(n-t) + t > 2(n-t)$, which is impossible. Thus, the correct processors do not reach \cref{pk:code:er1_vgetsk}. It means that they all set $V$ to $2$ at \cref{pk:code:er2_vgetsk}. Then, the faulty processor which becomes the king of the phase assures that no agreement is reached by the correct processors after the phase. Thus, the constructed strategy indeed delays the agreement provided that only faulty processors have been the kings of the phase until the current phase.
+
+Like every correct processor, the faulty processor using this strategy sends the messages with a value $0$ or $1$ in the first message exchange round. Moreover, it always sends the messages in the second message exchange round. Also, it sends the messages in the third message exchange if and only if it is the king of the phase. Therefore, the strategy does not trivially expose the faulty processor.
+
+\subsection{Random faulty behavior strategy}
+For the sake of future comparisons we also propose a straightforward random faulty behavior strategy.
+\begin{breakablealgorithm}
+  \caption{Phase king protocol: random faulty behavior strategy.}
+  \begin{algorithmic}[1]
+    \For{$m \gets 1$ \To $t+1$}
+        \For{$k \gets 1$ \To $n$}
+            \State \Call{Send}{$0$ or $1$ with equal probability}
+        \EndFor
+        \\
+        \State \Call{Receive}{\null}
+        \For{$k \gets 1$ \To $n$}
+            \State \Call{Send}{$0$ or $1$ or $2$ with equal probability}
+        \EndFor
+        \\ 
+        \State \Call{Receive}{\null}
+        \If{$m = i$}
+            \For{$k \gets 1$ \To $n$}
+                \State \Call{Send}{$0$ or $1$ with equal probability}
+            \EndFor
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+    \EndFor
+  \end{algorithmic}
+\end{breakablealgorithm}
+Due to the same reasons as the optimal strategy, this strategy does not trivially expose the faulty processor.
+
+\subsection{Implementation}
+There are $5$ files directly connected to the protocol.
+\begin{itemize}
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_phase_king/sync_phase_king.go}{\texttt{sync\_phase\_king.go}} contains the protocol.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_phase_king/sync_phase_king_faulty_behavior.go}{\texttt{sync\_phase\_king\_faulty\_behavior.go}} contains a faulty behavior factory.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_phase_king/sync_phase_king_optimal_strategy.go}{\texttt{sync\_phase\_king\_optimal\_strategy.go}} contains the optimal faulty behavior strategy. 
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_phase_king/sync_phase_king_random_strategy.go}{\texttt{sync\_phase\_king\_random\_strategy.go}}  contains the random faulty behavior strategy.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/example/consensus_sync_phase_king.go}{\texttt{example/consensus\_sync\_phase\_king.go}} contains an example of usage.
+\end{itemize}
+The implementation is very similar to the one of the previous protocol. The main difference is that there are four, instead of three, fragments corresponding to the parts of pseudocode in \cref{pk:code} labelled as follows.
+\begin{itemize}
+    \item \texttt{ER0} -- code at \cref{pk:code:er0_broadcast}.
+    \item \texttt{ER1} -- code from \cref{pk:code:er1_receive} to \cref{pk:code:er1_broadcast}.
+    \item \texttt{ER2} -- code from \cref{pk:code:er2_receive} to \cref{pk:code:er2_broadcast}.
+    \item \texttt{ER3} -- code from \cref{pk:code:er3_receive} to \cref{pk:code:er0_broadcast}.
+\end{itemize}

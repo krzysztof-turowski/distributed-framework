@@ -1,0 +1,126 @@
+In \cite{BG89} Berman and Garay proposed the single-bit message protocol whose resiliency is $4t+1$, the number of message exchange rounds is $2t+2$ and the maximal message length is $1$. This is the first protocol in which all these three parameters are simultaneously within a constant factor from their optimal values. It requires polynomial computation time per processor. The protocol is deterministic.
+
+\subsection{Pseudocode}
+\begin{breakablealgorithm} \label{sb:code}
+  \caption{Single-bit message protocol: code for processor $i$.}
+  \begin{algorithmic}[1]
+    \State $V \gets v_i$
+    \For{$m \gets 1$ \To $t+1$}
+        \State \Call{Broadcast}{$V$} \label{sb:code:er0_broadcast}
+        \\
+        \State $msgs \gets$ \Call{Receive}{\null} \label{sb:code:er1_receive}
+        \State $C \gets$ the number of $1$'s in $msgs$
+            \If{$C \geq n/2$} \label{sb:code:er1_if}
+                \State $V \gets 1$ \label{sb:code:er1_vgets1}
+            \Else
+                \State $V \gets 0$ \label{sb:code:er1_vgets0}
+                \State $C \gets n-C$
+            \EndIf
+        \If{$m = i$}
+            \State \Call{Broadcast}{$V$} \label{sb:code:er1_broadcast}
+        \EndIf
+        \\
+        \State $msgs \gets$ \Call{Receive}{\null} \label{sb:code:er2_receive}
+        \If{$C < 3n/4$} \label{sb:code:er2_if}
+            \State $V \gets msgs(m)$ \label{sb:code:er2_vgetsx}
+        \EndIf
+    \EndFor
+  \end{algorithmic}
+\end{breakablealgorithm}
+
+\subsection{Correctness}
+The protocol runs $t+1$ phases, each consisting of two message exchange rounds. Each processor has a local variable $V$ which can obtain values from $\{0,1\}$ and variable $C$ counting messages with value $1$ and later with the majority value received from the other processors in the first exchange round. Variables $V$ are set to the initial values at the beginning. In each phase a unique processor becomes a general of the phase (the phase number determines the id of the general). Let us prove the following lemmas.
+\begin{lemma}\label{sb:lem:preserve}
+If all correct processors have the same values $V$ before the phase, then the values are preserved after the phase.
+\end{lemma}
+\begin{proof} 
+If all correct processors have the same values $V$ equal to $1$ before the phase, then the condition $C\geq n/2$ is true for all of them since $t<n/4$ and $C\geq 3n/4$, meaning the $V$ values are not changed at \cref{sb:code:er1_vgets0}. Similarly, if the processors have the same values $V$ equal to $0$ the condition is false for all of them and the $V$ values remain not changed at \cref{sb:code:er1_vgets1}. As $C$ gets adjusted to count the majority value, we have $C\geq 3n/4$, and the $V$ values are preserved as we skip \cref{sb:code:er2_vgetsx}. It proves that values $V$ in correct processors are never changed, hence the claim follows.
+\end{proof}
+\begin{lemma} \label{sb:lem:general}
+If a general is a correct processor, then after its phase all correct processors have the same values $V$.
+\end{lemma}
+\begin{proof}
+If the general is correct, then he broadcast his $V$ at \cref{sb:code:er1_broadcast}. Two cases may occur now. Either all the correct processors set $V$ to the same value at \cref{sb:code:er2_vgetsx} or there is some for which $C\geq 3n/4$ at \cref{sb:code:er2_if}. However $n>4t$, so the later case implies for some processors there is $C \geq n/2 + t$ at the line. Thus, all the correct processors set $V$ to $1$ at \cref{sb:code:er1_vgets1} and the value is not changed later, as we observed in the proof of \Cref{sb:lem:preserve}. 
+Hence, in both cases all the correct processors set $V$ to the same value.
+\end{proof}
+\Cref{sb:lem:preserve} does not only ensure the validity, but also implies it's enough to reach the agreement once, in any phase. At least one of $t+1$ generals must be correct, so due to \Cref{sb:lem:general}. and the claim above the correct processors must reach an agreement. A finite number of operations guarantees the termination. Thus, we derived a valid protocol.
+
+\subsection{Optimal faulty behavior strategy}
+The lack of secure channels assumption in our model can be exploited by the optimal faulty behavior strategy. Such a strategy could possibly get useful information about the correct processors. Because of it, in our considerations for this and next protocols, we assume that the faulty processors have even broader knowledge. Namely, that they can peek at the state of any other processor at any time. In particular they can freely call the \textsc{PeekV()} function.
+
+As we have noticed in \Cref{sb:lem:preserve}, once the correct processors reach the agreement, the faulty processors cannot ruin it. Thus, the most they can do is not to allow reaching the agreement when one of them is the general of the phase and the agreement is not reached yet. They can do so provided no correct processor has been the general of the phase so far. It turns out they can ensure no agreement only if 
+\begin{align}
+    \mu < 3n/4, \label{sb:eq:cond}
+\end{align}
+where $\mu=\max(c_0, c_1)$ and $c_i$ denotes number of correct processors starting with initial value equal to $i$. Indeed, we observe that otherwise $C\geq 3n/4$ at \cref{sb:code:er2_if} in the first phase. It also means that $C\geq n/2$ at \cref{sb:code:er1_if} in every correct processor, which implies $V$ is set to $1$ in each of them, resulting in the agreement. On the other hand condition in \cref{sb:eq:cond} is sufficient to construct a working strategy we are looking for.
+
+\begin{algorithm} [H]
+  \caption{Single-bit message protocol: optimal faulty behavior strategy.}
+  \begin{algorithmic}[1]
+    \For{$m \gets 1$ \To $t+1$}
+        \State $vals \gets$ \Call{PeekV}{\null}
+        \State $E \gets$ the number of $0$'s in $vals$
+        \If{$j+E<3n/4$} \label{sbofb:code:er0_if}
+            \State \Call{Broadcast}{$0$}
+        \Else
+            \State \Call{Broadcast}{$1$}
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+        \If{$m = i$}
+            \For{$k \gets 1$ \To $\lfloor n/2 \rfloor$}
+                \State \Call{Send}{$k, 0$}
+            \EndFor
+            \For{$k \gets \lfloor n/2\rfloor+1$ \To $n$}
+                \State \Call{Send}{$k, 1$}
+            \EndFor
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+    \EndFor
+  \end{algorithmic}
+\end{algorithm}
+
+Let all the aforementioned conditions be met. We will analyze the first phase. There are less than $3n/4$ messages with the value $0$ sent in the first message exchange round, because of $\mu<3n/4$ and the condition at \cref{sbofb:code:er0_if}. There are less than $3n/4$ messages with value $1$ sent in this round, as $\mu<3n/4$ and the strategy emits such messages only when it cannot send ones with value $0$. If in such case there were at least $3n/4$ messages with value $1$, it would mean $(n-t) + t > 2\lfloor3n/4\rfloor$ which is impossible. Thus, the correct processors have $C\geq 3n/4$ at \cref{sb:code:er2_if}. Then, the faulty processor which becomes the general of the phase ensures that less than $3n/4$ correct processors have the same value $V$ after the phase. It implies no agreement is reached by the correct processors after the phase and the agreement. We can also repeat the same reasoning for the next phases by replacing $\mu$ with some other value which we know to be less than $3n/4$. Hence, the strategy indeed works.
+
+Like every correct processor, the faulty processor using this strategy sends the messages in the first message exchange round. Also, it sends the messages in the second message exchange if and only if it is the general of the phase. Therefore, the strategy does not trivially expose the faulty processor.
+
+\subsection{Random faulty behavior strategy}
+For the sake of future comparisons we also propose a straightforward random faulty behavior strategy.
+\begin{algorithm}[H]
+  \caption{Single-bit message protocol: random faulty behavior strategy.}
+  \begin{algorithmic}[1]
+    \For{$m \gets 1$ \To $t+1$}
+        \For{$k \gets 1$ \To $n$}
+            \State \Call{Send}{$0$ or $1$ with equal probability}
+        \EndFor
+        \\
+        \State \Call{Receive}{\null}
+        \If{$m = i$}
+            \For{$k \gets 1$ \To $n$}
+                \State \Call{Send}{$0$ or $1$ with equal probability}
+            \EndFor
+        \EndIf
+        \\
+        \State \Call{Receive}{\null}
+    \EndFor
+  \end{algorithmic}
+\end{algorithm}
+Due to the same reasons as the optimal strategy, this strategy does not trivially expose the faulty processor.
+
+\subsection{Implementation}
+There are $5$ files directly connected to the protocol.
+\begin{itemize}
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_single_bit/sync_single_bit.go}{\texttt{sync\_single\_bit.go}} contains the protocol.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_single_bit/sync_single_bit_faulty_behavior.go}{\texttt{sync\_single\_bit\_faulty\_behavior.go}} contains a faulty behavior factory.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_single_bit/sync_single_bit_optimal_strategy.go}{\texttt{sync\_single\_bit\_optimal\_strategy.go}} contains the optimal faulty behavior strategy. 
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/consensus/sync_single_bit/sync_single_bit_random_strategy.go}{\texttt{sync\_single\_bit\_random\_strategy.go}} contains the random faulty behavior strategy.
+    \item \href{https://github.com/krzysztof-turowski/distributed-framework/blob/6ec7e9cb9a870848f127c539d934b9da9c616ed6/example/consensus_sync_single_bit.go}{\texttt{example/consensus\_sync\_single\_bit.go}} contains an example of usage.
+\end{itemize}
+To run the protocol one has to begin with constructing a complete graph with loops and defining which nodes should run a chosen faulty behavior strategy. Then, we can call the \texttt{Run()} function which starts a simulation. Once it is called several gorountines are run, one for each node. Instead of looping over phases, each node loops over message exchange rounds. Each iteration comprises synchronization and running a relevant fragment of the protocol. Specifically, the fragment corresponds to one of three parts of pseudocode in \cref{sb:code} labelled as follows.
+\begin{itemize}
+    \item \texttt{ER0} -- code at \cref{sb:code:er0_broadcast}.
+    \item \texttt{ER1} -- code from \cref{sb:code:er1_receive} to \cref{sb:code:er1_broadcast}.
+    \item \texttt{ER2} -- code from \cref{sb:code:er2_receive} to \cref{sb:code:er0_broadcast}.
+\end{itemize}
+The framework's library requires that every node $v$ sends a message to nodes which call \texttt{receiveMessage($v$)}. To simulate no message the node can send a $nil$ message, which is not counted in statistics.
