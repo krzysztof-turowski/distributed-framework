@@ -1,5 +1,5 @@
 # distributed-framework
-A collection of algorithms for _Distributed Systems_ course (winter semester 2020/21) at [Jagiellonian University](https://uj.edu.pl), [Theoretical Computer Science Department](https://tcs.uj.edu.pl).
+A collection of algorithms for _Distributed Systems_ course (winter semesters 2020/21, 2021/22, 2022/23) at [Jagiellonian University](https://uj.edu.pl), [Theoretical Computer Science Department](https://tcs.uj.edu.pl).
 
 ## Algorithms
 
@@ -35,8 +35,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semester 202
 ### Consensus
 
 #### Synchronized network
-1. Phase King algorithm
-2. Ben-Or randomized algorithm
+1. Single Bit (Garay-Berman) algorithm
+2. Phase King (Garay-Berman-Perry) algorithm
+3. Ben-Or randomized algorithm
 
 ### Graph algorithms
 
