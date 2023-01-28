@@ -1,6 +1,6 @@
 all: test benchmark check
 
-example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example
+example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example orientation_example
 
 runners_example:
 	go run example/synchronized.go 5
@@ -40,6 +40,9 @@ consensus_example:
 	go run example/consensus_sync_phase_king.go 10 3  0 1 0 1 0 1 1 0 0 0  1 2 3  Optimal
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
+
+orientation_example:
+	go run example/orientation_async_syrotiuk_pachl.go 10
 
 unit_test:
 	go test ./leader/undirected_graph/sync_yoyo -v

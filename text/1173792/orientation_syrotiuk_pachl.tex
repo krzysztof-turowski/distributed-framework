@@ -1,0 +1,93 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{amssymb}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{graphicx}
+
+
+\usepackage[colorlinks=false]{hyperref}
+\usepackage[
+backend=biber,
+style=alphabetic,
+sorting=ynt
+]{biblatex}
+\addbibresource{biblio.bib}
+\usepackage{titlesec}
+\usepackage{tocloft}
+
+
+\begin{document}
+\section{Ring orientation algorithm}
+The goal of \cite{10.1007/BFb0019813} is to find a consistent orientation in a ring of size $N$ of anonymous processes, which means they don't have any type of identifiers or access to randomness. Without these constraints there exist $O(N\log N)$ ring orientation distributed algorithms. For example, if processes have unique identifiers we can elect a leader and then have the leader decide the orientation.
+
+In our algorithm processes will only know the size of the ring. The ring is anonymous (processes are indistinguishable) and asynchronous. Each process has two channels: left and right. Presented algorithm sends $O(N^{3/2})$ messages on average, under the assumption that local orientations for processes are chosen independently.
+
+\section{The algorithm}
+The algorithm terminates with the indication, in at least process, that the orientation in this process is shared by majority of processes. The other option is that there is no majority (the numbers of processes in both orientations are equal) and then, in our model, we cannot decide a consistent ring orientation.
+
+Message has two fields: $vote$ and $distance$. Furthermore, when we receive a message we know from which neighbour (left, right) it came.
+
+Every process executes the following algorithm:
+\begin{enumerate}
+    \item Send message with $vote = 1, distance = 1$ to right neighbour. 
+    \item Repeat until DONE:
+    \begin{enumerate}
+        \item receive $vote, distance$ from neighbour $from$
+        \item if $distance = N$ go to step 3 (DONE)
+        \item if $from = left$ send $vote+1, distance+1$ to right neighbour
+        \item else if $from = right$ and $vote > 0$ send $vote-1, distance+1$ to left neighbour.
+    \end{enumerate}
+    \item DONE: 
+    \begin{enumerate}
+        \item If $vote > 0$ then our orientation agrees with orientations of majority of processes.
+        \item Else if $vote = 0$ there is no majority.
+    \end{enumerate}
+\end{enumerate}
+
+\section{Correctness}
+Proof of correctness is based on combinatorial results about sequences of zeros and ones. One represent first type of orientation, zero the opposite orientation.
+
+In a sequence $s$ of zeros and ones we define $\#_0(s)$ and $\#_1(s)$ as number of zeros and ones in $s$, respectively. We call $s$ \textit{dominating} if $\#_1(s) > \#_0(s)$. We call $s$ \textit{weakly dominating} if $\#_1(s) \geq \#_0(s)$.
+
+\begin{lemma}
+\textbf{The Cycle Lemma.} For any sequence of $p$ ones and $q$ zeros, $p \geq q \geq 0$ exactly $p-q$ cyclic shifts of $s$ are dominating.
+\end{lemma}
+
+Proof can be found in \cite{DERSHOWITZ199035}.\\
+
+From The Cycle Lemma is easily follows
+
+\begin{lemma}
+If $s$ is a nonempty sequence of ones and zeros such that $\#_1(s) \geq \#_0(s)$ then at least one cyclic shift is weakly dominating.
+\end{lemma}
+
+After we represent orientations as ones and zeros forming sequence $s$, we may assume that $\#_1(s) \geq \#_0(s)$. Now in cyclic shift produced by Lemma 2. the first element is corresponding to the process containing to information about majority orientation. Because this cyclic shift is weakly dominating, the value of $vote$ will always stay nonnegative, so the message initially send by this process will go around the whole ring.
+
+\section{Complexity analysis}
+Complexity is measured in the number of messages send. We assume that every of $2^N$ ring configurations is equally probable.
+
+\begin{lemma}
+Let $p$ and $q$ be two integers, $p \geq q \geq 0$. Then among sequences with $p$ ones and $q$ zeros exactly ${p+q \choose q} \frac{p+1-q}{p+1}$ are weakly dominating.
+\end{lemma}
+
+Let $L(N)$ be the set of all sequences of zeros and ones. Let $Pref(s)$ be the set of all nonempty prefixes of cyclic shifts of sequence $s$. Define
+$$D(s) = |\{\alpha \in Pref(s) : \alpha \textrm{ is weakly dominating}\}|.$$
+
+Notice that a message $vote, distance$ is sent clockwise by the process labeled $k$ if and only if, for $\alpha \in Pref(s)$, such that the length of $\alpha$ is $distance$ and the last element of $\alpha$ corresponds to process $k$, $\alpha$ is weakly dominating.
+
+This implies that the total number of messages is equal to 
+$$2\sum_{s\in L(N)} D(s).$$
+
+By Lemma 3. we can prove that
+$$\frac{1}{2^N} 2 \sum_{s\in L(N)} D(s) = 4\sqrt{2/\pi} N^{3/2} + O(N).$$
+
+\printbibliography
+\end{document}
