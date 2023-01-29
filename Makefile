@@ -1,6 +1,6 @@
 all: test benchmark check
 
-example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example
+example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example graphs_mds_kuhn_wattenhofer_example
 
 runners_example:
 	go run example/synchronized.go 5
@@ -32,6 +32,9 @@ graphs_mst_example:
 
 graphs_mis_example:
 	go run example/graphs_mis_sync_luby.go 20 0.25
+
+graphs_mds_kuhn_example:
+	go run example/graphs_mds_sync_kuhn_wattenhofer.go 101 0.05 4
 
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
