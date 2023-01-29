@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_hirschberg_sinclair"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_hirschberg_sinclair"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
@@ -9,15 +10,27 @@ import (
 	"testing"
 )
 
-func TestUndirectedRingHirschbergSinclair(t *testing.T) {
+func TestUndirectedRingSyncHirschbergSinclair(t *testing.T) {
 	checkLogOutput()
 	sync_hirschberg_sinclair.Run(1000)
 }
 
-func BenchmarkUndirectedRingHirschbergSinclair(b *testing.B) {
+func BenchmarkUndirectedRingSyncHirschbergSinclair(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		sync_hirschberg_sinclair.Run(1000)
+	}
+}
+
+func TestUndirectedRingAsyncHirschbergSinclair(t *testing.T) {
+	checkLogOutput()
+	async_hirschberg_sinclair.Run(100)
+}
+
+func BenchmarkUndirectedRingAsyncHirschbergSinclair(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for i := 0; i < b.N; i++ {
+		async_hirschberg_sinclair.Run(100)
 	}
 }
 

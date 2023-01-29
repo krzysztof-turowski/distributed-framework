@@ -19,6 +19,7 @@ leader_directed_ring_example:
 
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
+	go run example/leader_undirected_ring_async_hirschberg_sinclair.go 10
 	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
 
 leader_undirected_graph_example:
