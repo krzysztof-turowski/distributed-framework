@@ -19,6 +19,7 @@ leader_directed_ring_example:
 
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
+	go run example/leader_undirected_ring_sync_franklin.go 10
 	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
 
 leader_undirected_graph_example:
@@ -49,7 +50,7 @@ test:
 	go test ./test -run . -v
 
 benchmark:
-	go test ./test -bench . -benchtime 10x -run Benchmark -v
+	go test ./test -bench . -benchtime 10x -run Benchmark -v -timeout 30m
 
 check:
 	@go vet `go list ./... | grep -v example`
