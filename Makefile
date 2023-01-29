@@ -33,7 +33,7 @@ graphs_mst_example:
 graphs_mis_example:
 	go run example/graphs_mis_sync_luby.go 20 0.25
 
-graphs_mds_kuhn_example:
+graphs_mds_kuhn_wattenhofer_example:
 	go run example/graphs_mds_sync_kuhn_wattenhofer.go 101 0.05 4
 
 consensus_example:
