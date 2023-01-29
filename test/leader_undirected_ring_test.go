@@ -1,12 +1,14 @@
 package test
 
 import (
-	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
-	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_hirschberg_sinclair"
-	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"io/ioutil"
 	"log"
 	"testing"
+
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_probabilistic_franklin"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_hirschberg_sinclair"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 func TestUndirectedRingHirschbergSinclair(t *testing.T) {
@@ -36,5 +38,19 @@ func BenchmarkStagesWithFeedback(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		nodes, runner := lib.BuildRing(100)
 		async_stages_with_feedback.Run(nodes, runner)
+	}
+}
+
+func TestProbabilisticFranklin(t *testing.T) {
+	checkLogOutput()
+	async_probabilistic_franklin.Run(1000, 3)
+}
+
+func BenchmarkProbabilisticFranklin(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+
+	log.SetOutput(ioutil.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		async_probabilistic_franklin.Run(1000, 3)
 	}
 }
