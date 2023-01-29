@@ -48,8 +48,6 @@ func TestProbabilisticFranklin(t *testing.T) {
 
 func BenchmarkProbabilisticFranklin(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
-
-	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		async_probabilistic_franklin.Run(1000, 3)
 	}
