@@ -15,6 +15,7 @@ leader_directed_ring_example:
 	go run example/leader_directed_ring_sync_dolev_klawe_rodeh.go b 10
 	go run example/leader_directed_ring_sync_peterson.go 10
 	go run example/leader_directed_ring_sync_itai_rodeh.go 10
+	go run example/leader_directed_ring_async_higham_przytycka.go 10
 	go run example/leader_directed_ring_async_itai_rodeh.go 10
 
 leader_undirected_ring_example:
