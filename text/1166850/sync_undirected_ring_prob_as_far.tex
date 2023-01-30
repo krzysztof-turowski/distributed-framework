@@ -113,6 +113,9 @@ To further improve performance of the algorithm, at initialization each node cho
 Processor X\textsubscript{i} wins the election if and only if it has made a full round along the ring, which implies that X\textsubscript{i} is the largest id (hence a sole winner) and all other processors must have their local X\textsubscript{j} variables set to X\textsubscript{i}. It follows that sending a $\langle$!$\rangle$ message around the ring will allow all processors to terminate. We work under the assumption that all processes start simultaneously, otherwise the first message a processor receives wakes it up and it completes initialization step before processing the message.
 
 \section{Complexity analysis}
+Both \textit{As Far As It Can} and its probabilistic version of require $O(n)$ rounds and $O(n^2)$ messages in the worst case, however in oriented and unidirectional rings \textit{As Far As It Can} costs around $nH_n$ messages on average. We will show that the probabilistic version's expected message complexity is bounded by $\frac{3}{4}n(H_n+\frac{2}{3}-\frac{1}{3n})$.
+
+
 Let's denote by $D(i)$ a sequence obtained by reading the elements of a permutation on ${\{1\dots n\}}$ in the clockwise direction starting from $i$, and let $D^R(i)$ be defined similarly for anticlockwise reading. For an element $j$ in $D$ let $\triangle_D(i,j)$  be the distance from i to j measured in the clockwise direction. We call a processor $r$ a c-eliminator of $i$ (a-eliminator) in D, if there is a nonzero probability that message $i$ will be discarded after a direct comparison with $r$ or contact with a node which has its local MAX set to $r$ where $i$ is moving clockwise (anticlockwise).
 
 for a permutation $\pi= \langle \sigma_1 \dots \sigma_n \rangle$  on ${\{1\dots n\}}$ let's define \[REC(\pi):=\{\sigma_i : 1<i<=n \land \forall j<i, \quad \sigma_j<\sigma_i\}\]
