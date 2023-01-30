@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"log"
+	"sync"
 )
 
 type modeType string
@@ -25,8 +26,10 @@ const (
 )
 
 type state struct {
-	Status modeType
-	MaxNum int
+	Status             modeType
+	MaxNum             int
+	ComebackCounter    int
+	LastMessageCounter int
 }
 
 type message struct {
@@ -35,129 +38,146 @@ type message struct {
 	Num         int
 }
 
-func send(v lib.Node, s state, mLeft message, mRight message) {
+func send(v lib.Node, m message, isLeft bool, wg *sync.WaitGroup) {
+	var sendIndex int
+	if isLeft {
+		sendIndex = 0
+	} else {
+		sendIndex = 1
+	}
+
+	message, _ := json.Marshal(m)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		v.SendMessage(sendIndex, message)
+	}()
+}
+
+func receive(v lib.Node) (message, bool) {
+	var m message
+	var isLeft bool
+	i, inMessage := v.ReceiveAnyMessage()
+	json.Unmarshal(inMessage, &m)
+	if i == 0 {
+		isLeft = true
+	} else {
+		isLeft = false
+	}
+	return m, isLeft
+}
+
+func initialize(v lib.Node, wg *sync.WaitGroup) bool {
+	s := state{Status: unknown, MaxNum: 1, ComebackCounter: 0}
 	data, _ := json.Marshal(s)
 	v.SetState(data)
-	if s.Status == leader {
-		mEnd := message{MessageType: end}
-		endMessage, _ := json.Marshal(mEnd)
-		v.SendMessage(0, endMessage)
-		v.SendMessage(1, endMessage)
-		return
-	}
-	if mLeft.MessageType == end && mRight.MessageType == end {
-		return
-	}
-	if s.Status != nonleader || (s.Status == nonleader && mLeft.MessageType == end) {
-		if mLeft.MessageType != null {
-			leftMessage, _ := json.Marshal(mLeft)
-			v.SendMessage(0, leftMessage)
-		} else {
-			v.SendMessage(0, nil)
-		}
-	}
-	if s.Status != nonleader || (s.Status == nonleader && mRight.MessageType == end) {
-		if (s.Status != nonleader && mRight.MessageType != null) || (s.Status == nonleader && mRight.MessageType == end) {
-			rightMessage, _ := json.Marshal(mRight)
-			v.SendMessage(1, rightMessage)
-		} else {
-			v.SendMessage(1, nil)
-		}
-	}
-
-}
-
-func receive(v lib.Node) (state, message, message) {
-	var s state
-	json.Unmarshal(v.GetState(), &s)
-	var mLeft, mRight message
-	i, inMessage := v.ReceiveAnyMessage()
-	if i == 0 {
-		json.Unmarshal(inMessage, &mLeft)
-		inMessage = v.ReceiveMessage(1)
-		json.Unmarshal(inMessage, &mRight)
-	} else {
-		json.Unmarshal(inMessage, &mRight)
-		inMessage = v.ReceiveMessage(0)
-		json.Unmarshal(inMessage, &mLeft)
-	}
-	return s, mLeft, mRight
-}
-
-func initialize(v lib.Node) bool {
-	s := state{Status: unknown, MaxNum: 1}
 	log.Println("Node", v.GetIndex(), "initiates a message with length", s.MaxNum)
-	send(v, s, message{
+	send(v, message{
 		MessageType: out,
 		Value:       v.GetIndex(),
 		Num:         s.MaxNum,
-	}, message{
+	}, true, wg)
+	send(v, message{
 		MessageType: out,
 		Value:       v.GetIndex(),
 		Num:         s.MaxNum,
-	})
+	}, false, wg)
 	return false
 }
 
 func handleMessage(v lib.Node, s state, result bool, receivedA message,
 	sendA message, sendB message) (message, message, state, bool) {
 	if receivedA.MessageType == out {
-		if receivedA.Value > v.GetIndex() && receivedA.Num > 1 {
-			sendB.MessageType = out
-			sendB.Num = receivedA.Num - 1
-			sendB.Value = receivedA.Value
-		} else if receivedA.Value > v.GetIndex() && receivedA.Num == 1 {
-			sendA.MessageType = in
-			sendA.Num = 1
-			sendA.Value = receivedA.Value
+		if s.LastMessageCounter > 0 {
+			return sendA, sendB, s, result
 		} else if receivedA.Value == v.GetIndex() {
+			s.ComebackCounter++
+			if s.ComebackCounter == 1 {
+				return sendA, sendB, s, result
+			}
+			sendA.MessageType = end
+			sendA.Value = v.GetIndex()
+			sendB.MessageType = end
+			sendB.Value = v.GetIndex()
+		} else if receivedA.Value > v.GetIndex() {
+			receivedA.Num--
+			if receivedA.Num > 0 {
+				sendB.MessageType = out
+				sendB.Value = receivedA.Value
+				sendB.Num = receivedA.Num
+			} else {
+				sendA.MessageType = in
+				sendA.Value = receivedA.Value
+			}
+		}
+	} else if receivedA.MessageType == in {
+		if s.LastMessageCounter > 0 {
+			return sendA, sendB, s, result
+		} else if receivedA.Value == v.GetIndex() {
+			s.ComebackCounter++
+			if s.ComebackCounter == 2 {
+				s.ComebackCounter = 0
+				s.MaxNum *= 2
+				sendB.MessageType = out
+				sendB.Value = v.GetIndex()
+				sendB.Num = s.MaxNum
+				sendA.MessageType = out
+				sendA.Value = v.GetIndex()
+				sendA.Num = s.MaxNum
+				log.Println("Node", v.GetIndex(), "initiates a message with length", s.MaxNum)
+			}
+		} else {
+			sendB.MessageType = in
+			sendB.Value = receivedA.Value
+		}
+	} else if receivedA.MessageType == end {
+		s.LastMessageCounter++
+		if receivedA.Value != v.GetIndex() {
+			s.Status = nonleader
+			sendB.MessageType = end
+			sendB.Value = receivedA.Value
+		} else {
 			s.Status = leader
+		}
+		if s.LastMessageCounter == 2 {
 			result = true
 		}
-	} else if receivedA.MessageType == in && receivedA.Value != v.GetIndex() {
-		sendB.MessageType = in
-		sendB.Num = 1
-		sendB.Value = receivedA.Value
-	} else if receivedA.MessageType == end {
-		if s.Status != leader {
-			sendB.MessageType = end
-			s.Status = nonleader
-		}
-		result = true
 	}
 	return sendA, sendB, s, result
 }
 
-func process(v lib.Node, round int) bool {
-	s, receivedLeft, receivedRight := receive(v)
+func process(v lib.Node, wg *sync.WaitGroup) bool {
+	var st state
+	json.Unmarshal(v.GetState(), &st)
+	received, isLeft := receive(v)
 	result := false
 	sendLeft, sendRight := message{MessageType: null}, message{MessageType: null}
-	sendLeft, sendRight, s, result = handleMessage(v, s, result, receivedLeft, sendLeft, sendRight)
-	sendRight, sendLeft, s, result = handleMessage(v, s, result, receivedRight, sendRight, sendLeft)
-	if receivedLeft.Value == v.GetIndex() && receivedLeft.MessageType == in && receivedLeft.Num == 1 &&
-		receivedRight.Value == v.GetIndex() && receivedRight.MessageType == in && receivedRight.Num == 1 {
-		s.MaxNum *= 2
-		sendLeft.Value = v.GetIndex()
-		sendLeft.MessageType = out
-		sendLeft.Num = s.MaxNum
-		sendRight.Value = v.GetIndex()
-		sendRight.MessageType = out
-		sendRight.Num = s.MaxNum
-		log.Println("Node", v.GetIndex(), "initiates a message with length", s.MaxNum)
+	if isLeft {
+		sendLeft, sendRight, st, result = handleMessage(v, st, result, received, sendLeft, sendRight)
+	} else {
+		sendRight, sendLeft, st, result = handleMessage(v, st, result, received, sendRight, sendLeft)
 	}
-	send(v, s, sendLeft, sendRight)
+	data, _ := json.Marshal(st)
+	v.SetState(data)
+
+	if sendLeft.MessageType != null {
+		send(v, sendLeft, true, wg)
+	}
+	if sendRight.MessageType != null {
+		send(v, sendRight, false, wg)
+	}
 	return result
 }
 
 func run(v lib.Node) {
+	var wg sync.WaitGroup
 	v.StartProcessing()
-	finish := initialize(v)
-	v.FinishProcessing(finish)
-	for round := 1; !finish; round++ {
-		v.StartProcessing()
-		finish = process(v, round)
-		v.FinishProcessing(finish)
+	initialize(v, &wg)
+	for !process(v, &wg) {
 	}
+	wg.Wait()
+	v.FinishProcessing(true)
 }
 
 func check(vertices []lib.Node) {

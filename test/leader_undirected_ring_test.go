@@ -24,13 +24,15 @@ func BenchmarkUndirectedRingSyncHirschbergSinclair(b *testing.B) {
 
 func TestUndirectedRingAsyncHirschbergSinclair(t *testing.T) {
 	checkLogOutput()
-	async_hirschberg_sinclair.Run(100)
+	for n := 2; n <= 100; n++ {
+		async_hirschberg_sinclair.Run(n)
+	}
 }
 
 func BenchmarkUndirectedRingAsyncHirschbergSinclair(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
-		async_hirschberg_sinclair.Run(100)
+		async_hirschberg_sinclair.Run(1000)
 	}
 }
 
