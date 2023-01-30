@@ -14,8 +14,13 @@ import (
 const B_PARAMETER = 2.0
 
 type state struct {
-	Selected bool
-	Covered  bool
+	Selected        bool
+	Covered         bool
+	Span            int
+	RoundedSpan     int
+	BestRoundedSpan int
+	Candidate       bool
+	Support         int
 }
 
 type message struct {
@@ -59,157 +64,127 @@ func receive(v lib.Node, index int) int {
 	return res.Value
 }
 
-func process(v lib.Node, done *int32) {
-	uncovered_nei := make([]bool, v.GetInChannelsCount())
-	mystate := getState(v)
-	covered := 0
-	if mystate.Covered {
-		covered = 1
+func getMaxFromNei(v lib.Node) int {
+	res := 0
+	for i := 0; i < v.GetInChannelsCount(); i++ {
+		tmp := receive(v, i)
+		if tmp > res {
+			res = tmp
+		}
 	}
-	selected := mystate.Selected
-	span := 0
-	calcSpan := func() {
-		for i := 0; i < v.GetInChannelsCount(); i++ {
-			uncovered_nei[i] = false
+	return res
+}
+
+func getSumFromNei(v lib.Node) int {
+	res := 0
+	for i := 0; i < v.GetInChannelsCount(); i++ {
+		res += receive(v, i)
+	}
+	return res
+}
+
+func roundSpan(span int) int {
+	res := 1.0
+	cnt := 0
+	for ; res < float64(span); cnt++ {
+		res *= B_PARAMETER
+	}
+	return cnt
+}
+
+func process(v lib.Node, done *int32, round int) bool {
+	mystate := getState(v)
+	switch round % 7 {
+	case 0: // span calculation
+		covered := 0
+		if mystate.Covered {
+			covered = 1
 		}
 		sendToAllNeighbors(v, covered)
-		span = 1 - covered
+		span := 1 - covered
 		for i := 0; i < v.GetInChannelsCount(); i++ {
-			tmp := receive(v, i)
-			span += 1 - tmp
-			uncovered_nei[i] = tmp == 0
+			span += 1 - receive(v, i)
 		}
-	}
-
-	calcRoundedSpan := func() int {
-		res := 1.0
+		mystate.Span = span
+		mystate.RoundedSpan = roundSpan(span)
+	case 1: // getting best rounded span from N^1(v)
+		sendToAllNeighbors(v, mystate.RoundedSpan)
+		mx := getMaxFromNei(v)
+		if mystate.RoundedSpan > mx {
+			mx = mystate.RoundedSpan
+		}
+		mystate.BestRoundedSpan = mx
+	case 2: // getting best rounded span from N^2(v) and selecting candidates
+		sendToAllNeighbors(v, mystate.BestRoundedSpan)
+		mx := getMaxFromNei(v)
+		mystate.Candidate = mystate.RoundedSpan >= mx && !mystate.Selected && mystate.Span != 0
+	case 3: // calculating support
+		if mystate.Candidate {
+			sendToAllNeighbors(v, 1)
+		} else {
+			sendToAllNeighbors(v, 0)
+		}
+		mystate.Support = getSumFromNei(v)
+		if !mystate.Covered && mystate.Candidate {
+			mystate.Support++
+		}
+	case 4: // collecting support and selecting new dominators
+		if !mystate.Covered {
+			sendToAllNeighbors(v, mystate.Support)
+		} else {
+			sendNullToNeigbors(v)
+		}
+		res := make([]int, mystate.Span)
 		cnt := 0
-		for ; res < float64(span); cnt++ {
-			res *= B_PARAMETER
-		}
-		return cnt
-	}
-
-	getMaxFromNei := func() int {
-		res := 0
-		for i := 0; i < v.GetInChannelsCount(); i++ {
-			tmp := receive(v, i)
-			if tmp > res {
-				res = tmp
-			}
-		}
-		return res
-	}
-
-	getSumFromNei := func() int {
-		res := 0
-		for i := 0; i < v.GetInChannelsCount(); i++ {
-			res += receive(v, i)
-		}
-		return res
-	}
-
-	getMedian := func(me int) int {
-		res := make([]int, span)
-		cnt := 0
-		if covered == 0 {
-			res[cnt] = me
+		if !mystate.Covered {
+			res[cnt] = mystate.Support
 			cnt++
 		}
 		for i := 0; i < v.GetInChannelsCount(); i++ {
-			if uncovered_nei[i] {
-				res[cnt] = receive(v, i)
+			tmp := v.ReceiveMessage(i)
+			if tmp != nil {
+				var val message
+				json.Unmarshal(tmp, &val)
+				res[cnt] = val.Value
 				cnt++
-			} else {
-				v.ReceiveMessage(i) // nil
 			}
 		}
-		if span == 0 {
-			return 0
+		if mystate.Span != 0 && mystate.Candidate {
+			sort.Ints(res)
+			if 1/float64(res[cnt/2]) >= rand.Float64() {
+				mystate.Selected = true
+			}
 		}
-		sort.Ints(res)
-		return res[cnt/2]
-	}
-	// calculating span, i.e. uncovered neighborhood
-	calcSpan()
-	v.FinishProcessing(false)
-	// rounded span
-	d_v := calcRoundedSpan()
-	// mx = max of span from N^1(v)
-	v.StartProcessing()
-	sendToAllNeighbors(v, d_v)
-	mx := getMaxFromNei()
-	v.FinishProcessing(false)
-	// mx = max of span from N^2(v)
-	v.StartProcessing()
-	if d_v > mx {
-		mx = d_v
-	}
-	sendToAllNeighbors(v, mx)
-	mx = getMaxFromNei()
-	candidate := d_v >= mx && !selected && span != 0
-	v.FinishProcessing(false)
-	// announce candidates, calculate for every uncovered node s(v) = how many candidates cover it
-	v.StartProcessing()
-	if candidate {
-		sendToAllNeighbors(v, 1)
-	} else {
-		sendToAllNeighbors(v, 0)
-	}
-	s_v := getSumFromNei()
-	if covered == 0 && candidate {
-		s_v++
-	}
-	v.FinishProcessing(false)
-	// gather s(v) from neighbors
-	v.StartProcessing()
-	if covered == 0 {
-		sendToAllNeighbors(v, s_v)
-	} else {
-		sendNullToNeigbors(v)
-	}
-	med := getMedian(s_v)
-	v.FinishProcessing(false)
-	// add candidate to dominating set with chance 1/(median of s_v from uncovered neighbors)
-	if med != 0 && candidate {
-		if 1/float64(med) >= rand.Float64() {
-			selected = true
-			setState(v, state{Selected: selected, Covered: true})
+	case 5: // announcing new dominators
+		cnt := 0
+		if mystate.Selected {
+			cnt++
+			sendToAllNeighbors(v, 1)
+		} else {
+			sendToAllNeighbors(v, 0)
+		}
+		cnt += getSumFromNei(v)
+		if !mystate.Covered && cnt != 0 {
+			atomic.AddInt32(done, -1)
+			mystate.Covered = true
+		}
+	case 6: // synchronization
+		if *done == 0 {
+			return true
 		}
 	}
-	// recalc covered nodes
-	v.StartProcessing()
-	if selected {
-		sendToAllNeighbors(v, 1)
-	} else {
-		sendToAllNeighbors(v, 0)
-	}
-	cov_sum := getSumFromNei()
-	if selected {
-		cov_sum++
-	}
-	// first time covered nodes contribute to stop condition
-	if cov_sum != 0 && covered == 0 {
-		atomic.AddInt32(done, -1)
-		setState(v, state{Selected: selected, Covered: true})
-	}
+	setState(v, mystate)
+	return false
 }
 
-func run(v lib.Node, finish *int32) {
+func run(v lib.Node, done *int32) {
 	v.StartProcessing()
-	initialize(v)
-	v.FinishProcessing(false)
-	for {
+	finish := initialize(v)
+	v.FinishProcessing(finish)
+	for rnd := 0; !finish; rnd++ {
 		v.StartProcessing()
-		process(v, finish)
-		v.FinishProcessing(false)
-		v.StartProcessing()
-		if *finish == 0 {
-			v.FinishProcessing(true)
-			break
-		} else {
-			v.FinishProcessing(false)
-		}
+		finish := process(v, done, rnd)
+		v.FinishProcessing(finish)
 	}
 }
 
