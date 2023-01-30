@@ -37,8 +37,6 @@ func run(node lib.Node) {
 	initialize(node)
 	if process(node) {
 		finishAsLeader(node)
-	} else {
-		//node.IgnoreFutureMessages()
 	}
 	node.FinishProcessing(true)
 }
@@ -80,9 +78,9 @@ func handleActive(node lib.Node) {
 	sender, byteMsg := node.ReceiveAnyMessage()
 
 	if sender == LEFT {
-		valLeft, valRight = handleTwoMessages(node, LEFT, RIGHT, byteMsg)
+		valLeft, valRight = handleTwoMessages(node, RIGHT, byteMsg)
 	} else {
-		valRight, valLeft = handleTwoMessages(node, RIGHT, LEFT, byteMsg)
+		valRight, valLeft = handleTwoMessages(node, LEFT, byteMsg)
 	}
 	id := getState(node).Id
 	if valLeft > id || valRight > id {
@@ -100,12 +98,12 @@ func handleActive(node lib.Node) {
 	}
 }
 
-func handleTwoMessages(node lib.Node, first int, second int, firstMsgBytes []byte) (uint64, uint64) {
+func handleTwoMessages(node lib.Node, secondNeighbour int, firstMsgBytes []byte) (uint64, uint64) {
 	var firstMsg messageContent
 	var secondMsg messageContent
 	byteMsg := firstMsgBytes
 	decodeAll(byteMsg, &firstMsg)
-	byteMsg = node.ReceiveMessage(second)
+	byteMsg = node.ReceiveMessage(secondNeighbour)
 	decodeAll(byteMsg, &secondMsg)
 	return firstMsg.Value, secondMsg.Value
 }
@@ -118,20 +116,15 @@ func handlePassive(node lib.Node) {
 	log.Println("Node", node.GetIndex(), "becomes passive")
 	for {
 		sender, byteMsg = node.ReceiveAnyMessage()
-		if sender == LEFT {
-			decodeAll(byteMsg, &msg)
-			node.SendMessage(RIGHT, byteMsg)
-			if msg.IsFinal {
-				setFinalState(node, msg.Value, false)
-				return
-			}
-		} else {
-			decodeAll(byteMsg, &msg)
-			node.SendMessage(LEFT, byteMsg)
-			if msg.IsFinal {
-				setFinalState(node, msg.Value, false)
-				return
-			}
+		other := RIGHT
+		if sender == RIGHT {
+			other = LEFT
+		}
+		decodeAll(byteMsg, &msg)
+		node.SendMessage(other, byteMsg)
+		if msg.IsFinal {
+			setFinalState(node, msg.Value, false)
+			return
 		}
 	}
 }
