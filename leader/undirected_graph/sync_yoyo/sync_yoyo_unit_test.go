@@ -32,6 +32,10 @@ func (v *testNode) ReceiveAnyMessage() (int, []byte) {
 	return 0, nil
 }
 
+func (v *testNode) ReceiveMessageIfAvailable(index int) []byte {
+	return nil
+}
+
 func (v *testNode) SendMessage(index int, message []byte) {
 
 }
