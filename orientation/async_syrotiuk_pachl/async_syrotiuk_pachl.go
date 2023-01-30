@@ -121,7 +121,7 @@ func check(vertices []lib.Node) {
 	firstNodeIndex := vertices[0].GetIndex()
 	previousNodeIndex := vertices[0].GetIndex()
 	currentNode := vertices[0].GetInNeighbors()[orientation]
-	state := getState(currentNode)
+	state := getState(vertices[0])
 	if state.Indicative && state.Agreement {
 		foundOrientation = orientation
 	}

@@ -55,7 +55,7 @@ Every process executes the following algorithm:
 \section{Correctness}
 Proof of correctness is based on combinatorial results about sequences of zeros and ones. One represent first type of orientation, zero the opposite orientation.
 
-In a sequence $s$ of zeros and ones we define $\#_0(s)$ and $\#_1(s)$ as number of zeros and ones in $s$, respectively. We call $s$ \textit{dominating} if $\#_1(s) > \#_0(s)$. We call $s$ \textit{weakly dominating} if $\#_1(s) \geq \#_0(s)$.
+In a sequence $s$ of zeros and ones we define $\#_0(s)$ and $\#_1(s)$ as number of zeros and ones in $s$, respectively. We call $s$ \textit{dominating} if $\#_1(t) > \#_0(t)$ for every nonempty prefix $t$ of $s$. We call $s$ \textit{weakly dominating} if $\#_1(t) \geq \#_0(t)$ for every prefix $t$ of $s$.
 
 \begin{lemma}
 \textbf{The Cycle Lemma.} For any sequence of $p$ ones and $q$ zeros, $p \geq q \geq 0$ exactly $p-q$ cyclic shifts of $s$ are dominating.
