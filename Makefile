@@ -1,6 +1,6 @@
 all: test benchmark check
 
-example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example
+example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_directed_clique_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example
 
 runners_example:
 	go run example/synchronized.go 5
@@ -16,6 +16,9 @@ leader_directed_ring_example:
 	go run example/leader_directed_ring_sync_peterson.go 10
 	go run example/leader_directed_ring_sync_itai_rodeh.go 10
 	go run example/leader_directed_ring_async_itai_rodeh.go 10
+
+leader_directed_clique_example:
+	go run example/leader_clique_async_loui_matsushita_west.go 10
 
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10

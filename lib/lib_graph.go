@@ -272,3 +272,20 @@ func BuildCompleteGraphWithLoops(n int, oriented bool, indexGenerator Generator)
 	}
 	return vertices, synchronizer
 }
+func BuildHamiltonianOrientedCompleteGraph(n int) ([]Node, Runner) {
+	vertices, runner := BuildEmptyDirectedGraph(n, GetRandomGenerator())
+	chans := getSynchronousChannels(n * (n - 1))
+	counter := 0
+	for i := 0; i < n; i++ {
+		for j := 1; j < n; j++ {
+			addOneWayConnection(vertices[i].(*oneWayNode), vertices[(i+j)%n].(*oneWayNode), chans[counter])
+			counter += 1
+			log.Println("Channel", vertices[i].GetIndex(), "->", vertices[(i+j)%n].GetIndex(), "set up")
+		}
+	}
+	return vertices, runner
+}
+func BuildSynchronizedHamiltonianOrientedCompleteGraph(n int) ([]Node, Synchronizer) {
+	vertices, runner := BuildHamiltonianOrientedCompleteGraph(n)
+	return vertices, asSynchronizer(runner)
+}
