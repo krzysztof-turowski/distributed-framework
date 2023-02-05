@@ -41,6 +41,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 ### Graph algorithms
 
+#### Synchronized dominating set
+1. LRG algorithm
+
 #### Synchronized minimum spanning tree
 1. Gallager-Humblet-Spira algorithm
 
