@@ -30,6 +30,7 @@ leader_undirected_mesh_example:
 
 graphs_ds_example:
 	go run example/graphs_ds_sync_lrg.go 10 0.70
+	go run example/graphs_ds_sync_kuhn_wattenhofer.go 101 0.05 4
 
 graphs_mst_example:
 	go run example/graphs_mst_sync_ghs.go 10 30 100
