@@ -73,18 +73,24 @@ func initialize(node lib.Node) {
 }
 
 func handleActive(node lib.Node) {
-	var valLeft uint64
+  var valLeft uint64
 	var valRight uint64
 	sender, byteMsg := node.ReceiveAnyMessage()
-
 	if sender == LEFT {
-		valLeft, valRight = handleTwoMessages(node, RIGHT, byteMsg)
+		valLeft = getValue(byteMsg)
+    valRight = getValue(node.ReceiveMessage(RIGHT))
 	} else {
-		valRight, valLeft = handleTwoMessages(node, LEFT, byteMsg)
+		valRight = getValue(byteMsg)
+    valLeft = getValue(node.ReceiveMessage(LEFT))
 	}
 	id := getState(node).Id
 	if valLeft > id || valRight > id {
-		setPassiveState(node)
+		setState(node, &state{
+      Id:       getState(node).Id,
+      IsLeader: false,
+      LeaderId: 0,
+      Phase:    passive,
+    })
 	} else if valLeft < id && valRight < id {
 		byteMsg = encodeAll(messageContent{
 			Value:   id,
@@ -94,18 +100,19 @@ func handleActive(node lib.Node) {
 		node.SendMessage(RIGHT, byteMsg)
 	} else {
 		log.Println("[LEADER] Node", node.GetIndex(), "becomes leader")
-		setFinalState(node, id, true)
+    setState(node, &state{
+      Id:       getState(node).Id,
+      IsLeader: true,
+      LeaderId: id,
+      Phase:    knownLeader,
+    })
 	}
 }
 
-func handleTwoMessages(node lib.Node, secondNeighbour int, firstMsgBytes []byte) (uint64, uint64) {
-	var firstMsg messageContent
-	var secondMsg messageContent
-	byteMsg := firstMsgBytes
-	decodeAll(byteMsg, &firstMsg)
-	byteMsg = node.ReceiveMessage(secondNeighbour)
-	decodeAll(byteMsg, &secondMsg)
-	return firstMsg.Value, secondMsg.Value
+func getValue(byteMsg []byte) uint64 {
+	var msg messageContent
+	decodeAll(byteMsg, &msg)
+	return msg.Value
 }
 
 func handlePassive(node lib.Node) {
@@ -123,28 +130,15 @@ func handlePassive(node lib.Node) {
 		decodeAll(byteMsg, &msg)
 		node.SendMessage(other, byteMsg)
 		if msg.IsFinal {
-			setFinalState(node, msg.Value, false)
+      setState(node, &state{
+        Id:       getState(node).Id,
+        IsLeader: false,
+        LeaderId: msg.Value,
+        Phase:    knownLeader,
+      })
 			return
 		}
 	}
-}
-
-func setFinalState(node lib.Node, leaderId uint64, isLeader bool) {
-	setState(node, &state{
-		Id:       getState(node).Id,
-		IsLeader: isLeader,
-		LeaderId: leaderId,
-		Phase:    knownLeader,
-	})
-}
-
-func setPassiveState(node lib.Node) {
-	setState(node, &state{
-		Id:       getState(node).Id,
-		IsLeader: false,
-		LeaderId: 0,
-		Phase:    passive,
-	})
 }
 
 func finishAsLeader(node lib.Node) {
