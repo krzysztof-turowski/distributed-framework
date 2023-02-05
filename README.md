@@ -50,6 +50,11 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Synchronized maximal independent set
 1. Luby algorithm
 
+### Orientation
+
+#### Asynchronous ring
+1. Syrotiuk-Pachl algorithm
+
 ## Running
 
 Run example:
