@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-func RunUsingMaxDegreeInGraph(vertices []lib.Node, synchronizer lib.Synchronizer, roundsParam int) {
+func RunWithMaxDegree(vertices []lib.Node, synchronizer lib.Synchronizer, roundsParam int) {
 	if roundsParam <= 0 { panic("roundsParam has to be a positive integer") }
 	
 	delta := -1

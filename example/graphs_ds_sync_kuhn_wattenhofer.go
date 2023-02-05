@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
-	"github.com/krzysztof-turowski/distributed-framework/graphs/mds/sync_kuhn_wattenhofer"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/ds/sync_kuhn_wattenhofer"
 )
 
 func main() {
@@ -22,5 +22,5 @@ func main() {
 		return
 	}
 	vertices, synchronizer := lib.BuildSynchronizedRandomGraph(n, p)
-	sync_kuhn_wattenhofer.Run(vertices, synchronizer, k) // opt = ??
+	sync_kuhn_wattenhofer.Run(vertices, synchronizer, k)
 }
