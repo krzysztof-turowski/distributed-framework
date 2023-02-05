@@ -1,6 +1,6 @@
 all: test benchmark check
 
-example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example orientation_example graphs_mst_example graphs_mis_example graphs_ds_example consensus_example
+example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example orientation_example size_estimation_example graphs_mst_example graphs_mis_example graphs_ds_example consensus_example
 
 runners_example:
 	go run example/synchronized.go 5
@@ -51,6 +51,9 @@ consensus_example:
 
 orientation_example:
 	go run example/orientation_async_syrotiuk_pachl.go 10
+
+size_estimation_example:
+	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
 
 unit_test:
 	go test ./leader/undirected_graph/sync_yoyo -v
