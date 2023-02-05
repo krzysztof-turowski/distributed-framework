@@ -1,0 +1,136 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{amssymb}
+\usepackage[english]{babel}
+\usepackage{filecontents}
+\usepackage{csquotes}
+\usepackage{graphicx}
+
+\usepackage[colorlinks=false]{hyperref}
+\usepackage[backend=bibtex,style=chem-angew,citestyle=numeric-comp,articletitle=true,hyperref=true,url=true]{biblatex}
+\addbibresource{biblio.bib}
+\usepackage{titlesec}
+\usepackage{tocloft}
+
+\begin{filecontents}{biblio.bib}
+@InProceedings{Bakhshi,
+author="Bakhshi, Rena
+and Fokkink, Wan
+and Pang, Jun
+and van de Pol, Jaco",
+editor="Ausiello, Giorgio
+and Karhum{\"a}ki, Juhani
+and Mauri, Giancarlo
+and Ong, Luke",
+title="Leader Election in Anonymous Rings: Franklin Goes Probabilistic",
+booktitle="Fifth Ifip International Conference On Theoretical Computer Science -- Tcs 2008",
+year="2008",
+publisher="Springer US",
+address="Boston, MA",
+pages="57--72",
+abstract="We present a probabilistic leader election algorithm for anonymous, bidirectional, asynchronous rings. It is based on an algorithm from Franklin 22, augmented with random identity selection, hop counters to detect identity clashes, and round numbers modulo 2. As a result, the algorithm is finite-state, so that various model checking techniques can be employed to verify its correctness, that is, eventually a unique leader is elected with probability one. We also sketch a formal correctness proof of the algorithm for rings with arbitrary size.",
+isbn="978-0-387-09680-3"
+}
+@article{10.1145/358506.358517, author = {Franklin, Randolph}, title = {On an Improved Algorithm for Decentralized Extrema Finding in Circular Configurations of Processors}, year = {1982}, issue_date = {May 1982}, publisher = {Association for Computing Machinery}, address = {New York, NY, USA}, volume = {25}, number = {5}, issn = {0001-0782}, url = {https://doi.org/10.1145/358506.358517}, doi = {10.1145/358506.358517}, abstract = {This note presents a more efficient algorithm for finding the largest element in a circular list of processors when messages can be passed in either direction. It passes 2N*floor(lg N) + 3N messages in the worst case, compared to Chang and Roberts' N(N + 1)/2 and Hirschberg and Sinclair's 8N + 8*ceiling(N lg N) messages. The technique is a selective elimination of possible processes, which then merely relay future messages between the remaining contenders.}, journal = {Commun. ACM}, month = {may}, pages = {336–337}, numpages = {2}, keywords = {decentralized algorithms, distributed systems} }
+\end{filecontents}
+
+
+\begin{document}
+\section{Leader election in asynchronous undirected ring}
+The goal is to elect a leader in an undirected ring with $n$ nodes that communicate in asynchronous rounds. We assume that processes do not carry any identity and that the size of the ring is known. We focus on communication with reliable channels but no message order preservation. Each node has a list of its neighbours in an arbitrary order.\par
+We present a probabilistic leader election algorithm \cite{Bakhshi} based on an algorithm from Franklin \cite{10.1145/358506.358517}, augmented with random identity selection, hop counters, and election round numbers modulo 2.
+
+\section{The algorithm}
+Consider a ring of processes $p_0, \ldots, p_{n-1}$ for $n > 1$. Each process is either active or passive. The idea is that we send a message from active processes to their neighbours. When an active process receives messages from both of its neighbours, it decides to stay active or to change to the passive state. In the end, there is only one active process remaining, hence it becomes the leader.\par
+In our algorithm every process $p_i$ maintains the following parameters:
+\begin{itemize}
+    \itemsep0em 
+    \item $id_i \in \{1, \ldots, k\}$ - represents the identity, not necessarily unique;
+    \item $state_i \in \{active, passive, leader, nonleader\}$;
+    \item $bit_i \in \{0,1\}$ - represents the number of the current election round mod 2.
+\end{itemize}
+All messages are of the form $(id, hop, bit)$, where
+\begin{itemize}
+    \itemsep0em 
+    \item $id$ is the identity of the process that created the message;
+    \item $hop \in \{1, \ldots, n\}$ is a counter which is increased by 1 every time the message is passed;
+    \item $bit$ represents the round of the process mod 2 (at the moment when the message was created).
+\end{itemize}
+Initially, for all processes $p_i$: $state_i = active$, $bit_i = 0$. The algorithm goes as follows:
+\begin{enumerate}
+    \itemsep0em 
+    \item At the start of each election round, an active process randomly selects an identity $id \in \{1, \ldots, k\}$ and sends the message $(id, 1, bit)$ in both directions.
+    \item Upon receipt of a message $(id, hop, bit)$, a process $p_i$ executes the following steps:
+    \begin{enumerate}
+        \itemsep0em 
+        \item if $state_i$ is passive, then $p_i$ passes the message $(id, hop+1, bit)$ in the same direction;
+        \item if $state_i$ is active and $bit_i \not = bit$, then $p_i$ stores the message to process it in the next round;
+        \item if $state_i$ is active and $bit_i = bit$, then:
+        \begin{enumerate}
+            \itemsep0em 
+            \item if $hop = n$, then $p_i$ becomes the leader;
+            \item if $hop < n$, then $p_i$ waits for a message with the same value of $bit$ from the other neighbour.
+        \end{enumerate}
+    \end{enumerate}
+    \item Upon receipt of messages with a proper value of $bit$ from both directions, $p_i$ checks if any message carries an $id$ larger than $id_i$. If this is the case, then $p_i$ becomes passive; otherwise, $p_i$ starts a new election round by inverting $bit_i$, getting a new value of $id_i$ and sending the message $(id_i, 1, bit_i)$ once again.
+    \item When a process becomes the leader, it sends this information as a special message in one direction. If a passive process receives a message from the leader, it passes it in the same direction, changes its own state to $nonleader$ and terminates.
+\end{enumerate}
+
+
+\section{Correctness and complexity}
+\begin{theorem}
+If channels are FIFO, the algorithm elects exactly one leader, even if processes and messages do not keep track of round number.
+\end{theorem}
+\begin{proof}
+We observe that if channels are FIFO, it is guaranteed that in each election round, a process receives messages from the current round since messages are created in the correct order and cannot change that order during communication via channels.
+
+In each round, active processes with the largest $id_i$ do not become passive. An active process can become a leader only if all other processes are passive. From this it follows that the algorithm elects exactly one leader.
+\end{proof}
+In our case channels are not FIFO, but we can still enforce FIFO behaviour of channels.
+
+\begin{theorem}
+Between each pair of active processes $p_1, p_2$, there are exactly two messages $m_1, m_2$:
+\begin{itemize}
+    \itemsep0em 
+    \item if messages travel in opposite directions, $p_1, p_2, m_1, m_2$ carry the same $bit$;
+    \item if messages travel in the same directions, $p_1, p_2$ carry opposite bits, as well as $m_1$ and $m_2$.
+\end{itemize}
+\end{theorem}
+\begin{proof}
+First, we observe that there are exactly two messages between each pair of active nodes. When an active node receives two messages from neighbours, it can either stay active and send another two messages, or become passive without sending any other messages; thus, the invariant holds.
+
+The rest of the theorem can be proven by analysing all possible scenarios of messages flow between three adjacent active processes. We will analyse one of the scenarios as all of them are similar to each other.
+
+Assume we have three adjacent active processes $p_1, p_2, p_3$, where $b_i = 0$ for all three processes. Every process sends a message with $bit = 0$ to its neighbours. Based of the $id$ of the messages, $p_2$ can stay active or become passive. If it becomes passive, there are two messages with $bit = 0$ between $p_1$ and $p_3$, where $bit_1 = bit_3 = 0$ as well. If $p_2$ stays active, it sends a message with $bit = 1$ to $p_1$ and $p_3$. In that case there are two messages between $p_1$ and $p_2$ with opposite bit traveling in the same direction, and $bit_1 = \neg bit_2$. The same holds for $p_2$ and $p_3$.
+\end{proof}
+
+\begin{theorem}
+    In the probabilistic Franklin algorithm with no FIFO channels, exactly one leader has been elected.
+\end{theorem}
+\begin{proof}
+    From Theorem 2 it follows that if there are two messages travelling in the same direction, they carry opposite bits. It means that an active process knows which message was created in the current round, so it can store the other message for next round. With this approach we can simulate FIFO channels, hence the theorem follows from Theorem 1.
+\end{proof}
+
+\begin{theorem}
+    The probabilistic Franklin algorithm terminates with probability $p = 1$.
+\end{theorem}
+\begin{proof}
+    With $x > 1$ active processes, they all remain active only if they choose the same identity all the time. The probability of selecting the same identity in one round is $\left( \frac{1}{k} \right)^{x-1} < 1$, so it tends towards 0 as the number of rounds gets larger. It means that there will be one active node remaining with probability $p=1$.
+\end{proof}
+
+\begin{theorem}
+    On average, the probabilistic Franklin algorithm takes $O(n \log n)$ messages.
+\end{theorem}
+\begin{proof}
+    On average, in each round about half of the active nodes become passive, so there is $O(\log n)$ rounds. Each round takes $O(n)$ messages, hence the algorithm takes $O(n \log n)$ messages.
+\end{proof}
+
+\printbibliography
+\end{document}
