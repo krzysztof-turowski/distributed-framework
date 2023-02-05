@@ -1,0 +1,107 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{filecontents}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\begin{filecontents}{\jobname.bib}
+@article{LOUI1986185,
+title = {Election in a complete network with a sense of direction},
+journal = {Information Processing Letters},
+volume = {22},
+number = {4},
+pages = {185-187},
+year = {1986},
+issn = {0020-0190},
+doi = {https://doi.org/10.1016/0020-0190(86)90025-6},
+url = {https://www.sciencedirect.com/science/article/pii/0020019086900256},
+author = {Michael C. Loui and Teresa A. Matsushita and Douglas B. West},
+keywords = {Election, distributed algorithm, message complexity, communication complexity}
+}
+\end{filecontents}
+
+\begin{document}
+
+\section*{Leader election in a clique with a sense of direction}
+
+Our goal is to elect a leader in a complete graph with $n$ nodes and asynchronous first-in-firs-out communication. We assume that every node has a unique identifier, and that all identifiers are totally ordered. The clique has a sense of direction if, given a fixed Hamiltonian cycle, at each node the label on each edge indicates the distance along the Hamiltonian cycle to the neighbouring node.
+
+Here we describe an algorithm presented by \cite{LOUI1986185}, which solves the given problem using only $O(n)$ messages. If the edges were unlabeled, and thus the graph had no sense of direction, the problem would require $\Omega (n\log n)$ messages.
+
+\subsection*{The algorithm}
+Each node can be in one of two states:
+\begin{description}
+    \item[\textit{active}] --- node is a candidate for the leader
+    \item[\textit{passive}] --- node no longer takes part in election
+\end{description}
+The idea is that each time a pair of active nodes exchanges messages, one of the nodes becomes passive, and passive nodes are bypassed by the messages. Once only the node with the largest \textit{id} is left active, it announces itself the leader.
+
+Messages sent (from node \textit{A} to node \textit{B}) contain two values:
+\begin{description}
+    \item[\textit{newid}] --- \textit{id} of the sending node
+    \item[\textit{dist}] --- distance along the Hamiltonian cycle from node \textit{A} to node \textit{B} (distance from node \textit{B} to node \textit{A} is equal to $n-dist$)
+\end{description}
+Passive nodes also hold additional value \textit{lastActiveDist} - distance from the node that caused it to become passive.
+
+Initially all nodes are active and they start by sending their \textit{id} to nodes at distance 1. When a node receives a message:
+\begin{itemize}
+    \item If the node is active and
+    \begin{itemize}
+        \item $newid > id$, it becomes passive and the value of \textit{dist} is stored in \textit{lastActiveDist},
+		\item $newid == id$, all the other nodes are passive, so the node broadcasts itself as the leader and the algorithm ends,
+		\item $newid < id$, the node sends its \textit{id} to the node at distance $n-dist$ (the node that sent the message), causing it to become passive.
+    \end{itemize}
+	\item If the node (\textit{A}) is passive, it sends to the node (\textit{B}) at distance $n-lastActiveDist$ message containing the received (from node \textit{C}) $newid$, and $dist-lastActiveDist\pmod{n}$ as the new value of \textit{dist}\footnote{There seems to be an error in the referenced article. The authors use $n-(lastActiveDist+dist)$ as the new \textit{dist}, that is as the distance from node \textit{C} to node \textit{B}. If the distance from node \textit{C} to node \textit{A} is \textit{dist}, and the distance from node \textit{A} to node \texit{B} is $n-lastActiveDist$, then the distance from node \textit{C} to node \textit{B} is the sum of the two, $n-lastActiveDist+dist$, without the parentheses. Also the value can easily become greater than $n$, while taking the modulo leaves the value in the correct range without changing the outcome.}. This causes node \textit{B} to treat the message as if received directly from node \textit{C} and further communication will omit node \textit{A}.
+\end{itemize}
+
+\subsection*{Correctness}
+The messages travel as if the graph were a two-directional cycle. At first, all are sent in the same direction. If a message hits a node that has been made passive by a different message, it is sent further in the same direction. If it hits a node with a higher \textit{id}, it is sent back in the other direction with a higher value of \textit{newid}. It is not sent further if received by a node with a lower \textit{id}, causing it to become passive, or if received by a node with an equal \textit{id}. No message can travel indefinitely, as there are finitely many different \textit{id}s.
+
+The node with the highest \textit{id} will not receive a message with its own \textit{id} unless all other nodes are passive, because such a message must be passed along the whole cycle first and not stop on any active node. Similarly, any other node cannot receive a message with its own \textit{id}, as it would have to be passed by the node with the highest \textit{id}.
+
+The bypassing done by the passive nodes cannot skip an active node. Since a passive node sends the messages to the node that made it passive, there cannot be on the cycle any active nodes between them. Also there cannot be any active nodes between this node and the one that sent the message, thus all bypassed nodes must be passive.
+
+Given the above, all of the $n$ starting messages has to stop at a different node, causing all but one nodes to become passive and the single remaining to become a leader.
+
+\subsection*{Complexity analysis}
+For the sake of the analysis, we shall divide the algorithm into phases. A phase begins with all active nodes sending a message, phase 0 is the first phase, and phase $p$ ends when all active nodes receive the messages sent during the phase $p$. During each phase, some of the passive nodes may transmit messages. Let $n_p$ be the number of active nodes at the beginning of phase $p$. It follows that
+\begin{equation}
+n_0=n
+\end{equation}
+During the execution of the algorithm passive nodes send a total of $n-1$ messages, and active nodes send
+$$\sum_{p\geqslant 0} n_p$$
+messages in total. We will bound this sum.
+
+A node remains active at the end of phase $p-1$ only if a neighbouring active node became passive during the previous phase. Thus
+\begin{equation}
+n_p \leqslant n_{p-2} - n_{p-1}
+\end{equation}
+for $p\geqslant 2$. Let $\phi = \frac{1}{2}\left( 1+\sqrt{5} \right)$. We shall prove that
+\begin{equation}
+\sum_{p\geqslant r} n_p < \phi^{2} n_r
+\end{equation}
+by the induction on the number of terms in the sum. If this sum has one or two terms, then since $n_{r+1}\leqslant n_r$ and $n_r<\phi^{2}n_r$ we have
+$$n_r + n_{r+1}\leqslant n_r + n_r < \phi^{2}n_r$$
+and the bound holds. Assume inductively that it holds for $r+1$ and $r+2$. Then
+\begin{equation}
+\sum_{p\geqslant r}n_p = n_r + \sum_{p\geqslant r+1}n_p < n_r+\phi^{2}n_{r+1}
+\end{equation}
+\begin{equation}
+\sum_{p\geqslant r}n_p = n_r + n_{r+1} + \sum_{p\geqslant r+2}n_p < n_r + n_{r+1} + \phi^{2}n_{r+1}
+\end{equation}
+Applying (2) to (5) yields
+\begin{equation}
+\sum_{p\geqslant r}n_p < n_r + n_{r+1} + \phi^{2} \left( n_r - n_{r+1} \right) = \left( 1+\phi^{2} \right) n_r + \left( 1-\phi^{2} \right)n_{r+1}
+\end{equation}
+Consequently,
+$$\sum_{p\geqslant r}n_p < \max_{n_{r+1}}\min \left\{ n_r+\phi^{2}n_{r+1}, \left( 1+\phi^{2} \right)n_r + \left( 1-\phi^{2} \right)n_{r+1} \right\} = \left( 1+\phi \right)n_r=\phi^{2}n_r$$
+as claimed in (3).
+
+Thus, by (1) and (3), the number of messages used by the algorithm is
+$$n-1+\sum_{p\geqslant 0}n_p<n-1+\phi^{2}n<3.62n=O(n)$$
+
+\bibliographystyle{plainnat}
+\bibliography{\jobname}
+\end{document}
