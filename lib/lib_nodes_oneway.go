@@ -39,6 +39,21 @@ func (v *oneWayNode) ReceiveAnyMessage() (int, []byte) {
 	}
 }
 
+func (v *oneWayNode) ReceiveMessageIfAvailable(index int) []byte {
+	neighborsCasesDefault := make([]reflect.SelectCase, 2)
+	neighborsCasesDefault[0] = v.inNeighborsCases[index]
+	neighborsCasesDefault[1] = reflect.SelectCase{Dir: reflect.SelectDefault}
+	_, value, ok := reflect.Select(neighborsCasesDefault)
+	if !ok {
+		return nil
+	}
+	message := value.Interface().([]byte)
+	if message != nil {
+		v.stats.receivedMessages++
+	}
+	return message
+}
+
 func (v *oneWayNode) SendMessage(index int, message []byte) {
 	log.Println("Node", v.GetIndex(), "sends message to neighbor", index)
 	v.outNeighborsChannels[index] <- message

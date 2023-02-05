@@ -1,0 +1,203 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{amssymb}
+\usepackage[english]{babel}
+\usepackage{filecontents}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{fixltx2e}
+
+
+
+\usepackage[colorlinks=false]{hyperref}
+\usepackage[backend=bibtex,style=chem-angew,citestyle=numeric-comp,articletitle=true,hyperref=true,url=true]{biblatex}
+\addbibresource{biblio.bib}
+\usepackage{titlesec}
+\usepackage{tocloft}
+
+\begin{filecontents}{biblio.bib}
+@article{ROTEM1987575,
+title = {Analysis of a distributed algorithm for extrema finding in a ring},
+journal = {Journal of Parallel and Distributed Computing},
+volume = {4},
+number = {6},
+pages = {575-591},
+year = {1987},
+issn = {0743-7315},
+doi = {https://doi.org/10.1016/0743-7315(87)90031-1},
+url = {https://www.sciencedirect.com/science/article/pii/0743731587900311},
+author = {D. Rotem and E. Korach and N. Santoro},
+abstract = {A new and more detailed analysis of the unidirectional algorithm of Chang and Roberts for distributed extrema finding on a ring is presented. This analysis shows that this simple algorithm, which is known to be average case optimal, compares very favorably with all the other known algorithms as it requires O(n log n) messages with probability tending to one. A bidirectional version of this algorithm is presented and is shown to dominate the unidirectional one in its average message complexity. Finally, both the unidirectional and the bidirectional algorithms are generalized to perform k selection in the ring, i.e., find the k largest labeled processors.}
+}
+@inproceedings{Santoro2006DesignAA,
+  booktitle={Design and analysis of distributed algorithms},
+  author={Nicola Santoro},
+  year={2006}
+}
+@InProceedings{10.1007/3-540-16078-7_70,
+author="Bodlaender, H. L.
+and van Leeuwen, J.",
+editor="Monien, B.
+and Vidal-Naquet, G.",
+title="New upperbounds for decentralized extrema-finding in a ring of processors",
+booktitle="STACS 86",
+year="1986",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="119--129",
+abstract="We show that decentralized extrema-finding (``election'') is more efficient in bidirectional rings than in unidirectional rings of processors, by exhibiting a (non-probabilistic) algorithm for distributed extrema-finding in bidirectional rings that requires fewer messages on the average than any such algorithm for unidirectional rings.",
+isbn="978-3-540-39758-8"
+}
+@article{LAVAULT1989167,
+title = {Average number of messages for distributed leader-finding in rings of processors},
+journal = {Information Processing Letters},
+volume = {30},
+number = {4},
+pages = {167-176},
+year = {1989},
+issn = {0020-0190},
+doi = {https://doi.org/10.1016/0020-0190(89)90208-1},
+url = {https://www.sciencedirect.com/science/article/pii/0020019089902081},
+author = {Christian Lavault},
+keywords = {Distributed algorithms, average message complexity, election, uni- and bidirectional rings}
+}
+
+\end{filecontents}
+
+\title{Leader election in synchronised undirected ring}
+\date{}
+
+
+\begin{document}
+\maketitle
+\section{Introduction}
+We consider an undirected ring with $n$ nodes. Each node is given a unique (integer) label (of which it alone is aware) which is the only factor differentiating it among other nodes and it can communicate only with its two neighbors on the ring in synchronous rounds. In such a configuration choosing a single node is a fundamental problem, known as leader election, whose solution may be applied in more complex algorithms. We will focus on choosing a node with maximal label.
+The most straight-forward approach to solving this problem is making each node send its id to an arbitrary neighbor and instructing every node to pass on received messages to neighbor opposite to source of the message while maintaining a maximum among all ids which it has seen. Once node's id traveled the whole ring back to its origin the maximal id is known. This algorithm requires $O(n)$ rounds to terminate and sends $O(n^2)$ messages between nodes. Let's call this approach \textit{All The Way}. Here we present a synchronous version of a probabilistic algorithm by Ephraim Korach, Doron Rotem, and Nicola Santoro \cite{ROTEM1987575} which on average costs approximately $.49n \log n$ message transfers, however the worst case is still $O(n^2)$ messages .
+
+\section{The algorithm}
+Let's improve the \textit{All The Way} protocol by noticing that messages need not to further circle around the ring once they have encountered a node which has seen a bigger id. We can thus modify the \textit{All The Way} protocol so that a node will only forward Election messages carrying an id greater than the biggest seen so far by that entity. However, by doing so only the elected leader will be aware of algorithm's termination. We can easily fix this by making the leader send a \textit{notify} message around the ring terminating all nodes, that strategy will incur an additional cost of $O(n)$ rounds and $n$ messages. Let's call the algorithm with only this optimization \textit{As Far As It Can}
+
+To further improve performance of the algorithm, at initialization each node chooses with equal probability one of the two directions in which it will send its initial message, with messages going clockwise and counterclockwise on the ring, it is expected that many messages run into "bigger" nodes and hence are annihilated sooner, thus resulting in the smaller message complexity of the algorithm. The algorithm in every processor consists of three successive stages, as described below for a processor X\textsubscript{i}.
+
+\subsection*{Pseudo Code}
+\begin{enumerate}
+    \item Initialization
+    \begin{enumerate}
+        \item[] MAX\textsubscript{i} := X\textsubscript{i}
+        \item[] choose a direction d \{left, right\} with probability $\frac{1}{2}$
+        \item[] send message $\langle$X\textsubscript{i}$\rangle$ in direction d
+    \end{enumerate}
+    \item Election
+    
+    Repeat following steps until the end of election is signaled by receipt of a <!> message.
+    If two messages are encountered from left and right discard smaller message and proceed as if only the larger was received.
+    \begin{enumerate}
+        \item[] Message $\langle$X\textsubscript{j}$\rangle$ received
+        \item[] if X\textsubscript{j}$>$MAX\textsubscript{i} then MAX\textsubscript{i} := X\textsubscript{j} and pass $\langle$X\textsubscript{i}$\rangle$ further on
+        \item[] elif X\textsubscript{j}$==$MAX\textsubscript{i} then X\textsubscript{i} won the election send $\langle$!$\rangle$ message
+    \end{enumerate}
+    \item Inauguration
+
+    If a message $\langle$!$\rangle$ is received by a leader then terminate otherwise pass on the message before terminating
+\end{enumerate}
+
+
+\section{Correctness}
+Processor X\textsubscript{i} wins the election if and only if it has made a full round along the ring, which implies that X\textsubscript{i} is the largest id (hence a sole winner) and all other processors must have their local X\textsubscript{j} variables set to X\textsubscript{i}. It follows that sending a $\langle$!$\rangle$ message around the ring will allow all processors to terminate. We work under the assumption that all processes start simultaneously, otherwise the first message a processor receives wakes it up and it completes initialization step before processing the message.
+
+\section{Complexity analysis}
+Both \textit{As Far As It Can} and its probabilistic version of require $O(n)$ rounds and $O(n^2)$ messages in the worst case, however in oriented and unidirectional rings \textit{As Far As It Can} costs around $nH_n$ messages on average. We will show that the probabilistic version's expected message complexity is bounded by $\frac{3}{4}n(H_n+\frac{2}{3}-\frac{1}{3n})$.
+
+
+Let's denote by $D(i)$ a sequence obtained by reading the elements of a permutation on ${\{1\dots n\}}$ in the clockwise direction starting from $i$, and let $D^R(i)$ be defined similarly for anticlockwise reading. For an element $j$ in $D$ let $\triangle_D(i,j)$  be the distance from i to j measured in the clockwise direction. We call a processor $r$ a c-eliminator of $i$ (a-eliminator) in D, if there is a nonzero probability that message $i$ will be discarded after a direct comparison with $r$ or contact with a node which has its local MAX set to $r$ where $i$ is moving clockwise (anticlockwise).
+
+for a permutation $\pi= \langle \sigma_1 \dots \sigma_n \rangle$  on ${\{1\dots n\}}$ let's define \[REC(\pi):=\{\sigma_i : 1<i<=n \land \forall j<i, \quad \sigma_j<\sigma_i\}\]
+\begin{lemma}
+Let $REC(D(i))$ be the sequence of records of $D(i)$ with $r_1$ as the first element. Element $r$ is a c-eliminator of $i$ if and only if
+\[r \in REC(D(i)) \quad \land \quad \left \lceil \frac{\triangle_D(i,r)}{2} \right \rceil < \triangle_D(i,r_1) \]
+\end{lemma}
+\begin{proof}
+$r$ obviously has to be bigger than all its predecessors to discard $i$, otherwise they will never meet. By synchronicity assumption distance from $r$ to $r_1$ must not be greater than distance from $i$ to $r_1$ otherwise $i$ will be discarded by $r_1$
+\end{proof}
+In fact we can easily derive probability that $i$ will be discarded by a given c-eliminator. Given c-eliminators $r_1 \dots r_m$ 
+$$
+P(i\text{ is eliminated by }r_t) =
+\begin{cases}
+\frac{1}{2}+(\frac{1}{2})^m \qquad  if \qquad t=1\\
+(\frac{1}{2})^t \qquad \qquad if \qquad t>1
+\end{cases}
+$$
+the first case is the probability of  $r_1$ going anticlockwise or all upper records going clockwise, the second case is the probability of $r_t$ going anticlockwise and c-eliminators $r_1 \dots r_{t-1}$ moving clockwise.
+
+\begin{theorem}
+Average number of messages is bounded by $\frac{3}{4}n(H_n+\frac{2}{3}-\frac{1}{3n})$ for $n>3$
+\end{theorem}
+\begin{proof}
+For a given labeling of processors we can obtain two rings $D$ and $D^R$. Let's consider processor $i$ and its c-eliminators $r_1 \dots r_m$ and a-eliminators $s_1 \dots s_k$ in $D$. Note that c-eliminators in $D$ are a-eliminators in $D^R$ and vice-versa. For a given pair $D$ and $D^R$, the total distance traveled by $i$ under algorithm \textit{As Far As It Can} is
+$$
+\triangle_D(i, r1) + \triangle_{D^R}(i, s1)
+$$
+
+Let's now use the earlier derived probabilities of c-eliminator discarding an element to analyze the probabilistic version of \textit{As Far As It Can}. Let $E_i(D)$ be the expected distance traveled by $i$ in ring D. The summands are multiplied by $\frac{1}{2}$ to count in the probability of choosing direction.
+$$
+E_i(D) =  
+\left(\sum_{j=1}^{m}
+(\frac{1}{2^{j+1}})
+\left \lceil \frac{\triangle_D(i,r_j)}{2} \right \rceil \right)
++ (\frac{1}{2^{m+1}}) \triangle_D(i,r_1)
++
+\left(\sum_{j=1}^{k}
+(\frac{1}{2^{j+1}})
+\left \lceil \frac{\triangle_{D^R}(i,s_j)}{2} \right \rceil \right)
++ (\frac{1}{2^{k+1}}) \triangle_{D^R}(i,s_1)
+$$
+By symmetry $E_i(D^R)$ is equal to $E_i(D)$. We can get the following upper bound on the sum of these two expected values by considering only $r_1$ and $s_1$
+$$
+E_i(D)+E_i(D^R))
+\leq 
+\frac{1}{2}
+\left (
+\triangle_D(i,r_1)
++ 
+\triangle_{D^R}(i,s_1)
++
+\left \lceil \frac{\triangle_D(i,r_1)}{2} \right \rceil
++
+\left \lceil \frac{\triangle_{D^R}(i,s_1)}{2} \right \rceil
+\right )
+$$
+
+which can be simplified to
+$$
+E_i(D)+E_i(D^R))
+\leq 
+\frac{3}{4}
+\left (
+\triangle_D(i,r_1)
++ 
+\triangle_{D^R}(i,s_1)
+\right )
++
+\frac{1}{2}
+$$
+So the probabilistic algorithm for a given i travels three quarters of deterministic \textit{As Far As It Can} and a constant $\frac{1}{2}$ (a quarter per permutation). This bound holds for all $i$ except for $n$, which goes through $n$ nodes in both algorithms. Average message complexity of \textit{As Far As It Can} when ignoring $n$ is $nH_n-n$ \cite{Santoro2006DesignAA} hence the bound we calculated is
+$$
+\frac{3}{4}( nH_n-n ) + \frac{n-1}{4} + n
+$$
+which simplifies to 
+$$
+\frac{3}{4}n(H_n+\frac{2}{3}-\frac{1}{3n})
+$$
+\end{proof}
+The bound can be further tightened by considering higher-order upper records as well. \cite{LAVAULT1989167}
+
+\nocite{*}
+\printbibliography
+\end{document}
