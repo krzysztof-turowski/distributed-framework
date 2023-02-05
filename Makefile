@@ -1,12 +1,9 @@
 all: test benchmark check
 
-example: runners_example leader_directed_hypercube_example leader_directed_ring_example leader_directed_clique_example leader_undirected_ring_example leader_undirected_graph_example leader_undirected_mesh_example graphs_mst_example graphs_mis_example consensus_example
+example: runners_example leader_directed_ring_example leader_undirected_ring_example leader_directed_clique_example leader_undirected_mesh_example leader_directed_hypercube_example leader_undirected_graph_example orientation_example size_estimation_example graphs_mst_example graphs_mis_example graphs_ds_example consensus_example
 
 runners_example:
 	go run example/synchronized.go 5
-
-leader_directed_hypercube_example:
-	go run example/leader_directed_hypercube_sync_hyperelect.go 6
 
 leader_directed_ring_example:
 	go run example/leader_directed_ring_sync_all.go 10
@@ -15,20 +12,38 @@ leader_directed_ring_example:
 	go run example/leader_directed_ring_sync_dolev_klawe_rodeh.go b 10
 	go run example/leader_directed_ring_sync_peterson.go 10
 	go run example/leader_directed_ring_sync_itai_rodeh.go 10
+	go run example/leader_directed_ring_async_higham_przytycka.go 10
 	go run example/leader_directed_ring_async_itai_rodeh.go 10
+
+leader_undirected_ring_example:
+	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
+	go run example/leader_undirected_ring_sync_franklin.go 10
+	go run example/leader_undirected_ring_sync_prob_as_far.go 10
+	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
+	go run example/leader_undirected_ring_async_franklin.go 10
+	go run example/leader_undirected_ring_async_probabilistic_franklin.go 10 3
 
 leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
 
-leader_undirected_ring_example:
-	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
-	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
+leader_undirected_mesh_example:
+	go run example/leader_undirected_mesh_sync_peterson.go 6 9
+
+leader_directed_hypercube_example:
+	go run example/leader_directed_hypercube_sync_hyperelect.go 6
 
 leader_undirected_graph_example:
 	go run example/leader_undirected_graph_sync_yoyo.go 20 0.25
 
-leader_undirected_mesh_example:
-	go run example/leader_undirected_mesh_sync_peterson.go 6 9
+orientation_example:
+	go run example/orientation_async_syrotiuk_pachl.go 10
+
+size_estimation_example:
+	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
+
+graphs_ds_example:
+	go run example/graphs_ds_sync_lrg.go 10 0.70
+	go run example/graphs_ds_sync_kuhn_wattenhofer.go 101 0.05 4
 
 graphs_mst_example:
 	go run example/graphs_mst_sync_ghs.go 10 30 100
@@ -52,7 +67,7 @@ test:
 	go test ./test -run . -v
 
 benchmark:
-	go test ./test -bench . -benchtime 10x -run Benchmark -v
+	go test ./test -bench . -benchtime 10x -run Benchmark -v -timeout 30m
 
 check:
 	@go vet `go list ./... | grep -v example`
