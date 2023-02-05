@@ -21,6 +21,7 @@ leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
 	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
 	go run example/leader_undirected_ring_async_franklin.go 10
+	go run example/leader_undirected_ring_async_probabilistic_franklin.go 10 3
 
 leader_undirected_graph_example:
 	go run example/leader_undirected_graph_sync_yoyo.go 20 0.25
