@@ -32,6 +32,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Asynchronous undirected ring
 1. Stages with feedback (Korach-Rotem-Santoro) algorithm
+2. Franklin algorithm
 
 ### Consensus
 
@@ -42,11 +43,19 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 ### Graph algorithms
 
+#### Synchronized dominating set
+1. LRG algorithm
+
 #### Synchronized minimum spanning tree
 1. Gallager-Humblet-Spira algorithm
 
 #### Synchronized maximal independent set
 1. Luby algorithm
+
+### Orientation
+
+#### Asynchronous ring
+1. Syrotiuk-Pachl algorithm
 
 ## Running
 
