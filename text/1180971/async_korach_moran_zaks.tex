@@ -1,0 +1,213 @@
+\documentclass{article}
+
+\usepackage[english]{babel}
+\usepackage{filecontents}
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+\usepackage{amsmath}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{amsthm}
+
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{natbib}
+\usepackage{cleveref}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+
+\begin{document}
+\section*{Bright Idea}
+Let's imagine we have a problem, we have just conquered some big area with \(n\) cities. We are unable to rule over them ourselves so we give each city to some low level governor (a King). 
+
+But we need someone who will maintain order and rule over them, like a King of Kings! Unfortunately, after we granted \(n\) kings land, we are in no position of revoking them, so one of them should be the overlord of them, they would rebel otherwise. We also don't have time to elect a king ourselves as we need to return home.
+
+So we ordered them to find their new King.
+As a result each King will try to expand theirs sphere of influence as much as possible by asking (politely) other kings to join his kingdom.
+
+The most successful will be granted the title of "King of Kings".
+
+\section*{More formal definition of a problem}
+\subsection*{Definitions}
+
+    \(G\) - Complete Graph.\\
+\(V(G)\) - Set of Vertices of graph G\\
+\(E(G)\) - Set of Edges in graph G\\
+\(P(v)\) - predicate that returns true(or returns his id) if \(v\) was chosen, else false(or returns id of the chosen node)
+
+The leader election problem - choose exactly one node \(v \in V(G)\) that \(P(v) = true\) and \(\forall u \in V(G)\), \( u \ne v\), \(P(u) = false\) 
+
+\section*{Algorithm}
+The naive algorithm is actually quite trivial. Every node is a king at the start and he sends \(n - 1\) messages to his neighbours to find the one with biggest id. The number of messages send by this algorithm is \(\mathcal{O}(n^2)\).
+
+We will try to limit the number of messages to \(\mathcal{O}(n \log n)\) by using maximum spanning tree of this graph. The main idea will be using nodes that are no longer contenders as a messengers between kings.
+
+Let's call Overlord of node the node that in the MST is the father of that node. Vassals will be the sons and the King will be the root of that tree. Each tree will act as a Kingdom. At the beginning every King has his own small Kingdom.
+
+Every node will also remember some data:
+\begin{itemize}
+    \item ID - int unique for each node
+    \item Active - true = KING the node is still a candidate for the title King of Kings, false = CITIZEN the node became the Vassal of another King and is out of question for the King of Kings title
+    \item Phase - the current phase of a King - it increases when King defeats other King with the same Phase
+    \item Rivals - the set of unused edges from current node - for Citizen they are useless but for King it means that this are the potential King of Kings and he need to find out
+    \item Vassals - the set of nodes that swore fealty to this node. In the words of the MST - set of sons of this node
+    \item Overlord - the node that this node is a Vassal (father of this node)
+    \item King - the ID of the Overlord of Overlord ... of Overlord (root of a tree). At the end of the program is will be King of Kings
+    \item AskedBefore - only matters for Citizen - the node which sent the ASK message, it is needed if the King of this Citizen would response with ACCEPT.
+    \item QUEUE - list of received messages - sometimes we need to wait for specific message (for example UPDATE) in that case we need to remember the received messages that will not be processed immediately.
+\end{itemize}
+
+
+Our algorithm will use few types of messages:
+\begin{itemize}
+    \item ASK(phase, king)
+    This message is created and sent by the King to one of his Rivals (it can also be sent by Citizen, but in that case the message is pushed to his King as a response of other King sending ASK message to the Citizen). The King is asking other Kings to join his kingdom and becoming his vassal. The outcome of ASK message is determined by phase, king values. To become King of Kings a king must receive response for every ASK message => (ACCEPT, YOUR\_CITIZEN)
+    \item ACCEPT(phase)
+    This message is sent from King to King as a response to ASK message, The sender will become Vassal of the receiver. If Citizen receives this message from his Overlord it means that his old King is now a Vassal and the sender of ASK message is now his new Overlord.
+    \item UPDATE(phase, king)
+    This message is sent from the King as response to ACCEPT message to his new Vassals (when Phase changes also this is sent to old Vassals). Vassals update theirs saved values to phase, king.
+    \item YOUR\_CITIZEN - This message is sent from Citizen to his King as a response to ASK message (the Vassal node is not a direct Vassal of the King, Overlord != King)
+    \item I\_AM\_THE\_KING - This message is sent to each node when the Leader is found.
+\end{itemize}
+
+
+\subsection*{King process}
+\begin{enumerate}
+    \item Repeat until is King or Rivals not empty
+    \begin{enumerate}
+        \item choose \(e \in\) Rivals and send ASK message along \(e\)
+        \item LABEL: receive(\(m\))
+        \item case \(m\):
+        \begin{itemize}
+            \item[] YOUR\_CITIZEN continue
+            \item[] ACCEPT(phase) Vassals = Vassals \(\cup\) \(e\) \begin{itemize}
+                \item[] if phase == King.phase
+                \item[] King.phase++
+                \item[] send UPDATE to every Vassal
+                \item[] else send UPDATE along e
+            \end{itemize}
+            \item[]ASK(phase, king)
+            \begin{itemize}
+                \item if (King.phase, King.king) \(>\) (phase, king)
+                \item goto LABEL
+                \item else King is now a Citizen
+            \end{itemize}
+        \end{itemize}
+    \end{enumerate}
+    \item if King.active == false perform procedure of a citizen
+    \\ else King is the King of Kings send I\_AM\_THE\_KING to other nodes
+\end{enumerate}
+
+\subsection*{Citizen process}
+    \begin{enumerate}
+        \item set as Overlord the King that has just dethroned us
+        \item send ACCEPT to Overlord
+        \item wait for UPDATE message (other messages are put in Queue)
+        \item perform processUpdate 
+        \item Repeat until I\_AM\_THE\_KING not received
+            \begin{enumerate}
+                \item receive(m) (from queue or other node)
+                \item case m:
+                \begin{itemize}
+                    \item[] ASK perform processAsk
+                    \item[] ACCEPT perform processOldAccept
+                    \item[] UPDATE perform processUpdate
+                \end{itemize}
+            \end{enumerate}
+    \end{enumerate}
+
+\subsection*{Procedure processAsk}
+    m - received ASK(phase, king)
+    \begin{enumerate}
+    \item if (Citizen.Phase, Citizen.King) == (phase, king) \\ send YOUR\_CITIZEN to sender of previous message\\ \\else if (Citizen.Phase, Citizen.King) \(<\) (phase, king)
+    \begin{enumerate}
+        \item send m to Citizen.Overlord
+        \item wait from UPDATE or ACCEPT from Citizen.Overlord
+        \item perform processUpdate
+        \item if sender == Citizen.King send YOUR\_CITIZEN to sender
+        \item else if ACCEPT then perform processNewAccept
+    \end{enumerate}
+ \end{enumerate}
+\subsection*{Procedure processOldAccept}
+    \begin{enumerate}
+        \item add sender to Citizen.Vassals
+        \item send UPDATE to the previous sender
+    \end{enumerate}
+
+\subsection*{Procedure processNewAccept}
+\begin{enumerate}
+        \item add sender to Citizen.Vassals
+        \item set Citizen.Overlord as Citizen.AskedBefore 
+        \item send ACCEPT to the new Citizen.Overlord
+        \item wait for UPDATE message from Citizen.Overlord
+        \item perform processUpdate
+    \end{enumerate}
+
+\subsection*{Procedure processUpdate}
+    \begin{enumerate}
+        \item Update Citizen.phase and Citizen.king
+        \item send UPDATE to every Vassal
+    \end{enumerate}
+
+
+\section*{Proof of correctness}
+\begin{theorem}
+Only one king is found by the algorithm.
+\end{theorem}
+\begin{proof}
+Let's assume that the theorem is false. It is impossible to have zero kings, because it would mean that someone dethroned each one. But because of ASK message the king with biggest (King.Phase, King.King) will survive.
+
+So let's assume that number of kings is \(s > 1\). Let's define status(node) := (node.Phase, node.King) and the kings that remained as \(king_1, king_2, ... king_s\). And assume status(\(king_i\)) \(<\) status(\(king_j\)) for \(i < j\)
+\end{proof}
+\begin{lemma}
+Every node will eventually have the status equal to \((x, king_i)\) for some \(1 \leq i \leq s\).
+\end{lemma}
+\begin{proof}
+Otherwise there exist some node \(v\) that has a different status forever. If \(v\) is king the lemma is true, otherwise the status must have been updated by UPDATE message from some king \(t\). If \(t\)'s status was changed so was \(v\)'s. If \(v\) transferred the ACCEPT message it was followed by UPDATE message from new King. \(v\) will never become King again so the lemma is true for all nodes.
+\end{proof}
+\begin{lemma}
+If some King is awake he will send an ASK message to a node not in his kingdom.
+\end{lemma}
+\begin{proof}
+The king is sending messages to all Rivals. If he sends message to his kingdom he will receive YOUR\_CITIZEN message which will cause the king to send another message.
+\end{proof}
+\begin{lemma}
+If \(king_s\) send a message to another kingdom of \(king_j\), \(king_j\) will become a citizen. 
+\end{lemma}
+\begin{proof}
+If \(king_j\) directly receives the message he immediately become the citizen. Otherwise it will be transferred by Vassals to the king. The message could be blocked on the way to \(king_j\) but that means that the node that blocked the message is waiting for UPDATE from his king as a response for ASK message with higher status than status(\(king_j\)). It means that one of the messages will cause the 
+\(king_j\) to become the citizen.
+\end{proof}
+By Lemma 3 we get contradiction to the assumptions that \(s > 1\)
+The algorithm will stop after the King of Kings announce his presence (by sending the I\_AM\_THE\_KING message down the tree).
+
+\section*{Proof of complexity}
+\begin{theorem}
+The number of messages sent is \(5n\log_2(n) + \mathcal{O}(n)\)
+\end{theorem}
+\begin{lemma}
+When the algorithm stops the biggest possible phase is bounded by \(\lfloor \log_2(n) \rfloor\)
+\end{lemma}
+\begin{proof}
+Whenever a king at phase \(t\) 
+increases his phase, he annexes another 
+king of phase \(t\). Therefore, we have at 
+most \(\frac{n}{2}\) kings in phase 1, \(\frac{n}{2^2}\) kings in  phase 2 ... \(\frac{n}{2^l}\) kings in phase \(l\), for every \(1 \leq l \leq \log_2(n)\)
+\end{proof}
+\begin{proof}{Theorem 2}
+Let's give upper bound for every type of messages
+\begin{enumerate}
+    \item I\_AM\_THE\_KING - exactly \(n-1\) messages
+    \item YOUR\_CITIZEN - each node sends at most one such message - as a reply to an ASK message - per phase. The total number of such messages is bounded by \(n\log_2(n)\)
+    \item ASK - a king can send at most len(King.Vassals) + 1, therefore all the kings in this phase sent together at most n messages, the total number of messages sent by kings is bounded by \(n\log_2(n)\), Every citizen transfers at most one ASK message per phase, the total number of such messages sent by all citizens is also bounded by \(n\log_2(n)\) 
+    \item ACCEPT - Citizens send no more than ASK messages - bounded by \(n\log_2(n)\), Kings send exactly \(n-1\) messages
+    \item UPDATE - one such message per phase - bounded by  \(n\log_2(n)\) 
+\end{enumerate}
+    So the total number of messages is bounded by \(5n\log_2(n) + 2n\). This bound is pretty loose. The algorithm uses around 800 messages for n = 100 but the bound is equal to 3200.
+\end{proof}
+
+\begin{thebibliography}{9}
+\bibitem{article}
+Ephraim none Korach, Shlomo Moran, Schmuel Zaks (1984)
+\emph{Tight Lower and Upper Bounds for Some Distributed Algorithms for a Complete Network of Processors}
+\end{thebibliography}
+\end{document}
