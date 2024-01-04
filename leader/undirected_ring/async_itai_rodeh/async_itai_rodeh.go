@@ -16,6 +16,12 @@ const (
 	RIGHT = 1
 )
 
+const (
+	REGULAR      = iota
+	VERIFICATION = iota
+	PROCLAMATION = iota
+)
+
 type state struct {
 	Counter          int
 	Is_active        bool
@@ -30,7 +36,7 @@ type messageData struct {
 	Hop_count uint64
 }
 
-//Ring start and answer check
+// Ring start and answer check
 
 func Run(nodes []lib.Node, runner lib.Runner) (int, int) {
 	for _, node := range nodes {
@@ -38,7 +44,13 @@ func Run(nodes []lib.Node, runner lib.Runner) (int, int) {
 		go run(node)
 	}
 	runner.Run(true)
+	check(nodes)
+	return runner.GetStats()
+}
 
+// Answer check
+
+func check(nodes []lib.Node) {
 	leaders := 0
 
 	for _, node := range nodes {
@@ -54,42 +66,33 @@ func Run(nodes []lib.Node, runner lib.Runner) (int, int) {
 	}
 
 	log.Println("---OK--- exactly one leader elected")
-
-	return runner.GetStats()
 }
 
-// Main function run in each goroutine
+// Main function run in each goroutine (main algorithm loop)
 
 func run(node lib.Node) {
 	node.StartProcessing()
 	initialize(node)
-	if process(node) {
-		log.Println("Node", node.GetIndex(), "is elected a leader")
-	}
-	node.FinishProcessing(true)
-}
-
-// Main algorithm loop
-
-func process(node lib.Node) bool {
 	for {
 		var msg messageData
 		sender, byteMsg := node.ReceiveAnyMessage()
 		decodeAll(byteMsg, &msg)
 
 		switch msg.Msg_type {
-		case 0:
+		case REGULAR:
 			handleItaiRodeh(node, sender, msg)
-		case 1:
+		case VERIFICATION:
 			handleVerificationMessage(node, sender, msg)
-		case 2:
+		case PROCLAMATION:
 			handleLeaderProclamation(node, sender, msg)
 		}
 
 		if getState(node).Is_leader_chosen {
-			return getState(node).Is_leader
+			log.Println("Node", node.GetIndex(), "is elected a leader")
+			break
 		}
 	}
+	node.FinishProcessing(true)
 }
 
 func initialize(node lib.Node) {
@@ -103,7 +106,7 @@ func initialize(node lib.Node) {
 	})
 
 	msg := messageData{
-		Msg_type:  0,
+		Msg_type:  REGULAR,
 		Bit:       getState(node).Bit,
 		Hop_count: 0,
 	}
@@ -116,8 +119,7 @@ func handleItaiRodeh(node lib.Node, sender int, msg messageData) {
 
 	S := getState(node)
 	if S.Is_active { //active
-		var lbit bool
-		var rbit bool
+		var lbit, rbit bool
 
 		//waiting for second msg
 		if sender == LEFT {
@@ -140,7 +142,7 @@ func handleItaiRodeh(node lib.Node, sender int, msg messageData) {
 				node.SendMessage(RIGHT, encodeAll(msg))
 			}
 		} else { //last round, send verification msg
-			msg.Msg_type = 1
+			msg.Msg_type = VERIFICATION
 			node.SendMessage(LEFT, encodeAll(msg))
 			node.SendMessage(RIGHT, encodeAll(msg))
 		}
@@ -153,8 +155,7 @@ func handleItaiRodeh(node lib.Node, sender int, msg messageData) {
 func handleVerificationMessage(node lib.Node, sender int, msg messageData) {
 	S := getState(node)
 	if S.Is_active { //active
-		var lhop uint64
-		var rhop uint64
+		var lhop, rhop uint64
 
 		//waiting for second msg
 		if sender == LEFT {
@@ -169,12 +170,12 @@ func handleVerificationMessage(node lib.Node, sender int, msg messageData) {
 
 		if lhop == uint64(node.GetSize()-1) && rhop == uint64(node.GetSize()-1) { //our msg returned, so we are the leader
 			S.Is_leader = true
-			msg.Msg_type = 2 //leader proclamation msg
+			msg.Msg_type = PROCLAMATION //leader proclamation msg
 			node.SendMessage(RIGHT, encodeAll(msg))
 		} else { //there is more than one leader - we reset the counter and initialize another sequence
 			S.Counter = 0
 			S.Bit = (rand.Intn(2) == 1)
-			msg.Msg_type = 0
+			msg.Msg_type = REGULAR
 			msg.Bit = S.Bit
 			node.SendMessage(LEFT, encodeAll(msg))
 			node.SendMessage(RIGHT, encodeAll(msg))
@@ -227,7 +228,6 @@ func decodeAll(data []byte, values ...interface{}) {
 func encode(buffer *bytes.Buffer, values ...interface{}) {
 	for _, value := range values {
 		if binary.Write(buffer, binary.BigEndian, value) != nil {
-			log.Println("DUUUPA   ", value)
 			panic("Failed to encode a value")
 		}
 	}
