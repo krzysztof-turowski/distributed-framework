@@ -46,7 +46,14 @@ Let's call Overlord of node the node that in the MST is the father of that node.
 Every node will also remember some data:
 \begin{itemize}
     \item ID - int unique for each node
-    \item Active - true = KING the node is still a candidate for the title King of Kings, false = CITIZEN the node became the Vassal of another King and is out of question for the King of Kings title
+    \item Active/Role - true = KING the node is still a candidate for the title King of Kings, false = CITIZEN the node became the Vassal of another King and is out of question for the King of Kings title
+    In our version of algorithm the Role will be one of 4 values:
+    \begin{itemize}
+        \item KING - basically Active = true
+        \item CITIZEN\_MAIN It won't appear in pseudocode but it is just a flag to note that this citizen is on his main loop
+        \item CITIZEN\_UPDATE - this citizen is waiting for UPDATE from his king (after becoming citizen and changing his King)
+        \item CITIZEN\_ASK\_BEFORE - this citizen is waiting for ACCEPT or UPDATE message from his King (it is used in processAsk procedure in else if condition)
+    \end{itemize}
     \item Phase - the current phase of a King - it increases when King defeats other King with the same Phase
     \item Rivals - the set of unused edges from current node - for Citizen they are useless but for King it means that this are the potential King of Kings and he need to find out
     \item Vassals - the set of nodes that swore fealty to this node. In the words of the MST - set of sons of this node
@@ -181,19 +188,20 @@ By Lemma 3 we get contradiction to the assumptions that \(s > 1\)
 The algorithm will stop after the King of Kings announce his presence (by sending the I\_AM\_THE\_KING message down the tree).
 
 \section*{Proof of complexity}
-\begin{theorem}
-The number of messages sent is \(5n\log_2(n) + \mathcal{O}(n)\)
-\end{theorem}
 \begin{lemma}
 When the algorithm stops the biggest possible phase is bounded by \(\lfloor \log_2(n) \rfloor\)
 \end{lemma}
+
 \begin{proof}
 Whenever a king at phase \(t\) 
 increases his phase, he annexes another 
 king of phase \(t\). Therefore, we have at 
 most \(\frac{n}{2}\) kings in phase 1, \(\frac{n}{2^2}\) kings in  phase 2 ... \(\frac{n}{2^l}\) kings in phase \(l\), for every \(1 \leq l \leq \log_2(n)\)
 \end{proof}
-\begin{proof}{Theorem 2}
+\begin{theorem}
+The number of messages sent is \(5n\log_2(n) + \mathcal{O}(n)\)
+\end{theorem}
+\begin{proof}
 Let's give upper bound for every type of messages
 \begin{enumerate}
     \item I\_AM\_THE\_KING - exactly \(n-1\) messages
@@ -207,7 +215,7 @@ Let's give upper bound for every type of messages
 
 \begin{thebibliography}{9}
 \bibitem{article}
-Ephraim none Korach, Shlomo Moran, Schmuel Zaks (1984)
+Ephraim Korach, Shlomo Moran, Schmuel Zaks (1984)
 \emph{Tight Lower and Upper Bounds for Some Distributed Algorithms for a Complete Network of Processors}
 \end{thebibliography}
 \end{document}
