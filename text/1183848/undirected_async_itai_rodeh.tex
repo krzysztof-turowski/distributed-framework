@@ -1,0 +1,165 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage[noend]{algpseudocode}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{color}
+
+\algnewcommand\And{\textbf{and} }
+\algnewcommand\Or{\textbf{or} }
+\algnewcommand{\algorithmicgoto}{\textbf{go to}}%
+\algnewcommand{\GoTo}[1]{\algorithmicgoto~\ref{#1}}%
+
+
+\title{%
+  Leader election in asynchronous undirected ring \\
+  \large based on \\ Symmetry Breaking in Distributed Networks by Itai, Rodeh}
+\author{Filip Jasionowicz}
+
+\author{Filip Jasionowicz}
+\date{December 2023}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    The goal of this project is to implement a leader election algorithm proposed by Itai and Rodeh, modify it to work with an undirected ring and provide a sketch of the complexity and correctness analysis.
+\end{abstract}
+
+\section{The model}
+
+The original algorithm proposed in \cite{ITAI199060} assumes the following model:
+\begin{enumerate}
+    \item There is no global clock and processors are not synchronized in any way
+    \item Processors are indistinguishable from each other and run the same code
+    \item Each processor knows the total number $n$ of processors in a ring
+    \item All channels are FIFO channels 
+    \item Processors are connected in a ring (cycle) where each of them has an output channel to its successor and an input channel from its predecessor
+\end{enumerate}
+Although 4. is not explicitly stated in an original paper, it is necessary for the proposed algorithm to work \cite{FOKKINK200553}.
+
+In this project we will modify the model by adding one additional input and output channel to each of the processors, so now they can send and receive messages to/from both of their neighbours on a ring. Note that the local orientation of the channels might not be the same for all processors - a message going locally "right" and then locally "left" might not end in the same processor.
+
+\section{Itai Rodeh algorithm for asynchronous directed ring}
+
+Let's start by recalling the idea of original Itai Rodeh algorithm for the asynchronous directed ring. All processors are initially active. In each turn (although the model is asynchronous, the channels are FIFO, so the turns are preserved) each active processor receive the message from its predecessor. If their bit is 0 and received bit is 1, they become passive. Otherwise they generate random bit and send them to their successor. Passive processors just pass the messages further. If a processor performed $c$ steps and is still active, it becomes a candidate for the leader.
+All leader candidates send a message containing a counter. If the message returns with the counter equal to size of the ring, then the sender knows it's an only leader. Otherwise, all leader candidates receive message with smaller counter. In this situation the procedure is repeated.
+
+\begin{algorithm}[H]
+  \caption{directed Itai Rodeh} \label{directed}
+  \begin{algorithmic}[1]
+    \State $active \leftarrow true$
+    \State $bit \leftarrow random(0/1)$ \label{gotomarker} \Comment{Chose 0 or 1 with probability $\frac{1}{2}$}
+    \State $bit \rightarrow SEND$
+    
+    \Repeat
+        \State $msg \leftarrow RECEIVE$
+        \If{$msg$ is bit}
+            \State \Call{HandleBit}{$msg$} \Comment{Regular bit message}
+        \Else
+            \State \Call{HandleCounter}{$msg$} \Comment{Leader verification message}
+        \EndIf
+    \Until unique leader not found
+    \\
+    \Procedure{HandleBit}{$rbit$}
+        \If{$active $}
+            \If{run for $c$ turns}
+                \State $counter \leftarrow 1$
+                \State $counter \rightarrow SEND$ \Comment{Send the verification message}
+            \EndIf
+            \If{$rbit = 1$ \And $bit = 0$}
+                \State $active \leftarrow false$
+            \EndIf
+            \State $bit \leftarrow random(0/1)$
+            \State $bit \rightarrow SEND$
+        \Else
+            \State $rbit \rightarrow SEND$ \Comment{Pass the message}
+        \EndIf
+    \EndProcedure
+    \\
+    \Procedure{HandleCounter}{$counter$}
+        \If{$active $}
+            \If{$counter = n$}
+                \State \Return WE ARE THE LEADER \Comment{Leader found}
+            \Else
+                \State \GoTo{gotomarker} \Comment{Multiple leader candidates, we try again}
+            \EndIf
+        \Else
+            \State $rbit \rightarrow SEND$ \Comment{Pass the message}
+        \EndIf
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\section{Sketch of analysis}
+\subsection{Partial correctness}
+First let's look at the partial correctness. Assume the algorithm has stopped. If more than one leader has been found in the verification phase, then our algorithm would still be running, so the only possible answers it might have given are 0 or 1 leaders. To obtain 0 leaders however, all processors would have to become passive which is not possible - processor can become passive only if it has an active predecessor with bit set to 1, and this predecessor couldn't be killed in that round, since processor with bit 1 cannot be killed. This proves that if the algorithm finishes, it elects a single leader.
+\subsection{Termination}
+Proposed algorithm is obviously a Las Vegas randomized algorithm (we proved the partial correctness, and the run time depends on the randomly generated bits). Our objective is to show that for some $c$ the expected running time is finite and reasonable. In \cite{ITAI199060} the authors propose the parameter $c$ to be $5\log n$. Intuition underlying this choice is actually pretty straightforward. In each round each active processor has a $\frac{1}{4}$ chance of becoming inactive, since it has to draw 0 and its predecessor 1, thus expected number of active processors reduces by a quarter in each round, giving that the expected number of rounds after only one processor remains active is around $\log_{\frac{4}{3}}n \approx 2.4\log n$. By doubling this number and setting number of rounds to $c=5\log n$ we ensure that the probability of more than one processor being active at the end of the algorithm is relatively small. In each turn each active processor sends one message to its successor and each passive processor forwards only one message, so in each turn $n$ messages are passed, giving the total complexity of $O(cn) = O(n\log n)$.
+
+\section{Itai Rodeh algorithm for asynchronous undirected ring}
+
+Let's modify the Algorithm \ref{directed} to work on undirected ring. The general idea is that active processors send their random bit to both our neighbours, and become passive if their bit is 0 and either of neighbours is 1. The verification message also needs to be send and received in both directions. In the following algorithm changes compared to directed version are marked red.
+
+\begin{algorithm}[H]
+  \caption{undirected Itai Rodeh} \label{undirected}
+  \begin{algorithmic}[1]
+    \State $active \leftarrow true$
+    \State $bit \leftarrow random(0/1)$ \label{gotomarker2} \Comment{Chose 0 or 1 with probability $\frac{1}{2}$}
+    \State $bit \rightarrow$ \color{red} $SEND$ $BOTH$ \Comment{Sent to both channels}\color{black}
+    
+    \Repeat
+        \State  $msg \leftarrow$ \color{red} $RECEIVE$ $ANY$ \Comment{Receive message from either channel}\color{black}
+        \If{$msg$ is bit}
+            \State \Call{HandleBit}{$msg$} \Comment{Regular bit message}
+        \Else
+            \State \Call{HandleCounter}{$msg$} \Comment{Leader verification message}
+        \EndIf
+    \Until unique leader not found
+    \\
+    \Procedure{HandleBit}{$rbit$}
+        \If{$active $}
+        \State \color{red} $rbit_2 \leftarrow RECEIVE$ $OTHER$ \Comment{Receive from other 
+        \begin{flushright} channel than $rbit$ \end{flushright}} \color{black}
+            \If{run for $c$ turns}
+                \State $counter \leftarrow 1$
+                \State $counter \rightarrow$ \color{red} $SEND$ $BOTH$ \color{black} \Comment{Send the verification message}
+            \EndIf
+            \If{($rbit = 1$ \color{red} \Or $rbit_2 = 1$ \color{black}) \And $bit = 0$}
+                \State $active \leftarrow false$
+            \EndIf
+            \State $bit \leftarrow random(0/1)$
+            \State $bit \rightarrow$ \color{red} $SEND$ $BOTH$ \Comment{Sent to both channels}\color{black}
+        \Else
+            \State $rbit \rightarrow$ \color{red} $SEND$ $OTHER$ \color{black} \Comment{Pass the message \color{red} not to its sender \color{black}}
+        \EndIf
+    \EndProcedure
+    \\
+    \Procedure{HandleCounter}{$counter$}
+        \If{$active $}
+            \State \color{red} $counter_2 \leftarrow RECEIVE$ $OTHER$ \Comment{Receive from other 
+            \begin{flushright} channel than $counter$ \end{flushright}} \color{black}
+            \If{$counter = n$ \color{red} \And $counter_2 = n$ \color{black}}
+                \State \Return WE ARE THE LEADER \Comment{Leader found}
+            \Else
+                \State \GoTo{gotomarker2} \Comment{Multiple leader candidates, we try again}
+            \EndIf
+        \Else
+            \State $rbit \rightarrow$ \color{red} $SEND$ $OTHER$ \color{black} \Comment{Pass the message \color{red} not to its sender \color{black}}
+        \EndIf
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+Note that partial correctness argument holds. The probability of active processor becoming passive in one turn is actually higher in Algorithm \ref{undirected}, being $\frac{3}{8}$. This implicates that after $c=5\log n$ turns the probability of more than one processor being active is even smaller than in Algorithm \ref{directed}. At the same time number of send messages is exactly doubled, giving the complexity of $O(2nc) = O(n\log n)$.
+
+\bibliographystyle{plain}
+\bibliography{biblio.bib}
+
+\end{document}
+
