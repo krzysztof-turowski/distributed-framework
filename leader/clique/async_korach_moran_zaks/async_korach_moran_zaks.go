@@ -8,7 +8,7 @@ import (
 )
 
 type state struct {
-	Active      bool
+	Role        int
 	Phase       int
 	Rivals      map[int]int
 	Vassals     map[int]int
@@ -19,10 +19,11 @@ type state struct {
 }
 
 type message struct {
-	Flag  int
-	Phase int
-	King  int
-	Index int
+	Flag   int
+	Phase  int
+	King   int
+	Index  int
+	Sender int
 }
 
 const (
@@ -33,74 +34,67 @@ const (
 	I_AM_THE_KING
 )
 
+const (
+	KING = iota
+	CITIZEN_MAIN
+	CITIZEN_UPDATE
+	LEADER
+)
+
 /************************************************************/
 /*                           KING                           */
 /************************************************************/
 
-func mainKing(node lib.Node) {
-	for {
-		if processKing(node) {
-			break
-		}
+func processKing(node lib.Node, received_index int, received_message message) bool {
+	send := func(index int, message []byte) {
+		node.SendMessage(index, message)
 	}
-
-	if !getState(node).Active {
-		mainCitizen(node)
-	} else {
-		iAmTheKing(node)
-	}
-}
-
-func processKing(node lib.Node) bool {
 
 	state := getState(node)
 
 	defer setState(node, &state)
 
-	send := func(index int, message []byte) {
-		node.SendMessage(index, message)
-	}
-
-	//len(state.Rivals) == 0 means that every ASK provoked the response -> we are the King of Kings
-	if !state.Active || len(state.Rivals) == 0 {
-		return true
-	} else {
-		index := getSomeKey(state.Rivals)
-		delete(state.Rivals, index)
-		send(index, createMessage(ASK, state.Phase, node.GetIndex()))
-	}
-
-ASK_RESPONSE:
-	received_index, received_message := receiveMessage(node)
 	message_type := received_message.Flag
 
 	switch message_type {
 	case ASK:
 		if state.Phase > received_message.Phase || (state.Phase == received_message.Phase && state.King > received_message.King) {
-			goto ASK_RESPONSE
+			return false
 		} else {
-			received_message.Index = received_index
-			state.Queue = append(state.Queue, received_message)
-			state.Active = false
+			_, ok := state.Vassals[received_index]
+			if ok {
+				delete(state.Vassals, received_index)
+			}
+			state.Overlord = received_index
+			state.Role = CITIZEN_UPDATE
+			send(received_index, createMessage(ACCEPT, state.Phase, state.King, node.GetIndex()))
 			return true
 		}
 	case YOUR_CITIZEN:
 	case ACCEPT:
 		state.Vassals[received_index] = received_index
 		if state.Phase > received_message.Phase {
-			send(received_index, createMessage(UPDATE, state.Phase, state.King))
+			send(received_index, createMessage(UPDATE, state.Phase, state.King, node.GetIndex()))
 		} else {
 			state.Phase++
 			for v := range state.Vassals {
-				send(v, createMessage(UPDATE, state.Phase, state.King))
+				send(v, createMessage(UPDATE, state.Phase, state.King, node.GetIndex()))
 			}
 		}
 	}
+
+	//len(state.Rivals) == 0 means that every ASK provoked the response -> we are the King of Kings
+	if state.Role != KING || len(state.Rivals) == 0 {
+		return true
+	}
+	index := getSomeKey(state.Rivals)
+	delete(state.Rivals, index)
+	send(index, createMessage(ASK, state.Phase, node.GetIndex(), node.GetIndex()))
 	return false
 }
 
 func iAmTheKing(node lib.Node) {
-	king_message := message{I_AM_THE_KING, I_AM_THE_KING, node.GetIndex(), 0}
+	king_message := message{I_AM_THE_KING, I_AM_THE_KING, node.GetIndex(), 0, node.GetIndex()}
 	the_king, _ := json.Marshal(king_message)
 	for v := range getState(node).Vassals {
 		node.SendMessage(v, the_king)
@@ -112,71 +106,53 @@ func iAmTheKing(node lib.Node) {
 /************************************************************/
 
 // Entering that function means that we were dethroned by some more powerful King - we have saved that ASK message in Queue
-func mainCitizen(node lib.Node) {
+func processCitizen(node lib.Node, received_index int, received_message message) bool {
 	send := func(index int, message []byte) {
 		node.SendMessage(index, message)
 	}
 
+	message_type := received_message.Flag
 	state := getState(node)
-
 	defer setState(node, &state)
-	received_message := state.Queue[0]
-	received_index := received_message.Index
-	state.Queue = state.Queue[1:]
-	_, ok := state.Vassals[received_index]
-	if ok {
-		delete(state.Vassals, received_index)
-	}
-	state.Overlord = received_index
 
-	send(received_index, createMessage(ACCEPT, state.Phase, state.King))
-
-	//we wait for UPDATE from our overlord
-	for {
-		received_index, received_message := receiveMessage(node)
-		message_type := received_message.Flag
-		if message_type == UPDATE {
-			setState(node, &state)
-			processUpdate(node, received_message)
-			state = getState(node)
-			break
-		} else {
-			received_message.Index = received_index
-			state.Queue = append(state.Queue, received_message)
+	switch message_type {
+	case ASK:
+		setState(node, &state)
+		processAsk(node, received_index, received_message)
+		state = getState(node)
+	case ACCEPT:
+		setState(node, &state)
+		processAcceptOld(node, received_index, received_message)
+		state = getState(node)
+	case UPDATE:
+		setState(node, &state)
+		processUpdate(node, received_message)
+		state = getState(node)
+	case I_AM_THE_KING:
+		for v := range state.Vassals {
+			send(v, createMessage(I_AM_THE_KING, received_message.Phase, received_message.King, node.GetIndex()))
 		}
+		return false
+	}
+	return true
+}
+
+func citizenUpdate(node lib.Node, received_index int, received_message message) bool {
+	state := getState(node)
+	defer setState(node, &state)
+
+	message_type := received_message.Flag
+	if message_type == UPDATE {
+		setState(node, &state)
+		processUpdate(node, received_message)
+		state = getState(node)
+		return true
+	} else {
+		received_message.Index = received_index
+		state.Queue = append(state.Queue, received_message)
+		return false
 	}
 
-	//main loop for citizen
-	for {
-		if len(state.Queue) == 0 {
-			received_index, received_message = receiveMessage(node)
-		} else {
-			received_message = state.Queue[0]
-			received_index = received_message.Index
-			state.Queue = state.Queue[1:]
-		}
-		message_type := received_message.Flag
-
-		switch message_type {
-		case ASK:
-			setState(node, &state)
-			processAsk(node, received_index, received_message)
-			state = getState(node)
-		case ACCEPT:
-			setState(node, &state)
-			processAcceptOld(node, received_index, received_message)
-			state = getState(node)
-		case UPDATE:
-			setState(node, &state)
-			processUpdate(node, received_message)
-			state = getState(node)
-		case I_AM_THE_KING:
-			for v := range state.Vassals {
-				send(v, createMessage(I_AM_THE_KING, received_message.Phase, received_message.King))
-			}
-			return
-		}
-	}
 }
 
 func processAsk(node lib.Node, ask_index int, ask_message message) {
@@ -193,7 +169,7 @@ func processAsk(node lib.Node, ask_index int, ask_message message) {
 	state.AskedBefore = ask_index
 
 	if state.Phase < ask_message.Phase || (state.Phase == ask_message.Phase && state.King < ask_message.King) {
-		send(state.Overlord, createMessage(ask_message.Flag, ask_message.Phase, ask_message.King))
+		send(state.Overlord, createMessage(ask_message.Flag, ask_message.Phase, ask_message.King, node.GetIndex()))
 		for state.Phase < ask_message.Phase || (state.Phase == ask_message.Phase && state.King < ask_message.King) {
 			received_index, received_message := receiveMessage(node)
 			message_type := received_message.Flag
@@ -208,7 +184,7 @@ func processAsk(node lib.Node, ask_index int, ask_message message) {
 					//we were the vassal of a king who became vassal of another King
 					//that King send us the ASK message
 					//the UPDATE message came after the ASK message
-					send(ask_index, createMessage(YOUR_CITIZEN, state.Phase, state.King))
+					send(ask_index, createMessage(YOUR_CITIZEN, state.Phase, state.King, node.GetIndex()))
 				}
 			} else if message_type == ACCEPT {
 				setState(node, &state)
@@ -230,7 +206,7 @@ func processAsk(node lib.Node, ask_index int, ask_message message) {
 			//we were the vassal of a king who became vassal of another King
 			//that King send us the ASK message
 			//the UPDATE message came before the ASK message
-			send(ask_index, createMessage(YOUR_CITIZEN, state.Phase, state.King))
+			send(ask_index, createMessage(YOUR_CITIZEN, state.Phase, state.King, node.GetIndex()))
 		}
 	}
 }
@@ -239,7 +215,7 @@ func processAsk(node lib.Node, ask_index int, ask_message message) {
 func processAcceptOld(node lib.Node, received_index int, received_message message) {
 	state := getState(node)
 	state.Vassals[received_index] = received_index
-	node.SendMessage(received_index, createMessage(UPDATE, state.Phase, state.King))
+	node.SendMessage(received_index, createMessage(UPDATE, state.Phase, state.King, node.GetIndex()))
 	setState(node, &state)
 }
 
@@ -257,7 +233,7 @@ func processAcceptNew(node lib.Node, received_index int, received_message messag
 
 	defer setState(node, &state)
 
-	node.SendMessage(state.Overlord, createMessage(ACCEPT, state.Phase, state.King))
+	node.SendMessage(state.Overlord, createMessage(ACCEPT, state.Phase, state.King, node.GetIndex()))
 
 	for {
 		received_index, received_message = receiveMessage(node)
@@ -281,7 +257,7 @@ func processUpdate(node lib.Node, received_message message) {
 	state.King = received_message.King
 
 	for v := range state.Vassals {
-		node.SendMessage(v, createMessage(UPDATE, state.Phase, state.King))
+		node.SendMessage(v, createMessage(UPDATE, state.Phase, state.King, node.GetIndex()))
 	}
 	setState(node, &state)
 }
@@ -299,20 +275,79 @@ func initialize(node lib.Node) {
 		new_state.Rivals[i] = i
 	}
 	new_state.Phase = 0
-	new_state.Active = true
+	new_state.Role = KING
 	new_state.Overlord = node.GetIndex()
 	new_state.King = node.GetIndex()
 	new_state.Queue = make([]message, 0)
+
+	//send first message to begin algorithm
+	index := getSomeKey(new_state.Rivals)
+	delete(new_state.Rivals, index)
+	node.SendMessage(index, createMessage(ASK, new_state.Phase, node.GetIndex(), node.GetIndex()))
+
 	setState(node, &new_state)
+}
+
+func process(node lib.Node) bool {
+	state := getState(node)
+
+	defer setState(node, &state)
+	var received_index int
+	var received_message message
+
+	if state.Role == CITIZEN_UPDATE || len(state.Queue) == 0 {
+		received_index, received_message = receiveMessage(node)
+	} else {
+		received_message = state.Queue[0]
+		received_index = state.Queue[0].Index
+		state.Queue = state.Queue[1:]
+	}
+
+	setState(node, &state)
+
+	switch state.Role {
+	case KING:
+		if processKing(node, received_index, received_message) {
+			state = getState(node)
+			if state.Role == KING {
+				//fmt.Println("KING **********************", node.GetIndex())
+				iAmTheKing(node)
+				return false
+			} else {
+				//fmt.Println("CITIZEN ***********************", node.GetIndex())
+				return true
+			}
+		} else {
+			state = getState(node)
+			return true
+		}
+	case CITIZEN_MAIN:
+		if processCitizen(node, received_index, received_message) {
+			state = getState(node)
+			return true
+		} else {
+			state = getState(node)
+			return false
+		}
+	case CITIZEN_UPDATE:
+		if citizenUpdate(node, received_index, received_message) {
+			state = getState(node)
+			state.Role = CITIZEN_MAIN
+		} else {
+			state = getState(node)
+		}
+
+	}
+
+	return true
 }
 
 func run(node lib.Node) {
 	node.StartProcessing()
 	initialize(node)
-	new_state := getState(node)
-	new_state.Phase = 0
-	setState(node, &new_state)
-	mainKing(node)
+	for process(node) {
+	}
+	//fmt.Println(node.GetIndex(), "ENDING")
 	node.FinishProcessing(true)
 }
 
@@ -334,6 +369,7 @@ func receiveMessage(node lib.Node) (int, message) {
 	received_index, received_bytes := node.ReceiveAnyMessage()
 	received_message := message{}
 	json.Unmarshal(received_bytes, &received_message)
+	//fmt.Println("NODE(", getState(node).Role, "):", node.GetIndex(), "| MSG:", received_message.Flag, "| PHASE:", received_message.Phase, "| KING: ", received_message.King, "| SENDER:", received_message.Sender)
 	return received_index, received_message
 }
 
@@ -344,8 +380,8 @@ func getSomeKey(m map[int]int) int {
 	return -1
 }
 
-func createMessage(flag int, phase int, king int) []byte {
-	send_message, _ := json.Marshal(message{flag, phase, king, 0})
+func createMessage(flag int, phase int, king int, sender int) []byte {
+	send_message, _ := json.Marshal(message{flag, phase, king, 0, sender})
 	return send_message
 }
 
