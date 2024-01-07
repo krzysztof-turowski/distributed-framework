@@ -13,7 +13,7 @@ import (
 
 // Run the Casteigts-Métivier-Robson-Zemmari deterministic leader election algorithm on a random network
 func Run(n int, p float64) (int, int) {
-	nodes, synchronizer := lib.BuildSynchronizedRandomGraph(n, p)
+	nodes, synchronizer := buildSynchronizedRandomConnectedGraph(n, p)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	identifiers := rng.Perm(n)
 	for i, node := range nodes {
@@ -23,6 +23,19 @@ func Run(n int, p float64) (int, int) {
 	synchronizer.Synchronize(0)
 	check(nodes)
 	return synchronizer.GetStats()
+}
+
+func buildSynchronizedRandomConnectedGraph(n int, p float64) ([]lib.Node, lib.Synchronizer) {
+	possibleEdges := (n * (n - 1)) / 2
+	m := int(float64(possibleEdges) * p)
+	m = max(m, n-1)
+	m = min(m, possibleEdges)
+	weightedNodes, synchronizer := lib.BuildSynchronizedRandomConnectedWeightedGraph(n, m, 1, lib.GetGenerator())
+	nodes := make([]lib.Node, len(weightedNodes))
+	for i, weightedNode := range weightedNodes {
+		nodes[i] = weightedNode
+	}
+	return nodes, synchronizer
 }
 
 /* CHECKS */
@@ -73,7 +86,7 @@ func run(node lib.Node, id int) {
 func process(node lib.Node, round int) bool {
 	s := getState(node)
 
-	operation := s.updatePrefixAndParent(round, node)
+	operation := s.updatePrefixAndParent(round)
 	announceModification(node, operation, &s)
 	if operation == shutdown {
 		node.IgnoreFutureMessages()
@@ -184,7 +197,7 @@ const none int = -1
 type state struct {
 	PlainID     int
 	Active      bool  // Is it still possible for this node to become the leader?
-	AlphaId     []bit // This node's own identifier (alpha-encoded)
+	AlphaID     []bit // This node's own identifier (alpha-encoded)
 	Prefix      []bit // The prefix of the leader's identifier that this node knows
 	Neighbors   []neighbor
 	Parent      int // Index of the parent among the neighbors
@@ -231,7 +244,7 @@ func newState(id int, degree int) state {
 	return state{
 		PlainID:     id,
 		Active:      true,
-		AlphaId:     toAlphaEncoding(id),
+		AlphaID:     toAlphaEncoding(id),
 		Prefix:      make([]bit, 0),
 		Neighbors:   neighbors,
 		Parent:      none,
@@ -241,29 +254,29 @@ func newState(id int, degree int) state {
 	}
 }
 
-func (s *state) updatePrefixAndParent(round int, node lib.Node) operation {
+func (s *state) updatePrefixAndParent(round int) operation {
 	if s.Done {
 		return shutdown
 	}
 	operation := null
 	if toDelete := s.possibleDelete(); toDelete != 0 {
-		log.Println(s.PlainID, "uses rule 1: delete", toDelete)
+		log.Println("round", round, ":", s.PlainID, "uses rule 1: delete", toDelete)
 		operation = deleteOperation(toDelete)
 	} else if parent := s.possibleChange(); parent != none {
-		log.Println(s.PlainID, "uses rule 2: change")
+		log.Println("round", round, ":", s.PlainID, "uses rule 2: change")
 		s.Active = false
 		operation = change
 		s.Parent = parent
 	} else if parent := s.possibleAppend(1); parent != none {
-		log.Println(s.PlainID, "uses rule 3: append 1")
+		log.Println("round", round, ":", s.PlainID, "uses rule 3: append 1")
 		operation = append1
 		s.Parent = parent
 	} else if parent := s.possibleAppend(0); parent != none {
-		log.Println(s.PlainID, "uses rule 4: append0 ")
+		log.Println("round", round, ":", s.PlainID, "uses rule 4: append 0 ")
 		operation = append0
 		s.Parent = parent
 	} else if toAppend, ok := s.possibleExtend(round); ok {
-		log.Println(s.PlainID, "uses rule 5: append", toAppend)
+		log.Println("round", round, ":", s.PlainID, "uses rule 5: append", toAppend)
 		operation = appendOperation(toAppend)
 	}
 	s.Prefix = apply(s.Prefix, operation)
@@ -281,6 +294,7 @@ func (s *state) processModification(from int, message modification) {
 		return
 	}
 	neighbor.Prefix = apply(neighbor.Prefix, message.Operation)
+	neighbor.LastOperation = message.Operation
 	if message.Operation != null {
 		neighbor.Termination = false
 	}
@@ -350,8 +364,8 @@ func (s *state) possibleAppend(bit bit) int {
 }
 
 func (s *state) possibleExtend(round int) (bit, bool) {
-	if s.Active && round <= len(s.AlphaId) {
-		return s.AlphaId[round-1], true
+	if s.Active && round <= len(s.AlphaID) {
+		return s.AlphaID[round-1], true
 	}
 	return 0, false
 }
@@ -377,7 +391,7 @@ func (s *state) isCandidate() bool {
 			return false
 		}
 	}
-	return true
+	return isWellFormed(s.Prefix)
 }
 
 /* OPERATIONS ON BIT STRINGS */
@@ -481,7 +495,7 @@ func apply(sequence []bit, operation operation) []bit {
 	case delete3:
 		return sequence[:end-3]
 	case change:
-		sequence[end-1] = 1 - sequence[end-1] // flip the last bit
+		sequence[end-1] = 1
 	}
 	return sequence
 }
