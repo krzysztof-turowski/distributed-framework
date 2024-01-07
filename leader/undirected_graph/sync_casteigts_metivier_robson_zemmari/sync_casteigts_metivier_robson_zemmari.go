@@ -18,7 +18,7 @@ func Run(n int, p float64) (int, int) {
 	identifiers := rng.Perm(n)
 	for i, node := range nodes {
 		log.Println("Node", node.GetIndex(), "about to run")
-		go run(node, 2*(identifiers[i]+1))
+		go run(node, 2*(identifiers[i]+1)) // Every node is assigned a unique identifier of O(log(n)) bits
 	}
 	synchronizer.Synchronize(0)
 	check(nodes)
@@ -45,7 +45,7 @@ func check(nodes []lib.Node) {
 		panic("No leader")
 	}
 	if leader != maxIndex {
-		panic(fmt.Sprint("Leader is ", leader, " but it should be", maxIndex))
+		panic("The leader does not have the greatest index")
 	}
 	for _, node := range nodes {
 		if !equal(getState(node).Prefix, toAlphaEncoding(maxIndex)) {
@@ -73,83 +73,83 @@ func run(node lib.Node, id int) {
 func process(node lib.Node, round int) bool {
 	s := getState(node)
 
-	operation := s.runSpreading(round, node)
-	announceSpreading(node, operation, &s)
+	operation := s.updatePrefixAndParent(round, node)
+	announceModification(node, operation, &s)
 	if operation == shutdown {
 		node.IgnoreFutureMessages()
 		return true
 	}
-	processSpreading(node, &s)
+	processIncomingModifications(node, &s)
 
-	announceTerm(node, &s)
-	processTerm(node, &s)
+	announceTermination(node, &s)
+	processIncomingTerminations(node, &s)
 
 	candidate := s.isCandidate()
 
-	if !s.Done && s.shouldSetTerm() {
+	if !s.Done && s.shouldSetTermination() {
 		s.Termination = true
 	}
-	announceTermToParent(node, &s)
-	processTermFromChildren(node, &s, candidate)
+	reportTerminationToParent(node, &s)
+	collectTerminationsFromChildren(node, &s, candidate)
 
 	setState(node, s)
 
 	return false
 }
 
-func announceSpreading(node lib.Node, operation operation, s *state) {
+func announceModification(node lib.Node, operation operation, s *state) {
 	for i := range s.Neighbors {
 		neighbor := &s.Neighbors[i]
 		if neighbor.Done {
 			continue
 		}
-		sendSpreading(node, i, spreading{operation, i == s.Parent})
+		sendModification(node, i, modification{operation, i == s.Parent})
 		if operation == shutdown {
 			neighbor.Done = true
 		}
 	}
 }
 
-func processSpreading(node lib.Node, s *state) {
+func processIncomingModifications(node lib.Node, s *state) {
 	for i, neighbor := range s.Neighbors {
 		if neighbor.Done {
 			continue
 		}
-		s.processSpreading(i, receiveSpreading(node, i))
+		s.processModification(i, receiveModification(node, i))
 	}
 }
 
-func announceTerm(node lib.Node, s *state) {
+func announceTermination(node lib.Node, s *state) {
 	for i, neighbor := range s.Neighbors {
 		if neighbor.Done {
 			continue
 		}
-		sendTerm(node, i, s.Termination)
+		sendTermination(node, i, s.Termination)
 	}
 }
 
-func processTerm(node lib.Node, s *state) {
+func processIncomingTerminations(node lib.Node, s *state) {
 	for i, neighbor := range s.Neighbors {
 		if neighbor.Done {
 			continue
 		}
-		s.Neighbors[i].Termination = receiveTerm(node, i)
+		s.Neighbors[i].Termination = receiveTermination(node, i)
 	}
 }
 
-func announceTermToParent(node lib.Node, s *state) {
+func reportTerminationToParent(node lib.Node, s *state) {
 	if s.Parent != none {
-		sendTerm(node, s.Parent, s.Termination)
+		sendTermination(node, s.Parent, s.Termination)
 	}
 }
 
-func processTermFromChildren(node lib.Node, s *state, candidate bool) {
+func collectTerminationsFromChildren(node lib.Node, s *state, candidate bool) {
 	persistentTerm := 0
 	for i, neighbor := range s.Neighbors {
 		if !neighbor.IsChild {
 			continue
 		}
-		term := receiveTerm(node, i)
+		term := receiveTermination(node, i)
 		if neighbor.Termination && term {
 			persistentTerm++
 		}
@@ -184,7 +184,7 @@ const none int = -1
 type state struct {
 	PlainID     int
 	Active      bool  // Is it still possible for this node to become the leader?
-	ID          []bit // This node's own identifier (alpha-encoded)
+	AlphaId     []bit // This node's own identifier (alpha-encoded)
 	Prefix      []bit // The prefix of the leader's identifier that this node knows
 	Neighbors   []neighbor
 	Parent      int // Index of the parent among the neighbors
@@ -195,18 +195,18 @@ type state struct {
 
 // Note that these messages have (semantically) constant size, i.e. we do not send identifiers
 
-type spreading struct {
+type modification struct {
 	Operation operation // The operation that the sender performed on its known prefix
 	FromChild bool      // Does the sender want the receiver to be its parent in the spanning tree?
 }
 
 type termination struct {
-	Term bool
+	Flag bool
 }
 
 // What the node knows about its neighbors
 type neighbor struct {
-	Known         []bit // The last known prefix from this neighbor's state
+	Prefix        []bit // The last known prefix from this neighbor's state
 	IsChild       bool
 	LastOperation operation
 	Termination   bool
@@ -215,7 +215,7 @@ type neighbor struct {
 
 func newNeighbor() neighbor {
 	return neighbor{
-		Known:         make([]bit, 0),
+		Prefix:        make([]bit, 0),
 		IsChild:       false,
 		LastOperation: null,
 		Termination:   false,
@@ -231,7 +231,7 @@ func newState(id int, degree int) state {
 	return state{
 		PlainID:     id,
 		Active:      true,
-		ID:          toAlphaEncoding(id),
+		AlphaId:     toAlphaEncoding(id),
 		Prefix:      make([]bit, 0),
 		Neighbors:   neighbors,
 		Parent:      none,
@@ -241,7 +241,7 @@ func newState(id int, degree int) state {
 	}
 }
 
-func (s *state) runSpreading(round int, node lib.Node) operation {
+func (s *state) updatePrefixAndParent(round int, node lib.Node) operation {
 	if s.Done {
 		return shutdown
 	}
@@ -273,14 +273,14 @@ func (s *state) runSpreading(round int, node lib.Node) operation {
 	return operation
 }
 
-func (s *state) processSpreading(from int, message spreading) {
+func (s *state) processModification(from int, message modification) {
 	neighbor := &s.Neighbors[from]
 	if message.Operation == shutdown {
 		s.Done = true
 		neighbor.Done = true
 		return
 	}
-	neighbor.Known = apply(neighbor.Known, message.Operation)
+	neighbor.Prefix = apply(neighbor.Prefix, message.Operation)
 	if message.Operation != null {
 		neighbor.Termination = false
 	}
@@ -303,8 +303,8 @@ func (s *state) possibleDelete() int {
 func (s *state) possibleDeleteA() int {
 	toDelete := 0
 	for _, neighbor := range s.Neighbors {
-		if isProperPrefixOf(neighbor.Known, s.Prefix) && isDeleteOperation(neighbor.LastOperation) {
-			toDelete = max(toDelete, min(len(s.Prefix)-len(neighbor.Known), 3))
+		if isProperPrefixOf(neighbor.Prefix, s.Prefix) && isDeleteOperation(neighbor.LastOperation) {
+			toDelete = max(toDelete, min(len(s.Prefix)-len(neighbor.Prefix), 3))
 		}
 	}
 	return toDelete
@@ -313,10 +313,10 @@ func (s *state) possibleDeleteA() int {
 func (s *state) possibleDeleteB() int {
 	toDelete := 0
 	for _, neighbor := range s.Neighbors {
-		common := longestCommonPrefix(s.Prefix, neighbor.Known)
+		common := longestCommonPrefix(s.Prefix, neighbor.Prefix)
 		diff := len(common)
-		validPosition := diff < len(s.Prefix)-1 && diff < len(neighbor.Known)
-		if validPosition && s.Prefix[diff] == 0 && neighbor.Known[diff] == 1 {
+		validPosition := diff < len(s.Prefix)-1 && diff < len(neighbor.Prefix)
+		if validPosition && s.Prefix[diff] == 0 && neighbor.Prefix[diff] == 1 {
 			toDelete = max(toDelete, len(s.Prefix)-1-diff)
 		}
 	}
@@ -333,7 +333,7 @@ func (s *state) possibleChange() int {
 	}
 	init := s.Prefix[:last]
 	for i, neighbor := range s.Neighbors {
-		if isProperPrefixOf(init, neighbor.Known) && neighbor.Known[last] == 1 {
+		if isProperPrefixOf(init, neighbor.Prefix) && neighbor.Prefix[last] == 1 {
 			return i
 		}
 	}
@@ -342,7 +342,7 @@ func (s *state) possibleChange() int {
 
 func (s *state) possibleAppend(bit bit) int {
 	for i, neighbor := range s.Neighbors {
-		if isProperPrefixOf(s.Prefix, neighbor.Known) && neighbor.Known[len(s.Prefix)] == bit {
+		if isProperPrefixOf(s.Prefix, neighbor.Prefix) && neighbor.Prefix[len(s.Prefix)] == bit {
 			return i
 		}
 	}
@@ -350,18 +350,18 @@ func (s *state) possibleAppend(bit bit) int {
 }
 
 func (s *state) possibleExtend(round int) (bit, bool) {
-	if s.Active && round <= len(s.ID) {
-		return s.ID[round-1], true
+	if s.Active && round <= len(s.AlphaId) {
+		return s.AlphaId[round-1], true
 	}
 	return 0, false
 }
 
-func (s *state) shouldSetTerm() bool {
+func (s *state) shouldSetTermination() bool {
 	if s.Active || s.Termination || !isWellFormed(s.Prefix) {
 		return false
 	}
 	for _, neighbor := range s.Neighbors {
-		if !equal(neighbor.Known, s.Prefix) {
+		if !equal(neighbor.Prefix, s.Prefix) {
 			return false
 		}
 		if neighbor.IsChild && !neighbor.Termination {
@@ -373,7 +373,7 @@ func (s *state) shouldSetTerm() bool {
 
 func (s *state) isCandidate() bool {
 	for _, neighbor := range s.Neighbors {
-		if !equal(neighbor.Known, s.Prefix) || !neighbor.Termination {
+		if !equal(neighbor.Prefix, s.Prefix) || !neighbor.Termination {
 			return false
 		}
 	}
@@ -488,27 +488,27 @@ func apply(sequence []bit, operation operation) []bit {
 
 /* GENERAL UTILS */
 
-func sendSpreading(node lib.Node, to int, message spreading) {
+func sendModification(node lib.Node, to int, message modification) {
 	representation, _ := json.Marshal(message)
 	node.SendMessage(to, representation)
 }
 
-func receiveSpreading(node lib.Node, from int) spreading {
-	var message spreading
+func receiveModification(node lib.Node, from int) modification {
+	var message modification
 	json.Unmarshal(node.ReceiveMessage(from), &message)
 	return message
 }
 
-func sendTerm(node lib.Node, to int, term bool) {
-	message := termination{term}
+func sendTermination(node lib.Node, to int, flag bool) {
+	message := termination{flag}
 	representation, _ := json.Marshal(message)
 	node.SendMessage(to, representation)
 }
 
-func receiveTerm(node lib.Node, from int) bool {
+func receiveTermination(node lib.Node, from int) bool {
 	var message termination
 	json.Unmarshal(node.ReceiveMessage(from), &message)
-	return message.Term
+	return message.Flag
 }
 
 func setState(node lib.Node, s state) {
