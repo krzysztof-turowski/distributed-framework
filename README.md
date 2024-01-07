@@ -27,6 +27,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Synchronized undirected graph
 1. Yo-Yo algorithm
+2. Casteigts-Métivier-Robson-Zemmari algorithm
 
 #### Asynchronous directed ring
 1. Itai-Rodeh algorithm
