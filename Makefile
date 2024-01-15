@@ -6,14 +6,13 @@ runners_example:
 	go run example/synchronized.go 5
 
 leader_directed_ring_example:
-	go run example/leader_directed_ring_sync_all.go 10
-	go run example/leader_directed_ring_sync_chang_roberts.go 10
-	go run example/leader_directed_ring_sync_dolev_klawe_rodeh.go a 10
-	go run example/leader_directed_ring_sync_dolev_klawe_rodeh.go b 10
-	go run example/leader_directed_ring_sync_peterson.go 10
-	go run example/leader_directed_ring_sync_itai_rodeh.go 10
-	go run example/leader_directed_ring_async_higham_przytycka.go 10
-	go run example/leader_directed_ring_async_itai_rodeh.go 10
+	go run example/leader_directed_ring_sync.go 10 chang_roberts
+	go run example/leader_directed_ring_sync.go 10 dolev_klawe_rodeh_a
+	go run example/leader_directed_ring_sync.go 10 dolev_klawe_rodeh_b
+	go run example/leader_directed_ring_sync.go 10 itai_rodeh
+	go run example/leader_directed_ring_sync.go 10 peterson
+	go run example/leader_directed_ring_async.go 10 higham_przytycka
+	go run example/leader_directed_ring_async.go 10 itai_rodeh
 
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
