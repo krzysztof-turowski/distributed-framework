@@ -55,7 +55,7 @@ func BenchmarkLRG(b *testing.B) {
 func BenchmarkDeltaKuhnWattenhofer(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-    vertices, synchronizer := lib.BuildSynchronizedRandomGraph(600, 0.75)
+		vertices, synchronizer := lib.BuildSynchronizedRandomGraph(600, 0.75)
 		sync_kuhn_wattenhofer.RunWithMaxDegree(vertices, synchronizer, 4)
 	}
 }
@@ -63,7 +63,7 @@ func BenchmarkDeltaKuhnWattenhofer(b *testing.B) {
 func BenchmarkLocalKuhnWattenhofer(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-    vertices, synchronizer := lib.BuildSynchronizedRandomGraph(600, 0.75)
+		vertices, synchronizer := lib.BuildSynchronizedRandomGraph(600, 0.75)
 		sync_kuhn_wattenhofer.Run(vertices, synchronizer, 4)
 	}
 }

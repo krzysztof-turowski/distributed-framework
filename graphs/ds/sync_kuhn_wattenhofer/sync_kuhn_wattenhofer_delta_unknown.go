@@ -6,7 +6,9 @@ import (
 )
 
 func Run(vertices []lib.Node, synchronizer lib.Synchronizer, roundsParam int) {
-	if roundsParam <= 0 { panic("roundsParam has to be a positive integer") }
+	if roundsParam <= 0 {
+		panic("roundsParam has to be a positive integer")
+	}
 
 	init := func(v lib.Node) bool { return initializeWithoutDelta(v, roundsParam) }
 	runNode := func(v lib.Node) { run(v, init, processWhenDeltaIsUnknown) }
@@ -16,14 +18,14 @@ func Run(vertices []lib.Node, synchronizer lib.Synchronizer, roundsParam int) {
 
 type lpStateDynamic struct {
 	lpState
-	DynamicDegree	int
-	DynamicDegree2	int
+	DynamicDegree  int
+	DynamicDegree2 int
 }
 
 func initializeWithoutDelta(v lib.Node, roundsParam int) bool {
 	dynamicDegree := v.GetOutChannelsCount() + 1
 	dynamicDegree2 := highestValueLocally(v, dynamicDegree, 2)
-	setState(v, lpStateDynamic{ createInitialLpState(roundsParam), dynamicDegree, dynamicDegree2 })
+	setState(v, lpStateDynamic{createInitialLpState(roundsParam), dynamicDegree, dynamicDegree2})
 	return false
 }
 
@@ -34,23 +36,33 @@ func processWhenDeltaIsUnknown(v lib.Node) bool {
 		if state.DynamicDegree2 == undefined {
 			state.DynamicDegree2 = highestValueLocally(v, state.DynamicDegree, 2)
 		} else {
-			lowBound := math.Pow(float64(state.DynamicDegree2), float64(state.OuterIndex) / float64(state.OuterIndex + 1))
-			if lowBound == 0 { lowBound = 1 } //!!
+			lowBound := math.Pow(float64(state.DynamicDegree2), float64(state.OuterIndex)/float64(state.OuterIndex+1))
+			if lowBound == 0 {
+				lowBound = 1
+			} //!!
 			isActive := float64(state.DynamicDegree) >= lowBound
-			
+
 			activenessValue := countTrueValuesInNeighborhood(v, isActive)
-			if state.Status == covered { activenessValue = 0 }
+			if state.Status == covered {
+				activenessValue = 0
+			}
 			activenessValue1 := highestValueLocally(v, activenessValue, 1)
 
 			if isActive {
-				considered := math.Pow(float64(activenessValue1), -float64(state.InnerIndex) / float64(state.InnerIndex + 1))
-				if state.DominationValue < considered { state.DominationValue = considered }
+				considered := math.Pow(float64(activenessValue1), -float64(state.InnerIndex)/float64(state.InnerIndex+1))
+				if state.DominationValue < considered {
+					state.DominationValue = considered
+				}
 			}
 
-			if isCovered(v, state.DominationValue) { state.Status = covered }
+			if isCovered(v, state.DominationValue) {
+				state.Status = covered
+			}
 			state.DynamicDegree = countTrueValuesInNeighborhood(v, state.Status == uncovered)
 
-			if state.InnerIndex == 0 { state.DynamicDegree2 = undefined }
+			if state.InnerIndex == 0 {
+				state.DynamicDegree2 = undefined
+			}
 			decreaseIndices(&state.lpState)
 		}
 		setState(v, state)

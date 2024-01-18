@@ -24,14 +24,14 @@ const (
 )
 
 type message struct {
-	MsgType messageType
-	Vote int
+	MsgType  messageType
+	Vote     int
 	Distance int
 }
 
 type state struct {
 	Indicative bool
-	Agreement bool
+	Agreement  bool
 }
 
 func send(v lib.Node, direction int, msgType messageType, vote int, distance int) {
@@ -40,16 +40,16 @@ func send(v lib.Node, direction int, msgType messageType, vote int, distance int
 }
 
 func receive(v lib.Node) (int, message) {
-	from, inMessage := v.ReceiveAnyMessage();
+	from, inMessage := v.ReceiveAnyMessage()
 	var msg message
-	json.Unmarshal(inMessage, &msg);
+	json.Unmarshal(inMessage, &msg)
 	return from, msg
 }
 
 func initialize(v lib.Node) {
 	setState(v, &state{
-		Indicative:	false,
-		Agreement:	false,
+		Indicative: false,
+		Agreement:  false,
 	})
 	go send(v, RIGHT, normal, 1, 1)
 }
@@ -63,19 +63,19 @@ func process(v lib.Node) bool {
 				agreement = true
 			}
 			setState(v, &state{
-				Indicative:	true,
-				Agreement:	agreement,
+				Indicative: true,
+				Agreement:  agreement,
 			})
 			go send(v, LEFT, end, 0, 0)
 			go send(v, RIGHT, end, 0, 0)
 			return false
 		}
-	
+
 		if from == LEFT {
-			go send(v, RIGHT, normal, msg.Vote + 1, msg.Distance + 1)
+			go send(v, RIGHT, normal, msg.Vote+1, msg.Distance+1)
 		} else if from == RIGHT && msg.Vote > 0 {
-			go send(v, LEFT, normal, msg.Vote - 1, msg.Distance + 1)
-		}	
+			go send(v, LEFT, normal, msg.Vote-1, msg.Distance+1)
+		}
 	} else if msg.MsgType == end {
 		if from == LEFT {
 			go send(v, RIGHT, end, 0, 0)
@@ -86,7 +86,6 @@ func process(v lib.Node) bool {
 	}
 	return true
 }
-
 
 func run(v lib.Node) {
 	v.StartProcessing()
@@ -149,7 +148,7 @@ func check(vertices []lib.Node) {
 			panic(fmt.Sprint("There is majority but it was not found"))
 		}
 	} else {
-		if orientationCount[foundOrientation] <= orientationCount[1 - foundOrientation] {
+		if orientationCount[foundOrientation] <= orientationCount[1-foundOrientation] {
 			panic(fmt.Sprint("Found orientation is not shared by majority of nodes"))
 		}
 	}

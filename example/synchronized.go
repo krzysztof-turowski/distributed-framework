@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/krzysztof-turowski/distributed-framework/lib"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 func initialize(v lib.Node) bool {
@@ -54,7 +56,7 @@ func main() {
 	n, _ := strconv.Atoi(os.Args[len(os.Args)-1])
 	vertices, synchronizer := lib.BuildSynchronizedCompleteGraph(n)
 	for _, v := range vertices {
-		log.Println("Node", v.GetIndex(), "about to run")
+		log.Println(fmt.Sprintf("Node %d is about to run", v.GetIndex()))
 		go run(v)
 	}
 	synchronizer.Synchronize(5 * time.Millisecond)
