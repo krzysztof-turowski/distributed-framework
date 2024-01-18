@@ -44,16 +44,6 @@ orientation_example:
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
 
-graphs_ds_example:
-	go run example/graphs_ds_sync_lrg.go 10 0.70
-	go run example/graphs_ds_sync_kuhn_wattenhofer.go 101 0.05 4
-
-graphs_mst_example:
-	go run example/graphs_mst_sync_ghs.go 10 30 100
-
-graphs_mis_example:
-	go run example/graphs_mis_sync_luby.go 20 0.25
-
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Optimal
@@ -61,6 +51,16 @@ consensus_example:
 	go run example/consensus_sync_phase_king.go 10 3  0 1 0 1 0 1 1 0 0 0  1 2 3  Optimal
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
+
+graphs_mst_example:
+	go run example/graphs_mst_sync_ghs.go 10 30 100
+
+graphs_mis_example:
+	go run example/graphs_mis_sync_luby.go 20 0.25
+
+graphs_ds_example:
+	go run example/graphs_ds_sync_lrg.go 10 0.70
+	go run example/graphs_ds_sync_kuhn_wattenhofer.go 101 0.05 4
 
 unit_test:
 	go test ./leader/undirected_graph/sync_yoyo -v
