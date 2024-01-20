@@ -78,32 +78,37 @@ func run(node lib.Node, id int) {
 	finish := false
 	for round := 1; !finish; round++ {
 		node.StartProcessing()
-		finish = process(node, round)
+		finish = process(node)
 		node.FinishProcessing(finish)
 	}
 }
 
-func process(node lib.Node, round int) bool {
+func process(node lib.Node) bool {
 	s := getState(node)
 
-	operation := s.updatePrefixAndParent(round)
-	announceModification(node, operation, &s)
-	if operation == shutdown {
-		node.IgnoreFutureMessages()
-		return true
+	switch s.Phase {
+	case modificationExchange:
+		s.ExchangeRound++
+		operation := s.updatePrefixAndParent()
+		announceModification(node, operation, &s)
+		if operation == shutdown {
+			node.IgnoreFutureMessages()
+			return true
+		}
+		processIncomingModifications(node, &s)
+	case externalTerminationUpdate:
+		announceTermination(node, &s)
+		processIncomingTerminations(node, &s)
+	case internalTerminationUpdate:
+		candidate := s.isCandidate()
+		if !s.Done && s.shouldSetTermination() {
+			s.Termination = true
+		}
+		reportTerminationToParent(node, &s)
+		collectTerminationsFromChildren(node, &s, candidate)
 	}
-	processIncomingModifications(node, &s)
 
-	announceTermination(node, &s)
-	processIncomingTerminations(node, &s)
-
-	candidate := s.isCandidate()
-
-	if !s.Done && s.shouldSetTermination() {
-		s.Termination = true
-	}
-	reportTerminationToParent(node, &s)
-	collectTerminationsFromChildren(node, &s, candidate)
+	s.Phase = nextPhase(s.Phase)
 
 	setState(node, s)
 
@@ -175,6 +180,27 @@ func collectTerminationsFromChildren(node lib.Node, s *state, candidate bool) {
 	}
 }
 
+type phase byte
+
+const (
+	modificationExchange phase = iota
+	externalTerminationUpdate
+	internalTerminationUpdate
+)
+
+func nextPhase(phase phase) phase {
+	switch phase {
+	case modificationExchange:
+		return externalTerminationUpdate
+	case externalTerminationUpdate:
+		return internalTerminationUpdate
+	case internalTerminationUpdate:
+		return modificationExchange
+	default:
+		panic(fmt.Sprint("Not a phase: ", phase))
+	}
+}
+
 /* OPERATIONS ON INTERNAL NODE STATES */
 
 type bit byte // This looks funny, but it is much more convenient than operating on actual bits
@@ -195,15 +221,17 @@ const (
 const none int = -1
 
 type state struct {
-	PlainID     int
-	Active      bool  // Is it still possible for this node to become the leader?
-	AlphaID     []bit // This node's own identifier (alpha-encoded)
-	Prefix      []bit // The prefix of the leader's identifier that this node knows
-	Neighbors   []neighbor
-	Parent      int // Index of the parent among the neighbors
-	Elected     bool
-	Termination bool
-	Done        bool
+	ExchangeRound int
+	Phase         phase
+	PlainID       int
+	Active        bool  // Is it still possible for this node to become the leader?
+	AlphaID       []bit // This node's own identifier (alpha-encoded)
+	Prefix        []bit // The prefix of the leader's identifier that this node knows
+	Neighbors     []neighbor
+	Parent        int // Index of the parent among the neighbors
+	Elected       bool
+	Termination   bool
+	Done          bool
 }
 
 // Note that these messages have (semantically) constant size, i.e. we do not send identifiers
@@ -242,41 +270,43 @@ func newState(id int, degree int) state {
 		neighbors[i] = newNeighbor()
 	}
 	return state{
-		PlainID:     id,
-		Active:      true,
-		AlphaID:     toAlphaEncoding(id),
-		Prefix:      make([]bit, 0),
-		Neighbors:   neighbors,
-		Parent:      none,
-		Elected:     false,
-		Termination: false,
-		Done:        false,
+		ExchangeRound: 0,
+		Phase:         modificationExchange,
+		PlainID:       id,
+		Active:        true,
+		AlphaID:       toAlphaEncoding(id),
+		Prefix:        make([]bit, 0),
+		Neighbors:     neighbors,
+		Parent:        none,
+		Elected:       false,
+		Termination:   false,
+		Done:          false,
 	}
 }
 
-func (s *state) updatePrefixAndParent(round int) operation {
+func (s *state) updatePrefixAndParent() operation {
 	if s.Done {
 		return shutdown
 	}
 	operation := null
 	if toDelete := s.possibleDelete(); toDelete != 0 {
-		log.Println("round", round, ":", s.PlainID, "uses rule 1: delete", toDelete)
+		log.Println("round", s.ExchangeRound, ":", s.PlainID, "uses rule 1: delete", toDelete)
 		operation = deleteOperation(toDelete)
 	} else if parent := s.possibleChange(); parent != none {
-		log.Println("round", round, ":", s.PlainID, "uses rule 2: change")
+		log.Println("round", s.ExchangeRound, ":", s.PlainID, "uses rule 2: change")
 		s.Active = false
 		operation = change
 		s.Parent = parent
 	} else if parent := s.possibleAppend(1); parent != none {
-		log.Println("round", round, ":", s.PlainID, "uses rule 3: append 1")
+		log.Println("round", s.ExchangeRound, ":", s.PlainID, "uses rule 3: append 1")
 		operation = append1
 		s.Parent = parent
 	} else if parent := s.possibleAppend(0); parent != none {
-		log.Println("round", round, ":", s.PlainID, "uses rule 4: append 0 ")
+		log.Println("round", s.ExchangeRound, ":", s.PlainID, "uses rule 4: append 0 ")
 		operation = append0
 		s.Parent = parent
-	} else if toAppend, ok := s.possibleExtend(round); ok {
-		log.Println("round", round, ":", s.PlainID, "uses rule 5: append", toAppend)
+	} else if toAppend, ok := s.possibleExtend(); ok {
+		log.Println("round", s.ExchangeRound, ":", s.PlainID, "uses rule 5: append", toAppend)
 		operation = appendOperation(toAppend)
 	}
 	s.Prefix = apply(s.Prefix, operation)
@@ -363,9 +393,9 @@ func (s *state) possibleAppend(bit bit) int {
 	return none
 }
 
-func (s *state) possibleExtend(round int) (bit, bool) {
-	if s.Active && round <= len(s.AlphaID) {
-		return s.AlphaID[round-1], true
+func (s *state) possibleExtend() (bit, bool) {
+	if s.Active && s.ExchangeRound <= len(s.AlphaID) {
+		return s.AlphaID[s.ExchangeRound-1], true
 	}
 	return 0, false
 }
@@ -534,18 +564,4 @@ func getState(node lib.Node) state {
 	var s state
 	json.Unmarshal(node.GetState(), &s)
 	return s
-}
-
-func max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
 }

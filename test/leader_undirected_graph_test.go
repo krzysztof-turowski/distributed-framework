@@ -21,12 +21,12 @@ func BenchmarkYoYoRandom(b *testing.B) {
 	}
 }
 
-func TestCasteigtsEtAl(t *testing.T) {
+func TestCasteigtsMetivierRobsonZemmari(t *testing.T) {
 	checkLogOutput()
 	sync_casteigts_metivier_robson_zemmari.Run(100, 0.25)
 }
 
-func BenchmarkCasteigtsEtAl(b *testing.B) {
+func BenchmarkCasteigtsMetivierRobsonZemmari(b *testing.B) {
 	log.SetOutput(io.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		sync_casteigts_metivier_robson_zemmari.Run(100, 0.25)
