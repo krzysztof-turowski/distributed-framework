@@ -5,37 +5,25 @@ import (
 	"fmt"
 	"log"
 	"math/bits"
-	"math/rand"
-	"time"
 
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 // Run the Casteigts-Métivier-Robson-Zemmari deterministic leader election algorithm on a random network
 func Run(n int, p float64) (int, int) {
-	nodes, synchronizer := buildSynchronizedRandomConnectedGraph(n, p)
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	identifiers := rng.Perm(n)
-	for i, node := range nodes {
-		log.Println("Node", node.GetIndex(), "about to run")
-		go run(node, 2*(identifiers[i]+1)) // Every node is assigned a unique identifier of O(log(n)) bits
-	}
-	synchronizer.Synchronize(0)
-	check(nodes)
-	return synchronizer.GetStats()
-}
-
-func buildSynchronizedRandomConnectedGraph(n int, p float64) ([]lib.Node, lib.Synchronizer) {
 	possibleEdges := (n * (n - 1)) / 2
 	m := int(float64(possibleEdges) * p)
 	m = max(m, n-1)
 	m = min(m, possibleEdges)
-	weightedNodes, synchronizer := lib.BuildSynchronizedRandomConnectedWeightedGraph(n, m, 1, lib.GetGenerator())
-	nodes := make([]lib.Node, len(weightedNodes))
-	for i, weightedNode := range weightedNodes {
-		nodes[i] = weightedNode
+
+	nodes, synchronizer := lib.BuildSynchronizedRandomConnectedGraphWithUniqueIndices(n, m)
+	for _, node := range nodes {
+		log.Println("Node", node.GetIndex(), "about to run")
+		go run(node) // Every node is assigned a unique identifier of O(log(n)) bits
 	}
-	return nodes, synchronizer
+	synchronizer.Synchronize(0)
+	check(nodes)
+	return synchronizer.GetStats()
 }
 
 /* CHECKS */
@@ -45,14 +33,15 @@ func check(nodes []lib.Node) {
 	leader := none
 	for _, node := range nodes {
 		s := getState(node)
-		maxIndex = max(maxIndex, s.PlainID)
+		index := node.GetIndex()
+		maxIndex = max(maxIndex, index)
 		if !s.Elected {
 			continue
 		}
 		if leader != none {
 			panic("Multiple leaders")
 		}
-		leader = s.PlainID
+		leader = index
 	}
 	if leader == none {
 		panic("No leader")
@@ -60,8 +49,9 @@ func check(nodes []lib.Node) {
 	if leader != maxIndex {
 		panic("The leader does not have the greatest index")
 	}
+	maxAlpha := toAlphaEncoding(maxIndex)
 	for _, node := range nodes {
-		if !equal(getState(node).Prefix, toAlphaEncoding(maxIndex)) {
+		if !equal(getState(node).Prefix, maxAlpha) {
 			panic("A node does not know the leader's identifier")
 		}
 	}
@@ -69,9 +59,9 @@ func check(nodes []lib.Node) {
 
 /* THE SKELETON OF THE ALGORITHM */
 
-func run(node lib.Node, id int) {
+func run(node lib.Node) {
 	node.StartProcessing()
-	s := newState(id, node.GetOutChannelsCount())
+	s := newState(node.GetIndex(), node.GetOutChannelsCount())
 	setState(node, s)
 	node.FinishProcessing(false)
 
