@@ -37,6 +37,7 @@ leader_directed_hypercube_example:
 
 leader_undirected_graph_example:
 	go run example/leader_undirected_graph_sync_yoyo.go 20 0.25
+	go run example/leader_undirected_graph_sync_casteigts_metivier_robson_zemmari.go 20 0.25
 
 orientation_example:
 	go run example/orientation_async_syrotiuk_pachl.go 10
