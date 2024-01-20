@@ -282,3 +282,14 @@ func BuildSynchronizedHamiltonianOrientedCompleteGraph(n int) ([]Node, Synchroni
 	vertices, runner := BuildHamiltonianOrientedCompleteGraph(n)
 	return vertices, asSynchronizer(runner)
 }
+func BuildSynchronizedRandomConnectedGraphWithUniqueIndices(n int, m int) ([]Node, Synchronizer) {
+	provider := func(i int) int {
+		return i
+	}
+	weightedNodes, synchronizer := BuildSynchronizedRandomConnectedWeightedGraph(n, m, 1, GetUniquenessGenerator(provider))
+	nodes := make([]Node, len(weightedNodes))
+	for i, weightedNode := range weightedNodes {
+		nodes[i] = weightedNode
+	}
+	return nodes, synchronizer
+}
