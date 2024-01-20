@@ -1,5 +1,5 @@
 # distributed-framework
-A collection of algorithms for _Distributed Systems_ course (winter semesters 2020/21, 2021/22, 2022/23) at [Jagiellonian University](https://uj.edu.pl), [Theoretical Computer Science Department](https://tcs.uj.edu.pl).
+A collection of algorithms for _Distributed Systems_ course (winter semesters 2020/21, 2021/22, 2022/23, 2023/24) at [Jagiellonian University](https://uj.edu.pl), [Theoretical Computer Science Department](https://tcs.uj.edu.pl).
 
 ## Algorithms
 
@@ -7,14 +7,17 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Synchronized directed ring
 1. Chang-Roberts algorithm
-2. Itai-Rodeh algorithm
-3. Dolev-Klawe-Rodeh algorithms A and B
-4. Peterson algorithm
+1. Peterson (Dolev-Klawe-Rodeh A) algorithm
+1. Improved Peterson algorithm
+1. Dolev-Klawe-Rodeh algorithm B
+1. Simplified Itai-Rodeh algorithm
+1. Itai-Rodeh algorithm
+1. Higham-Przytycka algorithm
 
 #### Synchronized undirected ring
+1. Franklin algorithm
 1. Hirschberg-Sinclair algorithm
-2. Franklin algorithm
-3. ProbAsFar (Korach-Rotem-Santoro) algorithm
+1. ProbAsFar (Korach-Rotem-Santoro) algorithm
 
 #### Synchronized undirected mesh
 1. Peterson algorithm
@@ -27,27 +30,47 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Synchronized undirected graph
 1. Yo-Yo algorithm
-2. Casteigts-Métivier-Robson-Zemmari algorithm
+1. Casteigts-Métivier-Robson-Zemmari algorithm
 
 #### Asynchronous directed ring
+1. Chang-Roberts algorithm
+1. Peterson (Dolev-Klawe-Rodeh A) algorithm
+1. Improved Peterson algorithm
+1. Dolev-Klawe-Rodeh algorithm B
 1. Itai-Rodeh algorithm
+1. Higham-Przytycka algorithm
 
 #### Asynchronous undirected ring
+1. Franklin algorithm
+1. Hirschberg-Sinclair algorithm
 1. Stages with feedback (Korach-Rotem-Santoro) algorithm
-2. Franklin algorithm
-3. Hirschberg-Sinclair algorithm
+1. Probabilistic Franklin algorithm
+1. Itai-Rodeh algorithm
+
+#### Asynchronous clique
+1. Korach-Moran-Zaks algorithm
+
+#### Asynchronous oriented clique
+1. Loui-Matsushita-West algorithm
+
+### Graph orientation
+
+#### Asynchronous ring
+1. Syrotiuk-Pachl algorithm
+
+### Order estimation
+
+#### Asynchronous undirected ring
+1. Itai-Rodeh algorithm
 
 ### Consensus
 
 #### Synchronized network
 1. Single Bit (Garay-Berman) algorithm
-2. Phase King (Garay-Berman-Perry) algorithm
-3. Ben-Or randomized algorithm
+1. Phase King (Garay-Berman-Perry) algorithm
+1. Ben-Or randomized algorithm
 
 ### Graph algorithms
-
-#### Synchronized dominating set
-1. LRG algorithm
 
 #### Synchronized minimum spanning tree
 1. Gallager-Humblet-Spira algorithm
@@ -55,10 +78,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Synchronized maximal independent set
 1. Luby algorithm
 
-### Orientation
-
-#### Asynchronous ring
-1. Syrotiuk-Pachl algorithm
+#### Synchronized dominating set
+1. Local Randomized Greedy (Jia-Rajaraman-Suel) algorithm
+1. Kuhn-Wattenhoffer algorithm
 
 ## Running
 

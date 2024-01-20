@@ -4,21 +4,23 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("No size specified")
-		return
-	}
-
 	n, err := strconv.Atoi(os.Args[1])
 	if err != nil || n < 1 {
 		fmt.Println("Invalid size", n)
 		return
 	}
 
-	async_higham_przytycka.Run(n)
+	switch algorithm := strings.ToLower(os.Args[2]); algorithm {
+	case "higham_przytycka":
+		async_higham_przytycka.Run(n)
+	case "itai_rodeh":
+		async_itah_rodeh.Run(n)
+	}
 }

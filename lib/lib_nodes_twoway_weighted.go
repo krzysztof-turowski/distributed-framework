@@ -5,7 +5,7 @@ import (
 )
 
 type twoWayWeightedGraphNode struct {
-	node    *twoWayNode
+	node    *oneWayNode
 	weights []int
 }
 
@@ -82,17 +82,18 @@ func (v *twoWayWeightedGraphNode) Close() {
 }
 
 func (v *twoWayWeightedGraphNode) shuffleTopology() {
-	rand.Shuffle(len(v.node.neighborsChannels), func(i, j int) {
-		v.node.neighborsChannels[i], v.node.neighborsChannels[j] = v.node.neighborsChannels[j], v.node.neighborsChannels[i]
-		v.node.neighbors[i], v.node.neighbors[j] = v.node.neighbors[j], v.node.neighbors[i]
-		v.node.neighborsCases[i], v.node.neighborsCases[j] = v.node.neighborsCases[j], v.node.neighborsCases[i]
+	rand.Shuffle(len(v.node.inNeighborsChannels), func(i, j int) {
+		v.node.inNeighborsChannels[i], v.node.inNeighborsChannels[j] = v.node.inNeighborsChannels[j], v.node.inNeighborsChannels[i]
+		v.node.outNeighborsChannels[i], v.node.outNeighborsChannels[j] = v.node.outNeighborsChannels[j], v.node.outNeighborsChannels[i]
+		v.node.inNeighbors[i], v.node.inNeighbors[j] = v.node.inNeighbors[j], v.node.inNeighbors[i]
+		v.node.outNeighbors[i], v.node.outNeighbors[j] = v.node.outNeighbors[j], v.node.outNeighbors[i]
+		v.node.inNeighborsCases[i], v.node.inNeighborsCases[j] = v.node.inNeighborsCases[j], v.node.inNeighborsCases[i]
 		v.weights[i], v.weights[j] = v.weights[j], v.weights[i]
 	})
 }
 
 func addTwoWayWeightedConnection(
-	firstNode *twoWayWeightedGraphNode, secondNode *twoWayWeightedGraphNode,
-	firstChan chan []byte, secondChan chan []byte, weight int) {
+	firstNode, secondNode *twoWayWeightedGraphNode, firstChan, secondChan chan []byte, weight int) {
 	addTwoWayConnection(firstNode.node, secondNode.node, firstChan, secondChan)
 	firstNode.weights = append(firstNode.weights, weight)
 	secondNode.weights = append(secondNode.weights, weight)
