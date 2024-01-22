@@ -31,11 +31,14 @@ type Message struct {
 	Toss    int
 }
 
-func Run(nodes []lib.Node, synchronizer lib.Synchronizer, T int, inputs []int) (bool, int) {
+func Run(nodes []lib.Node, synchronizer lib.Synchronizer, T int, inputs []int, faultyBehavior func(lib.Node, int)) (bool, int) {
+	if faultyBehavior == nil {
+		faultyBehavior = runByzantine
+	}
 	for i, node := range nodes {
 		if inputs[i] == -1 {
 			log.Println("Running node", node.GetIndex(), "as byzantine")
-			go runByzantine(node, T)
+			go faultyBehavior(node, T)
 		} else {
 			log.Println("Running node", node.GetIndex())
 			go run(node, T, inputs[i])

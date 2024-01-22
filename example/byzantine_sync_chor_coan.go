@@ -54,10 +54,14 @@ func main() {
 	}
 
 	nodes, synchronizer := lib.BuildCompleteGraphWithLoops(n, true, lib.GetGenerator())
-	ans, val := sync_chor_coan.Run(nodes, synchronizer, t, inputs)
-	if !ans {
-		panic("Consensus failed")
-	} else {
+	ans, val := sync_chor_coan.Run(nodes, synchronizer, t, inputs, troll)
+	if ans {
 		fmt.Println("All non-byzantine nodes agreed on value", val)
+	} else {
+		panic("Consensus failed")
 	}
+}
+
+func troll(n lib.Node, i int) {
+	panic("PANIC")
 }

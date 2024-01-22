@@ -65,7 +65,7 @@ func testChorCoanIteration(n int, t int, initial_values int) {
 		V[rand.Intn(n)] = -1
 	}
 	nodes, synchronizer := lib.BuildCompleteGraphWithLoops(n, true, lib.GetGenerator())
-	ans, val := sync_chor_coan.Run(nodes, synchronizer, t, V)
+	ans, val := sync_chor_coan.Run(nodes, synchronizer, t, V, nil)
 	if !ans || (initial_values != RANDOM && val != initial_values) {
 		log.Panic("FAILED")
 	}
