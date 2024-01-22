@@ -54,7 +54,7 @@ func main() {
 	}
 
 	nodes, synchronizer := lib.BuildCompleteGraphWithLoops(n, true, lib.GetGenerator())
-	ans, val := sync_chor_coan.Run(nodes, synchronizer, t, inputs, troll)
+	ans, val := sync_chor_coan.Run(nodes, synchronizer, t, inputs, nil)
 	if ans {
 		fmt.Println("All non-byzantine nodes agreed on value", val)
 	} else {
