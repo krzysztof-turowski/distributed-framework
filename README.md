@@ -66,13 +66,12 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 ### Consensus
 
 #### Byzantine problem
-1. Synchronous Chor-Coan algorithm
-
 
 #### Synchronized network
 1. Single Bit (Garay-Berman) algorithm
 1. Phase King (Garay-Berman-Perry) algorithm
 1. Ben-Or randomized algorithm
+1. Chor-Coan algorithm
 
 ### Graph algorithms
 
