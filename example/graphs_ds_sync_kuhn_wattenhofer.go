@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/ds/sync_kuhn_wattenhofer"
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"os"
 	"strconv"
-	"github.com/krzysztof-turowski/distributed-framework/lib"
-	"github.com/krzysztof-turowski/distributed-framework/graphs/ds/sync_kuhn_wattenhofer"
 )
 
 func main() {

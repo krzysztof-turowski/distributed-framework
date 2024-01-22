@@ -9,7 +9,8 @@ import (
 	"sort"
 )
 
-//  EDGES
+//	EDGES
+//
 // Synchronized GHS algorithm for finding Minimal Spanning Tree requires every edge to have a unique weight.
 // To achieve that for every u,v in E we define new edge weight as a triple (w, v, u) where w is the original
 // weight and v < u. We order such triplets lexicographically.
@@ -416,7 +417,8 @@ func RunSynchronizedGHSRandom(n, m, maxWeight int) {
 	RunSynchronizedGHS(vertices, synchronizer)
 }
 
-//  VERIFICATION
+//	VERIFICATION
+//
 // assuming all edges have unique weights than there is single MST
 func verifySynchronizedGHS(vertices []lib.WeightedGraphNode) {
 	expected := findMST(vertices)

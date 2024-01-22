@@ -31,11 +31,14 @@ type Message struct {
 	Toss    int
 }
 
-func Run(nodes []lib.Node, synchronizer lib.Synchronizer, T int, inputs []int) (int, int) {
+func Run(nodes []lib.Node, synchronizer lib.Synchronizer, T int, inputs []int, faultyBehavior func(lib.Node, int)) (bool, int) {
+	if faultyBehavior == nil {
+		faultyBehavior = runByzantine
+	}
 	for i, node := range nodes {
 		if inputs[i] == -1 {
 			log.Println("Running node", node.GetIndex(), "as byzantine")
-			go runByzantine(node, T)
+			go faultyBehavior(node, T)
 		} else {
 			log.Println("Running node", node.GetIndex())
 			go run(node, T, inputs[i])
@@ -43,24 +46,24 @@ func Run(nodes []lib.Node, synchronizer lib.Synchronizer, T int, inputs []int) (
 	}
 
 	synchronizer.Synchronize(0)
-	checkConsensus(nodes)
-
-	return synchronizer.GetStats()
+	messages, time := synchronizer.GetStats()
+	log.Println("messages:", messages)
+	log.Println("time:", time)
+	return checkConsensus(nodes)
 }
 
 func tossCoin() int {
-	return rand.Int() % 2
+	return rand.Intn(2)
 }
 
-func checkConsensus(nodes []lib.Node) {
-	decided := make([]bool, 2)
-	decided[0] = false
-	decided[1] = false
+func checkConsensus(nodes []lib.Node) (bool, int) {
+	decided := [...]bool{false, false}
 	for _, node := range nodes {
 		state := getState(node)
 		if !state.Byzantine {
 			if state.AgreedValue == ANY_NONE {
-				log.Panic("At least one non-byzantine node did not agreed on any value")
+				log.Println("At least one non-byzantine node did not agreed on any value")
+				return false, -1
 			} else {
 				decided[state.AgreedValue] = true
 			}
@@ -68,19 +71,22 @@ func checkConsensus(nodes []lib.Node) {
 	}
 
 	if decided[0] && decided[1] {
-		log.Panic("Non-byzantine nodes agreed on different values")
+		log.Println("Non-byzantine nodes agreed on different values")
+		return false, -1
 	} else if decided[0] {
 		log.Println("All non-byzantine nodes agreed on value 0")
+		return true, 0
 	} else if decided[1] {
 		log.Println("All non-byzantine nodes agreed on value 1")
+		return true, 1
 	} else {
-		log.Panic("Non-byzantine nodes did not agree on any value")
+		log.Println("Non-byzantine nodes did not agree on any value")
+		return false, -1
 	}
 }
 
 func handleRoundOne(node lib.Node, messages []*Message) {
-	zeros := 0
-	ones := 0
+	zeros, ones := 0, 0
 
 	for _, msg := range messages {
 		if msg.Current == ZERO {
@@ -115,11 +121,8 @@ func handleCoinToss(node lib.Node, epoch int) {
 func handleRoundTwo(node lib.Node, messages []*Message, epoch int) bool {
 	state := getState(node)
 
-	zerosAns := 0
-	onesAns := 0
-
-	zerosToss := 0
-	onesToss := 0
+	zerosAns, onesAns := 0, 0
+	zerosToss, onesToss := 0, 0
 
 	for id, msg := range messages {
 		if msg.Current == ZERO {
@@ -140,11 +143,9 @@ func handleRoundTwo(node lib.Node, messages []*Message, epoch int) bool {
 	var ans, num, ansToss int
 
 	if zerosAns > onesAns {
-		num = zerosAns
-		ans = ZERO
+		num, ans = zerosAns, ZERO
 	} else {
-		num = onesAns
-		ans = ONE
+		num, ans = onesAns, ONE
 	}
 
 	if zerosToss > onesToss {
