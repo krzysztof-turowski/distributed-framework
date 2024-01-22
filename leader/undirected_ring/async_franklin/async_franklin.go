@@ -73,24 +73,24 @@ func initialize(node lib.Node) {
 }
 
 func handleActive(node lib.Node) {
-  var valLeft uint64
+	var valLeft uint64
 	var valRight uint64
 	sender, byteMsg := node.ReceiveAnyMessage()
 	if sender == LEFT {
 		valLeft = getValue(byteMsg)
-    valRight = getValue(node.ReceiveMessage(RIGHT))
+		valRight = getValue(node.ReceiveMessage(RIGHT))
 	} else {
 		valRight = getValue(byteMsg)
-    valLeft = getValue(node.ReceiveMessage(LEFT))
+		valLeft = getValue(node.ReceiveMessage(LEFT))
 	}
 	id := getState(node).Id
 	if valLeft > id || valRight > id {
 		setState(node, &state{
-      Id:       getState(node).Id,
-      IsLeader: false,
-      LeaderId: 0,
-      Phase:    passive,
-    })
+			Id:       getState(node).Id,
+			IsLeader: false,
+			LeaderId: 0,
+			Phase:    passive,
+		})
 	} else if valLeft < id && valRight < id {
 		byteMsg = encodeAll(messageContent{
 			Value:   id,
@@ -100,12 +100,12 @@ func handleActive(node lib.Node) {
 		node.SendMessage(RIGHT, byteMsg)
 	} else {
 		log.Println("[LEADER] Node", node.GetIndex(), "becomes leader")
-    setState(node, &state{
-      Id:       getState(node).Id,
-      IsLeader: true,
-      LeaderId: id,
-      Phase:    knownLeader,
-    })
+		setState(node, &state{
+			Id:       getState(node).Id,
+			IsLeader: true,
+			LeaderId: id,
+			Phase:    knownLeader,
+		})
 	}
 }
 
@@ -130,12 +130,12 @@ func handlePassive(node lib.Node) {
 		decodeAll(byteMsg, &msg)
 		node.SendMessage(other, byteMsg)
 		if msg.IsFinal {
-      setState(node, &state{
-        Id:       getState(node).Id,
-        IsLeader: false,
-        LeaderId: msg.Value,
-        Phase:    knownLeader,
-      })
+			setState(node, &state{
+				Id:       getState(node).Id,
+				IsLeader: false,
+				LeaderId: msg.Value,
+				Phase:    knownLeader,
+			})
 			return
 		}
 	}

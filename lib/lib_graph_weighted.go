@@ -12,8 +12,8 @@ func addWeightedConnection(vertices []WeightedGraphNode, i, j, weight int) {
 		vertices[i].(*twoWayWeightedGraphNode), vertices[j].(*twoWayWeightedGraphNode),
 		chans[0], chans[1],
 		weight)
-	log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up with weight ", weight)
-	log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up with weight ", weight)
+	log.Println(fmt.Sprintf("Channel %d -> %d set up with weight %d", vertices[i].GetIndex(), vertices[j].GetIndex(), weight))
+	log.Println(fmt.Sprintf("Channel %d -> %d set up with weight %d", vertices[j].GetIndex(), vertices[i].GetIndex(), weight))
 }
 
 func BuildEmptyWeightedGraph(n int, indexGenerator Generator) ([]WeightedGraphNode, Runner) {
@@ -21,7 +21,7 @@ func BuildEmptyWeightedGraph(n int, indexGenerator Generator) ([]WeightedGraphNo
 	weightedVertices := make([]WeightedGraphNode, n)
 	for i := range weightedVertices {
 		weightedVertices[i] = &twoWayWeightedGraphNode{
-			node:    vertices[i].(*twoWayNode),
+			node:    vertices[i].(*oneWayNode),
 			weights: make([]int, 0),
 		}
 	}

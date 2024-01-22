@@ -8,7 +8,8 @@ import (
 func asSynchronizer(runner Runner) Synchronizer {
 	return Synchronizer{n: runner.n, inConfirm: runner.inConfirm, outConfirm: runner.outConfirm}
 }
-func BuildEmptyDirectedGraph(n int, indexGenerator Generator) ([]Node, Runner) {
+
+func BuildEmptyGraph(n int, indexGenerator Generator) ([]Node, Runner) {
 	vertices := make([]Node, n)
 	inConfirm := make([]chan counterMessage, n)
 	outConfirm := make([]chan bool, n)
@@ -33,12 +34,14 @@ func BuildEmptyDirectedGraph(n int, indexGenerator Generator) ([]Node, Runner) {
 	}
 	return vertices, Runner{n: n, vertices: vertices, inConfirm: inConfirm, outConfirm: outConfirm}
 }
-func BuildSynchronizedEmptyDirectedGraph(n int, indexGenerator Generator) ([]Node, Synchronizer) {
-	vertices, runner := BuildEmptyDirectedGraph(n, indexGenerator)
+
+func BuildSynchronizedEmptyGraph(n int, indexGenerator Generator) ([]Node, Synchronizer) {
+	vertices, runner := BuildEmptyGraph(n, indexGenerator)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildDirectedRing(n int) ([]Node, Runner) {
-	vertices, runner := BuildEmptyDirectedGraph(n, GetRandomGenerator())
+	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
 	chans := getSynchronousChannels(n)
 	for i := 0; i < n; i++ {
 		addOneWayConnection(
@@ -51,56 +54,33 @@ func BuildDirectedRing(n int) ([]Node, Runner) {
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedDirectedRing(n int) ([]Node, Synchronizer) {
 	vertices, runner := BuildDirectedRing(n)
 	return vertices, asSynchronizer(runner)
 }
-func BuildEmptyGraph(n int, indexGenerator Generator) ([]Node, Runner) {
-	vertices := make([]Node, n)
-	inConfirm := make([]chan counterMessage, n)
-	outConfirm := make([]chan bool, n)
-	for i := range inConfirm {
-		inConfirm[i] = make(chan counterMessage)
-		outConfirm[i] = make(chan bool)
-	}
-	for i := range vertices {
-		vertices[i] = &twoWayNode{
-			index:             indexGenerator.Int(),
-			size:              n,
-			neighborsChannels: make([]twoWaySynchronousChannel, 0),
-			neighbors:         make([]Node, 0),
-			stats: statsNode{
-				inConfirm:  outConfirm[i],
-				outConfirm: inConfirm[i],
-			},
-		}
-		log.Println("Node", vertices[i].GetIndex(), "built")
-	}
-	return vertices, Runner{n: n, vertices: vertices, inConfirm: inConfirm, outConfirm: outConfirm}
-}
-func BuildSynchronizedEmptyGraph(n int, indexGenerator Generator) ([]Node, Synchronizer) {
-	vertices, runner := BuildEmptyGraph(n, indexGenerator)
-	return vertices, asSynchronizer(runner)
-}
+
 func BuildRing(n int) ([]Node, Runner) {
 	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
 	chans := getSynchronousChannels(2 * n)
 	for i := 0; i < n; i++ {
 		addTwoWayConnection(
-			vertices[i].(*twoWayNode), vertices[(i+1)%n].(*twoWayNode),
+			vertices[i].(*oneWayNode), vertices[(i+1)%n].(*oneWayNode),
 			chans[2*i], chans[(2*i+1)%(2*n)])
 		log.Println("Channel", vertices[i].GetIndex(), "->", vertices[(i+1)%n].GetIndex(), "set up")
 		log.Println("Channel", vertices[(i+1)%n].GetIndex(), "->", vertices[i].GetIndex(), "set up")
 	}
 	for _, vertex := range vertices {
-		vertex.(*twoWayNode).shuffleTopology()
+		vertex.(*oneWayNode).shuffleTopology()
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedRing(n int) ([]Node, Synchronizer) {
 	vertices, runner := BuildRing(n)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildCompleteGraph(n int) ([]Node, Runner) {
 	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
 	chans := getSynchronousChannels(n * (n - 1))
@@ -108,7 +88,7 @@ func BuildCompleteGraph(n int) ([]Node, Runner) {
 	for i := 0; i < n; i++ {
 		for j := i + 1; j < n; j++ {
 			addTwoWayConnection(
-				vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
+				vertices[i].(*oneWayNode), vertices[j].(*oneWayNode),
 				chans[counter], chans[counter+1])
 			counter += 2
 			log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
@@ -116,14 +96,16 @@ func BuildCompleteGraph(n int) ([]Node, Runner) {
 		}
 	}
 	for _, vertex := range vertices {
-		vertex.(*twoWayNode).shuffleTopology()
+		vertex.(*oneWayNode).shuffleTopology()
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedCompleteGraph(n int) ([]Node, Synchronizer) {
 	vertices, runner := BuildCompleteGraph(n)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildRandomGraph(n int, p float64) ([]Node, Runner) {
 	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
 	for i := 0; i < n; i++ {
@@ -131,7 +113,7 @@ func BuildRandomGraph(n int, p float64) ([]Node, Runner) {
 			if p < rand.Float64() {
 				chans := getSynchronousChannels(2)
 				addTwoWayConnection(
-					vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
+					vertices[i].(*oneWayNode), vertices[j].(*oneWayNode),
 					chans[0], chans[1])
 				log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
 				log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
@@ -139,14 +121,16 @@ func BuildRandomGraph(n int, p float64) ([]Node, Runner) {
 		}
 	}
 	for _, vertex := range vertices {
-		vertex.(*twoWayNode).shuffleTopology()
+		vertex.(*oneWayNode).shuffleTopology()
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedRandomGraph(n int, p float64) ([]Node, Synchronizer) {
 	vertices, runner := BuildRandomGraph(n, p)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildRandomTree(n int) ([]Node, Runner) {
 	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
 	chans := getSynchronousChannels(2*n - 2)
@@ -154,21 +138,23 @@ func BuildRandomTree(n int) ([]Node, Runner) {
 	for i := 1; i < n; i++ {
 		j := rand.Intn(i)
 		addTwoWayConnection(
-			vertices[i].(*twoWayNode), vertices[j].(*twoWayNode),
+			vertices[i].(*oneWayNode), vertices[j].(*oneWayNode),
 			chans[counter], chans[counter+1])
 		counter += 2
 		log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
 		log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
 	}
 	for _, vertex := range vertices {
-		vertex.(*twoWayNode).shuffleTopology()
+		vertex.(*oneWayNode).shuffleTopology()
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedRandomTree(n int) ([]Node, Synchronizer) {
 	vertices, runner := BuildRandomTree(n)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildGraphFromAdjacencyList(adjacencyList [][]int, generator Generator) ([]Node, Runner) {
 	vertices, runner := BuildEmptyGraph(len(adjacencyList), generator)
 	for i, l := range adjacencyList {
@@ -176,7 +162,7 @@ func BuildGraphFromAdjacencyList(adjacencyList [][]int, generator Generator) ([]
 			if i < j-1 {
 				chans := getSynchronousChannels(2)
 				addTwoWayConnection(
-					vertices[i].(*twoWayNode), vertices[j-1].(*twoWayNode),
+					vertices[i].(*oneWayNode), vertices[j-1].(*oneWayNode),
 					chans[0], chans[1])
 				log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j-1].GetIndex(), "set up")
 				log.Println("Channel", vertices[j-1].GetIndex(), "->", vertices[i].GetIndex(), "set up")
@@ -184,14 +170,16 @@ func BuildGraphFromAdjacencyList(adjacencyList [][]int, generator Generator) ([]
 		}
 	}
 	for _, vertex := range vertices {
-		vertex.(*twoWayNode).shuffleTopology()
+		vertex.(*oneWayNode).shuffleTopology()
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedGraphFromAdjacencyList(adjacencyList [][]int, generator Generator) ([]Node, Synchronizer) {
 	vertices, runner := BuildGraphFromAdjacencyList(adjacencyList, generator)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildUndirectedMesh(a int, b int) ([]Node, Runner) {
 	log.Println("buliding", a, "x", b, "mesh")
 	adjacencyList := make([][]int, a*b)
@@ -216,10 +204,12 @@ func BuildUndirectedMesh(a int, b int) ([]Node, Runner) {
 	}
 	return BuildGraphFromAdjacencyList(adjacencyList, GetRandomGenerator())
 }
+
 func BuildSynchronizedUndirectedMesh(a int, b int) ([]Node, Synchronizer) {
 	vertices, runner := BuildUndirectedMesh(a, b)
 	return vertices, asSynchronizer(runner)
 }
+
 func BuildHypercube(dim int, oriented bool) ([]Node, Runner) {
 	if dim < 0 {
 		panic("Dimension cannot be negative")
@@ -236,26 +226,27 @@ func BuildHypercube(dim int, oriented bool) ([]Node, Runner) {
 			}
 			chans := getSynchronousChannels(2)
 			j := i | (1 << d)
-			addTwoWayConnection(vertices[i].(*twoWayNode), vertices[j].(*twoWayNode), chans[0], chans[1])
+			addTwoWayConnection(vertices[i].(*oneWayNode), vertices[j].(*oneWayNode), chans[0], chans[1])
 			log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
 			log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
 		}
 	}
 	if !oriented {
 		for _, vertex := range vertices {
-			vertex.(*twoWayNode).shuffleTopology()
+			vertex.(*oneWayNode).shuffleTopology()
 		}
 	}
 	rand.Shuffle(len(vertices), func(i, j int) { vertices[i], vertices[j] = vertices[j], vertices[i] })
 	return vertices, runner
 }
+
 func BuildSynchronizedHypercube(dim int, oriented bool) ([]Node, Synchronizer) {
 	vertices, runner := BuildHypercube(dim, oriented)
 	return vertices, asSynchronizer(runner)
 }
 
 func BuildCompleteGraphWithLoops(n int, oriented bool, indexGenerator Generator) ([]Node, Synchronizer) {
-	vertices, synchronizer := BuildSynchronizedEmptyDirectedGraph(n, indexGenerator)
+	vertices, synchronizer := BuildSynchronizedEmptyGraph(n, indexGenerator)
 	chans := getSynchronousChannels(n * n)
 	counter := 0
 	for i := 0; i < n; i++ {
@@ -272,8 +263,9 @@ func BuildCompleteGraphWithLoops(n int, oriented bool, indexGenerator Generator)
 	}
 	return vertices, synchronizer
 }
+
 func BuildHamiltonianOrientedCompleteGraph(n int) ([]Node, Runner) {
-	vertices, runner := BuildEmptyDirectedGraph(n, GetRandomGenerator())
+	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
 	chans := getSynchronousChannels(n * (n - 1))
 	counter := 0
 	for i := 0; i < n; i++ {
@@ -285,7 +277,19 @@ func BuildHamiltonianOrientedCompleteGraph(n int) ([]Node, Runner) {
 	}
 	return vertices, runner
 }
+
 func BuildSynchronizedHamiltonianOrientedCompleteGraph(n int) ([]Node, Synchronizer) {
 	vertices, runner := BuildHamiltonianOrientedCompleteGraph(n)
 	return vertices, asSynchronizer(runner)
+}
+func BuildSynchronizedRandomConnectedGraphWithUniqueIndices(n int, m int) ([]Node, Synchronizer) {
+	provider := func(i int) int {
+		return i
+	}
+	weightedNodes, synchronizer := BuildSynchronizedRandomConnectedWeightedGraph(n, m, 1, GetUniquenessGenerator(provider))
+	nodes := make([]Node, len(weightedNodes))
+	for i, weightedNode := range weightedNodes {
+		nodes[i] = weightedNode
+	}
+	return nodes, synchronizer
 }

@@ -6,14 +6,13 @@ runners_example:
 	go run example/synchronized.go 5
 
 leader_directed_ring_example:
-	go run example/leader_directed_ring_sync_all.go 10
-	go run example/leader_directed_ring_sync_chang_roberts.go 10
-	go run example/leader_directed_ring_sync_dolev_klawe_rodeh.go a 10
-	go run example/leader_directed_ring_sync_dolev_klawe_rodeh.go b 10
-	go run example/leader_directed_ring_sync_peterson.go 10
-	go run example/leader_directed_ring_sync_itai_rodeh.go 10
-	go run example/leader_directed_ring_async_higham_przytycka.go 10
-	go run example/leader_directed_ring_async_itai_rodeh.go 10
+	go run example/leader_directed_ring_sync.go 10 chang_roberts
+	go run example/leader_directed_ring_sync.go 10 dolev_klawe_rodeh_a
+	go run example/leader_directed_ring_sync.go 10 dolev_klawe_rodeh_b
+	go run example/leader_directed_ring_sync.go 10 itai_rodeh
+	go run example/leader_directed_ring_sync.go 10 peterson
+	go run example/leader_directed_ring_async.go 10 higham_przytycka
+	go run example/leader_directed_ring_async.go 10 itai_rodeh
 
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
@@ -38,22 +37,13 @@ leader_directed_hypercube_example:
 
 leader_undirected_graph_example:
 	go run example/leader_undirected_graph_sync_yoyo.go 20 0.25
+	go run example/leader_undirected_graph_sync_casteigts_metivier_robson_zemmari.go 20 0.25
 
 orientation_example:
 	go run example/orientation_async_syrotiuk_pachl.go 10
 
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
-
-graphs_ds_example:
-	go run example/graphs_ds_sync_lrg.go 10 0.70
-	go run example/graphs_ds_sync_kuhn_wattenhofer.go 101 0.05 4
-
-graphs_mst_example:
-	go run example/graphs_mst_sync_ghs.go 10 30 100
-
-graphs_mis_example:
-	go run example/graphs_mis_sync_luby.go 20 0.25
 
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
@@ -62,6 +52,16 @@ consensus_example:
 	go run example/consensus_sync_phase_king.go 10 3  0 1 0 1 0 1 1 0 0 0  1 2 3  Optimal
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
+
+graphs_mst_example:
+	go run example/graphs_mst_sync_ghs.go 10 30 100
+
+graphs_mis_example:
+	go run example/graphs_mis_sync_luby.go 20 0.25
+
+graphs_ds_example:
+	go run example/graphs_ds_sync_lrg.go 10 0.70
+	go run example/graphs_ds_sync_kuhn_wattenhofer.go 101 0.05 4
 
 unit_test:
 	go test ./leader/undirected_graph/sync_yoyo -v
