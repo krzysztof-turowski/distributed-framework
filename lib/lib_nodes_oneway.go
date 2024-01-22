@@ -148,15 +148,12 @@ func (v *oneWayNode) shuffleTopology() {
 		v.inNeighborsChannels[i], v.inNeighborsChannels[j] = v.inNeighborsChannels[j], v.inNeighborsChannels[i]
 		v.inNeighbors[i], v.inNeighbors[j] = v.inNeighbors[j], v.inNeighbors[i]
 		v.inNeighborsCases[i], v.inNeighborsCases[j] = v.inNeighborsCases[j], v.inNeighborsCases[i]
-	})
-	rand.Shuffle(len(v.outNeighborsChannels), func(i, j int) {
 		v.outNeighborsChannels[i], v.outNeighborsChannels[j] = v.outNeighborsChannels[j], v.outNeighborsChannels[i]
 		v.outNeighbors[i], v.outNeighbors[j] = v.outNeighbors[j], v.outNeighbors[i]
 	})
 }
 
-func addOneWayConnection(
-	firstNode *oneWayNode, secondNode *oneWayNode, channel chan []byte) {
+func addOneWayConnection(firstNode, secondNode *oneWayNode, channel chan []byte) {
 	firstNode.outNeighborsChannels = append(firstNode.outNeighborsChannels, channel)
 	firstNode.outNeighbors = append(firstNode.outNeighbors, secondNode)
 	secondNode.inNeighborsChannels = append(secondNode.inNeighborsChannels, channel)
@@ -164,4 +161,9 @@ func addOneWayConnection(
 	secondNode.inNeighborsCases = append(
 		secondNode.inNeighborsCases,
 		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
+}
+
+func addTwoWayConnection(firstNode, secondNode *oneWayNode, firstChan, secondChan chan []byte) {
+	addOneWayConnection(firstNode, secondNode, firstChan)
+	addOneWayConnection(secondNode, firstNode, secondChan)
 }
