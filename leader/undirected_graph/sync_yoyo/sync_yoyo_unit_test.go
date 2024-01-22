@@ -36,6 +36,10 @@ func (v *testNode) ReceiveMessageIfAvailable(index int) []byte {
 	return nil
 }
 
+func (v *testNode) ReceiveMessageWithTimeout(index int) []byte {
+	return nil
+}
+
 func (v *testNode) SendMessage(index int, message []byte) {
 
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	"reflect"
+	"time"
 )
 
 type oneWayNode struct {
@@ -45,6 +46,21 @@ func (v *oneWayNode) ReceiveMessageIfAvailable(index int) []byte {
 	neighborsCasesDefault[1] = reflect.SelectCase{Dir: reflect.SelectDefault}
 	_, value, ok := reflect.Select(neighborsCasesDefault)
 	if !ok {
+		return nil
+	}
+	message := value.Interface().([]byte)
+	if message != nil {
+		v.stats.receivedMessages++
+	}
+	return message
+}
+
+func (v *oneWayNode) ReceiveMessageWithTimeout(index int) []byte {
+	neighborsCasesTimeout := make([]reflect.SelectCase, 2)
+	neighborsCasesTimeout[0] = v.inNeighborsCases[index]
+	neighborsCasesTimeout[1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(5 * time.Second))}
+	num, value, ok := reflect.Select(neighborsCasesTimeout)
+	if !ok || num == 1 {
 		return nil
 	}
 	message := value.Interface().([]byte)
@@ -132,12 +148,15 @@ func (v *oneWayNode) shuffleTopology() {
 		v.inNeighborsChannels[i], v.inNeighborsChannels[j] = v.inNeighborsChannels[j], v.inNeighborsChannels[i]
 		v.inNeighbors[i], v.inNeighbors[j] = v.inNeighbors[j], v.inNeighbors[i]
 		v.inNeighborsCases[i], v.inNeighborsCases[j] = v.inNeighborsCases[j], v.inNeighborsCases[i]
+	})
+	rand.Shuffle(len(v.outNeighborsChannels), func(i, j int) {
 		v.outNeighborsChannels[i], v.outNeighborsChannels[j] = v.outNeighborsChannels[j], v.outNeighborsChannels[i]
 		v.outNeighbors[i], v.outNeighbors[j] = v.outNeighbors[j], v.outNeighbors[i]
 	})
 }
 
-func addOneWayConnection(firstNode, secondNode *oneWayNode, channel chan []byte) {
+func addOneWayConnection(
+	firstNode *oneWayNode, secondNode *oneWayNode, channel chan []byte) {
 	firstNode.outNeighborsChannels = append(firstNode.outNeighborsChannels, channel)
 	firstNode.outNeighbors = append(firstNode.outNeighbors, secondNode)
 	secondNode.inNeighborsChannels = append(secondNode.inNeighborsChannels, channel)
@@ -145,9 +164,4 @@ func addOneWayConnection(firstNode, secondNode *oneWayNode, channel chan []byte)
 	secondNode.inNeighborsCases = append(
 		secondNode.inNeighborsCases,
 		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
-}
-
-func addTwoWayConnection(firstNode, secondNode *oneWayNode, firstChan, secondChan chan []byte) {
-	addOneWayConnection(firstNode, secondNode, firstChan)
-	addOneWayConnection(secondNode, firstNode, secondChan)
 }
