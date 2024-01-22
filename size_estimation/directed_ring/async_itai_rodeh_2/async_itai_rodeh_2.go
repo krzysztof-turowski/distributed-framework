@@ -2,10 +2,11 @@ package async_itai_rodeh_2
 
 import (
 	"encoding/json"
-	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 type State struct {
@@ -117,8 +118,6 @@ func process(node lib.Node) bool {
 			Count: 0,
 		}
 		send(node, state, msgOut)
-	} else {
-		log.Println("Node", node.GetIndex(), "finished with size", state.Size)
 	}
 	return true
 }
