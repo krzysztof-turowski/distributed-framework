@@ -53,6 +53,9 @@ consensus_example:
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
 
+byzantine_example:
+	go run example/byzantine_sync_chor_coan.go 7 2  0 0 -1 1 0 -1 0
+
 graphs_mst_example:
 	go run example/graphs_mst_sync_ghs.go 10 30 100
 
