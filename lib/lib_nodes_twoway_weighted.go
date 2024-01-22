@@ -29,6 +29,10 @@ func (v *twoWayWeightedGraphNode) ReceiveMessageIfAvailable(index int) []byte {
 	return v.node.ReceiveMessageIfAvailable(index)
 }
 
+func (v *twoWayWeightedGraphNode) ReceiveMessageWithTimeout(index int) []byte {
+	return v.node.ReceiveMessageWithTimeout(index)
+}
+
 func (v *twoWayWeightedGraphNode) SendMessage(index int, message []byte) {
 	v.node.SendMessage(index, message)
 }
