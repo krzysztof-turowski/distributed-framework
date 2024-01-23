@@ -2,6 +2,7 @@ package sync_torus
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"math/rand"
@@ -47,6 +48,11 @@ type Message struct {
 	SoFar    int
 	ToGo     int
 }
+
+/* TESTS */
+const (
+	testCases int = 100
+)
 
 /* STATE FUNCTIONS */
 type StateNodeTorus struct {
@@ -184,7 +190,7 @@ func contains(dir DirectionType, val NodeLabelType, st *StateNodeTorus) bool {
 		return false
 	}
 	for v := range st.H2[dir] {
-		if NodeLabelType(v) == val {
+		if NodeLabelType(st.H2[dir][v]) == val {
 			return true
 		}
 	}
@@ -286,13 +292,105 @@ func BuildSynchronizedTorus(n int) ([]lib.Node, lib.Synchronizer) {
 }
 
 /* CHECK */
+func getNodeInd(vertices []lib.Node, id NodeLabelType) int {
+	for i := range vertices {
+		if NodeLabelType(vertices[i].GetIndex()) == id {
+			return i
+		}
+	}
+	// not reachable
+	return -1
+}
+
+func getLinkFrom(v lib.Node, id NodeLabelType) DirectionType {
+	st := getState(v)
+	for i, k := range st.H1 {
+		if NodeLabelType(k) == id {
+			return i
+		}
+	}
+	// not reachable
+	return -1
+}
+
+func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
+	dMin := 1
+	d := rand.Intn(len(vertices)) + dMin
+	distance := 0
+	currentNode := vertices[initiatorNode]
+	prevNode := vertices[initiatorNode]
+	st := getState(currentNode)
+	k, r := findPerpendicularAny(st)
+	handrail := st.H1[k]
+	toGo := d
+	soFar := 0
+	distance++
+	nextNodeId := st.H1[r]
+
+	log.Println("Node:", currentNode.GetIndex(), "initiator.")
+	log.Println("d:", d)
+
+	for distance < 4*d {
+		prevNode = currentNode
+		currentNode = vertices[getNodeInd(vertices, nextNodeId)]
+		soFar++
+		r, k = findPerpendicularVal(getState(currentNode), handrail, getLinkFrom(currentNode, NodeLabelType(prevNode.GetIndex())))
+		if soFar != toGo {
+			st = getState(currentNode)
+			handrail = st.H1[k]
+			s := findParallelTo(st, r)
+			nextNodeId = st.H1[s]
+		} else {
+			st = getState(currentNode)
+			handrail = st.H1[r]
+			soFar = 0
+			nextNodeId = st.H1[k]
+		}
+		log.Println("Next node", nextNodeId, ".")
+		distance++
+	}
+
+	if nextNodeId != NodeLabelType(vertices[initiatorNode].GetIndex()) {
+		panic("Boundary not closed!!!")
+	}
+}
+
+func multipleTests(vertices []lib.Node) {
+	numOfVer := len(vertices)
+	initiatiorNode := rand.Intn(numOfVer)
+	for i := 0; i < testCases; i++ {
+		checkWithoutRunning(vertices, initiatiorNode)
+	}
+
+}
+
+/* RUN */
+func start(vertices []lib.Node, synchronizer lib.Synchronizer) (int, int) {
+	for _, v := range vertices {
+		go run(v)
+	}
+	synchronizer.Synchronize(2)
+	synchronizer.GetStats()
+	return synchronizer.GetStats()
+}
+
+func Run(n int) {
+	vertices, sync := BuildSynchronizedTorus(n)
+	msgs, rounds := start(vertices, sync)
+	fmt.Println("ORIENTATION")
+	fmt.Println("Rounds:", rounds, "Messages:", msgs)
+	fmt.Println("TESTING CORECTNESS")
+	multipleTests(vertices)
+}
+
+/* MY SKETCHES FOR RUNTIME BOUNDARY, MAY BE WRONG BUT USEFUL */
 func emptyIntersect(h21 []NodeLabelType, h22 []NodeLabelType) bool {
 	if len(h22) == 0 || len(h21) == 0 {
 		return true
 	}
 	for i := range h21 {
 		for j := range h22 {
-			if i == j {
+			if h21[i] == h22[j] {
 				return false
 			}
 		}
@@ -338,15 +436,14 @@ func findPerpendicularVal(st *StateNodeTorus, handrail NodeLabelType, link Direc
 			continue
 		}
 		for j := range st.H2[i] {
-			if j == int(handrail) {
+			if st.H2[i][j] == handrail {
 				k = i
-				break
+				return r, k
 			}
 		}
-		if k != -1 {
-			break
-		}
+
 	}
+	// not reachable
 	return r, k
 }
 
@@ -358,7 +455,6 @@ func markTerritory(v lib.Node, st *StateNodeTorus) {
 				if st.State == initiator {
 					log.Println("Node:", v.GetIndex(), "boundary closed.")
 					st.BoundaryClosed = true
-					return
 				} else {
 					sofar := msgin.SoFar + 1
 					r, k := findPerpendicularVal(st, msgin.Handrail, i)
@@ -375,7 +471,6 @@ func markTerritory(v lib.Node, st *StateNodeTorus) {
 						addPendingMessage(int(k), st, msgout)
 					}
 					st.BoundaryClosed = true
-					return
 				}
 			} else {
 				// not reachable
@@ -410,7 +505,6 @@ func startMarking(v lib.Node, d int) bool {
 func check(v lib.Node, d int) {
 	finish := false
 	st := getState(v)
-	log.Println("Node:", v.GetIndex(), "statring check.")
 	v.StartProcessing()
 	if st.State == initiator {
 		finish = startMarking(v, d)
@@ -438,34 +532,13 @@ func checkAll(vertices []lib.Node, synchronizer lib.Synchronizer) (int, int) {
 	st.State = initiator
 	setState(vertices[initiatorNode], st)
 
-	log.Println("Just before check.")
 	for _, v := range vertices {
 		go check(v, d)
 	}
 	synchronizer.Synchronize(0)
 	synchronizer.GetStats()
 	if !getState(vertices[initiatorNode]).BoundaryClosed {
-		panic("Not closed boundary!!!")
+		panic("Boundary not closed!!!")
 	}
 	return synchronizer.GetStats()
-}
-
-/* RUN */
-func start(vertices []lib.Node, synchronizer lib.Synchronizer) (int, int) {
-	for _, v := range vertices {
-		go run(v)
-	}
-	synchronizer.Synchronize(2)
-	synchronizer.GetStats()
-	return synchronizer.GetStats()
-}
-
-func Run(n int) {
-	vertices, sync := BuildSynchronizedTorus(n)
-	msgs, rounds := start(vertices, sync)
-	log.Println("ORIENTATION")
-	log.Println("Rounds:", rounds, "Messages:", msgs)
-	// log.Println("TESTING CORECTNESS")
-	// msgs, rounds = checkAll(vertices, sync)
-	// log.Println("Rounds:", rounds, "Messages:", msgs)
 }
