@@ -27,7 +27,8 @@ leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
 
 leader_undirected_clique_example:
-	go run example/leader_clique_async_korach_moran_zaks.go
+	go run example/leader_clique_async_korach_moran_zaks.go 10
+	go run example/leader_clique_async_afek_gafni.go 10
 
 leader_undirected_mesh_example:
 	go run example/leader_undirected_mesh_sync_peterson.go 6 9
