@@ -1,0 +1,181 @@
+\documentclass{article}
+
+\usepackage[english]{babel}
+\usepackage{filecontents}
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+\usepackage{amsmath}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{amsthm}
+
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{natbib}
+\usepackage{cleveref}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+\section*{Problem}
+From n nodes we want to choose one that will be the leader of the rest.
+
+\section*{More formal definition of a problem}
+\subsection*{Definitions}
+
+    \(G\) - Complete Graph.\\
+\(V(G)\) - Set of Vertices of graph G\\
+\(E(G)\) - Set of Edges in graph G\\
+\(P(v)\) - predicate that returns true(or returns his id) if \(v\) was chosen, else false(or returns id of the chosen node)
+
+The leader election problem - choose exactly one node \(v \in V(G)\) that \(P(v) = true\) and \(\forall u \in V(G)\), \( u \ne v\), \(P(u) = false\) 
+
+\section*{Algorithm}
+The naive algorithm is actually quite trivial. Every node is a king at the start and he sends \(n - 1\) messages to his neighbours to find the one with biggest id. The number of messages send by this algorithm is \(\mathcal{O}(n^2)\).
+
+The new algorithm will reduce the number of messages to \(\mathcal{O}(n \log n)\).
+
+The algorithm below is Afek-Gafni algorithm B.
+
+Each node will spawn two processes at the beginning (in our code all will be done in one process but it is easier to understand when we will talk about two processes). One will be called Candidate - this one will start the conversation. Ordinary process will answer the ask from the other candidate or pass the message to his father (the node that captured him before). The node will change it's father if the new node that arrives at specific node is higher valued than himself. The candidate part of the node sent messages only to ordinary part of other nodes and ordinary part sent messages only to candidate part of the node.
+
+\subsection*{Level}
+The main determinant which decides who won the confrontation between the nodes is \textbf{Level} - which is the number of nodes it has already captured.
+
+\subsection*{Capturing and Elimination rule} 
+To capture node \textit{v}, the (level, id) of a candidate must be lexicographically larger than the (level, id) of the previous owner of \textit{v}, and the previous owner must be killed.
+
+\subsection*{What happens when node P arrives at node v}
+\textit{P} arriving at node \textit{v} means that node \textit{P} send the message to node \textit{v} which is owned by candidate \textit{Q}.
+\begin{itemize}
+    \item if \textit{(Level(P), ID(P))} \(<\) \textit{(Level(v), ID(Q))} - \textit{P} is killed
+    \item if \textit{(Level(P), ID(P))} \(>\) \textit{(Level(v), ID(Q))} - v gets \textit{P} level and \textit{P} is sent to \textit{Q}
+\end{itemize}
+When \textit{P} arrives at \textit{Q}:
+\begin{itemize}
+    \item if \textit{(Level(P), ID(P))} \(<\) \textit{(Level(Q), ID(Q))} - \textit{P} is killed
+    \item if \textit{Q} has been killed already then P returns to \textit{v} and tries to capture it
+\end{itemize}
+
+\subsection*{State of the node}
+Every node will remember some things in itself.
+\begin{itemize}
+    \item ID - unique int for each node.
+    \item Untraversed - set of neighbours of this node.
+    \item Leader - ID of leader of the entire network.
+    \item Owner\_ID - the ID of the candidate that owns this node (the candidate captured that node).
+    \item Level - the level of the node - the number of nodes that this candidate has captured.
+    \item Father - the node that captured this node.
+    \item Potential\_Father - the node that wants to capture this node but it waits for response from the Father.
+    \item Status - status of node (CANDIDATE - alive, ORDINARY - dead, WAIT\_FOR\_ANSWER - dead but waiting for specific message, ENDING - prepared to end the program).
+    \item Counter - only applies to leader - to end the entire program.
+    \item Queue - the queue of messages that the node didn't need at the time.
+\end{itemize}
+
+\subsection*{Initialize}
+level := 0,\\ owner\_id := 0,\\ untraversed := E,\\ father := nil,\\ potential\_father := nil,\\ status := candidate,\\ queue := empty, \\ counter := 0,\\
+\subsection*{Candidate Process}
+\begin{enumerate}
+    \item while \(untraversed \ne \phi\)
+    \begin{enumerate}
+        \item choose \(l \in untraversed\)
+        \item send (\(level, id\)) along \(l\)
+        \item R: receive(\(level', id'\)) from \(l'\)
+        \item if \(id' == id\) AND \(!killed\) then
+        \begin{itemize}
+            \item \(level = level + 1\)
+            \item \(untraversed = untraversed - l\)
+        \end{itemize}
+        \item else
+        \begin{enumerate}
+            \item if \((level', id') < (level, id)\) then DISCARD message GOTO R
+            \item else 
+            \begin{itemize}
+                \item send \((level', id')\) along \(l'\)
+                \item \(killed\) = true
+                GOTO R
+            \end{itemize}
+        \end{enumerate}
+    \end{enumerate}
+    \item if \(!killed\) then \(announce(ELECTED)\)
+\end{enumerate}
+
+\subsection*{Ordinary Process}
+While (not terminated)
+\begin{enumerate}
+    \item receive(\(level', id'\)) from \(l'\)
+    \item case \(level', id'\):
+    \begin{enumerate}
+        \item \(level', id' < level, owner\_id\) DISCARD message
+        \item \(level', id' > level, owner\_id\)
+        \begin{itemize}
+            \item \(potential\_father = l'\)
+            \item \(level = level'\)
+            \item \(owner\_id = id'\)
+            \item \(if father == nil\) then \(father = potential\_father\)
+            \item send (\(level',id'\)) along \(father\)
+        \end{itemize}
+        \item \(level', id' == level, owner_id\)
+        \begin{itemize}
+            \item \(father = potential\_father\)
+            \item send (\(level',id'\)) along \(father\)
+        \end{itemize}
+    \end{enumerate}
+\end{enumerate}
+
+\section*{Messages}
+We will define some types of messages:
+\begin{itemize}
+    \item ARRIVE - the message send by candidate process to ordinary to try to capture the ordinary node. If the ordinary process of the node was never captured that means the candidate process of the node is still alive. The ARRIVE sequence will cause one of the to die.
+    \item ACCEPT\_ANSWER - the message send by the ordinary process to candidate to accept him as his father, the ordinary process is no longer candidate (if it was).
+    \item ASK - the message send by the ordinary process to candidate because he saw node with higher (level, id) than the ordinary node - he send it to the father to eliminate one node (father or sender). He waits for one of the three messages below (he doesn't process other messages in between - not including LEADER, END).
+    \item ANSWER\_ACCEPT\_CND - the message send by candidate process in response to ASK message. The candidate accepted his fate and was killed by the ASK message, he needs to inform the sender of ASK message.
+    \item ANSWER\_DENY\_CND - the message send by candidate process in response to ASK message. The candidate managed to defeat ASK message but need to response to the asker.
+    \item DEAD - the message send by candidate process in response to ASK message. However the node is already dead (ordinary process and candidate process runs until the end of program - dead candidate process only answers the ASK messages and don't send new ARRIVE messages).
+    \item LEADER - the leader was found! The node send that information to every node with his id. Every other node will now send END message to the leader and prepare to end the program.
+    \item END - if the node is not the leader then he sends this messages to the leader informing leader that he is ready to end the program (he will receive messages but it will discard them). If leader gets n - 1 END messages (from every neighbour) then he sends END message to all nodes and then the program ends. It is needed to have two kinds of messages because if there was only END message (if node receive it - ends) then there would be a possibility that some node would send on closed channel.
+\end{itemize}
+
+\section*{Implementation details}
+First of all algorithm above assume that channels are not blocking. However in our implementation the node can only send one message without blocking the channel. If it sends two to the same channel the node waits until the first message is read.
+
+So the first change we implement is that every ordinary process wait for response from candidate father. We need to change also candidate process, Now candidate on response to ASK message from ordinary process will return one of three values:
+\begin{enumerate}
+    \item DEAD 
+    \item ANSWER\_ACCEPT\_CND 
+    \item ANSWER\_DENY\_CND
+\end{enumerate}
+
+\section*{Proof of correctness}
+The pair (level, id) is always increasing so there will always be the maximum candidate.
+
+\section*{Proof of complexity}
+\begin{lemma}
+For any given \(k\), the number of candidates that own \(\frac{n}{k}\) or more nodes is at most \(k\). 
+\end{lemma}
+\begin{proof}
+Let \(C_1\) and \(C_2\) be any two candidates which owned \(\frac{n}{k}\) nodes at some point in time. \(C1\) and \(C2\) must have owned disjoint sets of at least \(\frac{n}{k}\) nodes each. If they never tried to claim a node from each other, we are
+done. The first time that \(C_1\) (without loss of generality) tries to claim a node, say \(v\),
+from \(C_2\), either one of them dies, or \(C_2\) has already been killed. If \(C_1\), without loss
+of generality, caused the death of \(C_2\), then clearly it must have owned at least \(\frac{n}{k}\)
+nodes disjoint from \(C_2\), at the time of killing. If \(C_2\) is already dead, \(C_1\) must still own
+at least \(\frac{n}{k}\) nodes in order to claim \(v\) to itself. Remember that level is the number of nodes that candidate captures.
+\end{proof}
+\begin{corollary}
+The largest candidate to be killed by another candidate owns at most \(\frac{n}{2}\) nodes; the next largest owns at most \(\frac{n}{3}\) nodes.
+\end{corollary}
+\begin{lemma}
+The message complexity of Algorithm B is \(4n\) \( \ln{n} \) \(=\) \(2,773n\) \( \log_2{n}\) messages plus \(\mathcal{O}(n)\) ending sequence messages.
+\end{lemma}
+\begin{proof}
+Capturing the nodes take at most 4 messages (ARRIVE, ASK, response to ASK, ANSWER\_ACCEPT) in other cases less. So candidate that owns \(k\) nodes, created (not send) at most \(4k\) messages. By Corollary 1 the total send messages is bounded by \(4n\sum_{i=1}^n(\frac{1}{i})\) plus the messages by ending sequence which is equal to \(3(n-1)\).
+\end{proof}
+
+
+\begin{thebibliography}{9}
+\bibitem{article}
+Yehuda Afek, Eli Gafni (1985)
+\emph{Time and message bounds for election in
+synchronous and asynchronous complete networks}
+\end{thebibliography}
+\end{document}
