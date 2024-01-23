@@ -15,7 +15,6 @@ type state struct {
 	Owner_ID         int
 	Level            int
 	Potential_Father int
-	Ending           bool
 	Counter          int
 	Queue            []message
 }
@@ -32,6 +31,7 @@ const (
 	CANDIDATE = iota
 	ORDINARY
 	WAIT_FOR_ANSWER
+	ENDING
 )
 
 const (
@@ -201,9 +201,11 @@ func process(node lib.Node) bool {
 
 	message_type := received_message.Type
 
+	//ENDING SEQUENCE
 	if message_type == LEADER {
 		state.Leader = received_message.ID
 		state.Father = received_index
+		state.Status = ENDING
 		send(received_index, createMessage(received_message.Level, state.Leader, END, node.GetIndex()))
 		return true
 	} else if message_type == END {
@@ -212,12 +214,13 @@ func process(node lib.Node) bool {
 		} else {
 			return false
 		}
-		if state.Counter == node.GetSize()-1 {
+		if state.Counter == node.GetSize()-1 { //all nodes are ready to finish - no more messages will be send (not including END messages)
 			announceEnd(node)
 			return false
 		}
-	} else if state.Ending {
+	} else if state.Status == ENDING {
 		return true
+		//ENDING SEQUENCE
 	} else if state.Status == WAIT_FOR_ANSWER {
 		setState(node, &state)
 		ordinaryWait(node, received_index, received_message)
@@ -234,7 +237,7 @@ func process(node lib.Node) bool {
 				announceLeader(node)
 				state.Leader = node.GetIndex()
 				state.Counter = 0
-				state.Ending = true
+				state.Status = ENDING
 				return true
 			}
 		} else {
@@ -255,7 +258,6 @@ func initialize(node lib.Node) {
 	state.Potential_Father = NOT_SET
 	state.Status = CANDIDATE
 	state.Counter = 0
-	state.Ending = false
 	state.Queue = make([]message, 0)
 	state.Untraversed = map[int]int{}
 	for i := 0; i < n; i++ {
