@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/krzysztof-turowski/distributed-framework/leader/clique/async_afek_gafni_b"
 	"github.com/krzysztof-turowski/distributed-framework/leader/clique/async_humblet"
 	"github.com/krzysztof-turowski/distributed-framework/leader/clique/async_korach_moran_zaks"
 	"github.com/krzysztof-turowski/distributed-framework/leader/clique/async_loui_matsushita_west"
@@ -38,6 +39,14 @@ func TestKorachMoranZaks(t *testing.T) {
 	}
 }
 
+func TestAfekGafniB(t *testing.T) {
+	checkLogOutput()
+	for n := 2; n <= 100; n++ {
+		nodes, runner := lib.BuildCompleteGraph(n)
+		async_afek_gafni_b.Run(nodes, runner)
+	}
+}
+
 func BenchmarkHumblet(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 
@@ -65,5 +74,15 @@ func BenchmarkKorachMoranZaks(b *testing.B) {
 		rand.Seed(0)
 		nodes, runner := lib.BuildCompleteGraph(100)
 		async_korach_moran_zaks.Run(nodes, runner)
+	}
+}
+
+func BenchmarkAfekGafniB(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+
+	for i := 0; i < b.N; i++ {
+		rand.Seed(0)
+		nodes, runner := lib.BuildCompleteGraph(100)
+		async_afek_gafni_b.Run(nodes, runner)
 	}
 }

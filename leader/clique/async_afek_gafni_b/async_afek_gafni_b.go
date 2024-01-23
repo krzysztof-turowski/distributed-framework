@@ -2,7 +2,6 @@ package async_afek_gafni_b
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/krzysztof-turowski/distributed-framework/lib"
@@ -12,15 +11,17 @@ type state struct {
 	Leader           int
 	Untraversed      map[int]int
 	Father           int
-	Killed           bool
+	Status           int
 	Owner_ID         int
 	Level            int
 	Potential_Father int
-	//Balance          int
-	//Ending           bool
+	Ending           bool
+	Counter          int
+	Queue            []message
 }
 
 type message struct {
+	Index  int
 	Level  int
 	ID     int
 	Type   int
@@ -28,13 +29,20 @@ type message struct {
 }
 
 const (
+	CANDIDATE = iota
+	ORDINARY
+	WAIT_FOR_ANSWER
+)
+
+const (
 	ARRIVE = iota
 	ANSWER_ACCEPT
 	ANSWER_ACCEPT_CND
+	ANSWER_DENY_CND
 	ASK
 	DEAD
-	//DENY //just to avoid using node.IgnoreFutureMessages()
 	LEADER
+	END
 )
 
 const (
@@ -46,49 +54,51 @@ const (
 /*                       CANDIDATE                          */
 /************************************************************/
 
-func announce_leader(node lib.Node) {
+// begin ending sequence
+func announceLeader(node lib.Node) {
 	n := node.GetSize() - 1
 	for i := 0; i < n; i++ {
 		node.SendMessage(i, createMessage(0, node.GetIndex(), LEADER, node.GetIndex()))
 	}
 }
 
+// every node is ready to end -> there won't be another source of sending messages
+func announceEnd(node lib.Node) {
+	n := node.GetSize() - 1
+	for i := 0; i < n; i++ {
+		node.SendMessage(i, createMessage(0, node.GetIndex(), END, node.GetIndex()))
+	}
+}
+
 func candidate(node lib.Node, received_index int, received_message message) bool {
 
-	//every message send in candidate function is processed by ordinary function
 	send := func(index int, message []byte) {
 		node.SendMessage(index, message)
 	}
 
 	state := getState(node)
 	defer setState(node, &state)
-
 	message_type := received_message.Type
-	if message_type == ARRIVE {
-		if received_message.Level < state.Level || (received_message.Level == state.Level && received_message.ID < node.GetIndex()) {
-			//send(received_index, createMessage(state.Level, node.GetIndex(), DENY, node.GetIndex()))
-			return true
-		} else if received_message.Level > state.Level || (received_message.Level == state.Level && received_message.ID > node.GetIndex()) {
-			state.Level = received_message.Level
-			state.Father = received_index
-			state.Killed = true
-			state.Owner_ID = received_message.ID
-			send(received_index, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT, node.GetIndex()))
-			return false
-		}
-	} else if message_type == ANSWER_ACCEPT {
+
+	if received_message.ID == node.GetIndex() && state.Status == CANDIDATE {
 		state.Level++
-		//state.Balance--
-	} else if message_type == ASK {
-		if received_message.Level > state.Level || (received_message.Level == state.Level && received_message.ID > node.GetIndex()) {
-			state.Level = received_message.Level
-			state.Owner_ID = received_message.ID
-			state.Father = received_index
-			state.Killed = true
-			//state.Balance++
-			send(received_index, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT_CND, node.GetIndex()))
-			return false
+		delete(state.Untraversed, received_index)
+	} else {
+		if state.Status == ORDINARY {
+			if message_type == ASK { //some node still believes that this node is candidate so we need to update that information
+				send(received_index, createMessage(received_message.Level, received_message.ID, DEAD, node.GetIndex()))
+				return true
+			}
 		}
+		if message_type == ASK {
+			if state.Level < received_message.Level || (state.Level == received_message.Level && node.GetIndex() < received_message.ID) {
+				send(received_index, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT_CND, node.GetIndex()))
+				state.Status = ORDINARY
+			} else { //to avoid deadlock
+				send(received_index, createMessage(received_message.Level, received_message.ID, ANSWER_DENY_CND, node.GetIndex()))
+			}
+		}
+		return true
 	}
 
 	if len(state.Untraversed) == 0 {
@@ -104,10 +114,44 @@ func candidate(node lib.Node, received_index int, received_message message) bool
 /*                       ORDINARY                           */
 /************************************************************/
 
-// the message was send from candidate part of the node
 func ordinary(node lib.Node, received_index int, received_message message) {
 
-	//every message send in ordinary function is processed by candidate function
+	send := func(index int, message []byte) {
+		node.SendMessage(index, message)
+	}
+
+	state := getState(node)
+	defer setState(node, &state)
+
+	if state.Level > received_message.Level || (state.Level == received_message.Level && state.Owner_ID > received_message.ID) {
+		//discard the message -> the sender is waiting to be killed because he can't progress his candidate status
+		return
+	} else if state.Level < received_message.Level || (state.Level == received_message.Level && state.Owner_ID < received_message.ID) {
+		state.Status = ORDINARY
+		state.Level = received_message.Level
+		if state.Owner_ID == received_message.ID { //ARRIVE MESSAGE WAS SENT BY OUR OWNER
+			state.Level = received_message.Level
+			state.Status = ORDINARY
+			send(received_index, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT, node.GetIndex()))
+			return
+		}
+
+		state.Potential_Father = received_index
+		state.Owner_ID = received_message.ID
+
+		if state.Father == NOT_SET {
+			state.Father = state.Potential_Father
+			send(state.Father, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT, node.GetIndex()))
+			return
+		}
+
+		//Since we only can send one message to channel we need to wait for response to avoid the deadlock
+		state.Status = WAIT_FOR_ANSWER
+		send(state.Father, createMessage(received_message.Level, received_message.ID, ASK, node.GetIndex()))
+	}
+}
+
+func ordinaryWait(node lib.Node, received_index int, received_message message) {
 	send := func(index int, message []byte) {
 		node.SendMessage(index, message)
 	}
@@ -116,26 +160,17 @@ func ordinary(node lib.Node, received_index int, received_message message) {
 	defer setState(node, &state)
 
 	message_type := received_message.Type
-	if message_type == ARRIVE {
-		if received_message.Level > state.Level || (received_message.Level == state.Level && received_message.ID > state.Owner_ID) {
-			state.Potential_Father = received_index
-			state.Level = received_message.Level
-			if state.Owner_ID == received_message.ID {
-				state.Father = received_index
-				send(state.Father, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT, node.GetIndex()))
-			} else {
-				state.Owner_ID = received_message.ID
-				send(state.Father, createMessage(received_message.Level, received_message.ID, ASK, node.GetIndex()))
-			}
-		}
-	} else if message_type == ANSWER_ACCEPT_CND {
+	if message_type == ANSWER_ACCEPT_CND || message_type == DEAD {
+		//the father was killed by our ASK messages (ANSWER_ACCEPT_CND) or it was killed before
 		state.Father = state.Potential_Father
-		send(state.Father, createMessage(state.Level, state.Owner_ID, ANSWER_ACCEPT, node.GetIndex()))
-	} else if message_type == ASK {
-		send(received_index, createMessage(received_message.Level, received_message.ID, DEAD, node.GetIndex()))
-	} else if message_type == DEAD {
-		state.Father = state.Potential_Father
-		send(state.Father, createMessage(state.Level, state.Owner_ID, ANSWER_ACCEPT, node.GetIndex()))
+		state.Status = ORDINARY
+		send(state.Father, createMessage(received_message.Level, received_message.ID, ANSWER_ACCEPT, node.GetIndex()))
+	} else if message_type == ANSWER_DENY_CND {
+		//the father denied the ASK message
+		state.Status = ORDINARY
+	} else {
+		//we are waiting for the response from the father - put into the queue the message
+		state.Queue = append(state.Queue, message{Index: received_index, Level: received_message.Level, ID: received_message.ID, Type: received_message.Type, Sender: received_message.Sender})
 	}
 }
 
@@ -144,6 +179,10 @@ func ordinary(node lib.Node, received_index int, received_message message) {
 /************************************************************/
 
 func process(node lib.Node) bool {
+	send := func(index int, message []byte) {
+		node.SendMessage(index, message)
+	}
+
 	state := getState(node)
 	defer setState(node, &state)
 
@@ -151,29 +190,57 @@ func process(node lib.Node) bool {
 	var received_message message
 
 	setState(node, &state)
-	received_index, received_message = receiveMessage(node)
+
+	if len(state.Queue) == 0 || state.Status == WAIT_FOR_ANSWER {
+		received_index, received_message = receiveMessage(node)
+	} else {
+		received_message = state.Queue[0]
+		received_index = received_message.Index
+		state.Queue = state.Queue[1:]
+	}
 
 	message_type := received_message.Type
 
 	if message_type == LEADER {
 		state.Leader = received_message.ID
-		return false
-	} else if state.Killed {
+		state.Father = received_index
+		send(received_index, createMessage(received_message.Level, state.Leader, END, node.GetIndex()))
+		return true
+	} else if message_type == END {
+		if node.GetIndex() == received_message.ID {
+			state.Counter++
+		} else {
+			return false
+		}
+		if state.Counter == node.GetSize()-1 {
+			announceEnd(node)
+			return false
+		}
+	} else if state.Ending {
+		return true
+	} else if state.Status == WAIT_FOR_ANSWER {
+		setState(node, &state)
+		ordinaryWait(node, received_index, received_message)
+		state = getState(node)
+	} else if message_type == ARRIVE {
 		setState(node, &state)
 		ordinary(node, received_index, received_message)
 		state = getState(node)
-	} else if !state.Killed {
+	} else if message_type == ANSWER_ACCEPT || message_type == ASK {
 		setState(node, &state)
 		if !candidate(node, received_index, received_message) {
 			state = getState(node)
-			if !state.Killed {
-				//fmt.Println("LEADER!", node.GetIndex())
-				announce_leader(node)
+			if state.Status == CANDIDATE {
+				announceLeader(node)
 				state.Leader = node.GetIndex()
-				return false
+				state.Counter = 0
+				state.Ending = true
+				return true
 			}
+		} else {
+			state = getState(node)
 		}
-		state = getState(node)
+
 	}
 	return true
 }
@@ -184,9 +251,12 @@ func initialize(node lib.Node) {
 	state.Level = BEGINNING
 	state.Owner_ID = node.GetIndex()
 	state.Father = NOT_SET
+	state.Leader = NOT_SET
 	state.Potential_Father = NOT_SET
-	//state.Balance = 0
-	state.Killed = false
+	state.Status = CANDIDATE
+	state.Counter = 0
+	state.Ending = false
+	state.Queue = make([]message, 0)
 	state.Untraversed = map[int]int{}
 	for i := 0; i < n; i++ {
 		state.Untraversed[i] = i
@@ -201,12 +271,10 @@ func initialize(node lib.Node) {
 
 func run(node lib.Node) {
 	node.StartProcessing()
-	//fmt.Println(node.GetIndex())
 	initialize(node)
 	for process(node) {
 
 	}
-	//node.IgnoreFutureMessages()
 	node.FinishProcessing(true)
 }
 
@@ -228,7 +296,7 @@ func receiveMessage(node lib.Node) (int, message) {
 	received_index, received_bytes := node.ReceiveAnyMessage()
 	received_message := message{}
 	json.Unmarshal(received_bytes, &received_message)
-	//fmt.Println("KILLED:", getState(node).Killed, "NODE:", node.GetIndex(), "SO", getState(node).Owner_ID, "NODELEVEL:", getState(node).Level, "|LEVEL:", received_message.Level, "|ID:", received_message.ID, "|TYPE:", received_message.Type, "|SENDER", received_message.Sender)
+	//fmt.Println("STATUS:", getState(node).Status, "NODE:", node.GetIndex(), "SO", getState(node).Owner_ID, "NODELEVEL:", getState(node).Level, "|LEVEL:", received_message.Level, "|ID:", received_message.ID, "|TYPE:", received_message.Type, "|SENDER", received_message.Sender)
 	return received_index, received_message
 }
 
@@ -262,5 +330,5 @@ func checkLeader(nodes []lib.Node) {
 			panic("Multiple leaders spotted")
 		}
 	}
-	fmt.Println("The Leader is ", leader)
+	log.Println("The Leader is ", leader)
 }
