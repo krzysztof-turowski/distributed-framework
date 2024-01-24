@@ -44,6 +44,7 @@ orientation_example:
 
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
+	go run example/size_estimation_directed_ring_async_itai_rodeh_2.go 10
 
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
