@@ -29,13 +29,13 @@
 \begin{document}
 
 \section{Introduction}
-Given a single-directional ring of n processors, it is required to program the processors such that they are able to find the size of the ring (let that size be n). When processors are distinguishable, it is sufficient to count distinct identifiers. Thus, we will consider indistinguishable processors. Itai and Rodeh (1990) \cite{ItaiRodeh1990} have proven that there exists no deterministic, always correct solution to this problem fit for any ring size - mostly due to it being impossible to recognise messages originating from same processor. It is therefore necessary to consider probabilistic approach - an algorithm that always terminates with usually correct result. We shall consider processors with access to random bit generator. Itai and Rodeh (1990) have also proven that there exists no processor terminating (meaning all processors terminated) algorithm that solves this problem which is correct with probability a > 0. Thus, it is necessary to consider message terminating (meaning no processor will send a message without receiving one, and all messages have been received) algorithms. Itai and Rodeh (1990) also propose such an algorithm, which is correct with externally chosen probability 1 > a > 0.
+Given a single-directional ring of $n$ processors, it is required to program the processors such that they are able to find the size of the ring. When processors are distinguishable, it is sufficient to count distinct identifiers. Thus, we will consider indistinguishable processors. Itai and Rodeh (1990) \cite{ItaiRodeh1990} have proven that there exists no deterministic, always correct solution to this problem fit for any ring size - mostly due to it being impossible to recognise messages originating from the same processor. It is therefore necessary to consider probabilistic approach - an algorithm that always terminates with usually correct result. We shall consider processors with access to random bit generator. Itai and Rodeh (1990) have also proven that there exists no processor terminating (meaning all processors terminated) algorithm that solves this problem which is correct with probability $a > 0$. Thus, it is necessary to consider message terminating (meaning no processor will send a message without receiving one, and all messages have been received) algorithms. Itai and Rodeh (1990) also propose such an algorithm, which is correct with externally chosen probability $0 < a < 1$.
 
 \section{Algorithm}
 \subsection{Overview}
-Throughout the algorithm, each processor maintains it's best estimation of the ring size ($k_n$). This estimation is initially 2 and is guaranteed to never exceed true ring size. In response to a received message, a processor may increase its estimation, or it may increase confidence in its estimation. The minimum confidence is the external parameter that decides probability of correctness. More specifically, let the parameter be $r$; in that case, we define confidence as $r*k_n$ (so dependant on current ring size estimation). The algorithm terminates when all processors are confident in their value of $k_n$. At such a point, no processor initiates a message. It will be shown that when this happens, $k_n$ is same for all processors.
+Throughout the algorithm, each processor maintains it's best estimation of the ring size ($k_n$). This estimation is initially $2$ and is guaranteed to never exceed true ring size. In response to a received message, a processor may increase its estimation, or it may increase confidence in its estimation. The minimum confidence is the external parameter that decides probability of correctness. More specifically, let the parameter be $r$; in that case, we define confidence as $r \cdot k_n$ (so dependent on current ring size estimation). The algorithm terminates when all processors are confident in their value of $k_n$. At such a point, no processor initiates a message. It will be shown that when this happens, $k_n$ is the same for all processors.
 \subsection{Description}
-A message m contains 3 fields: $k_m$, $id_m$, $count_m$. $k_m$ is the ring size estimate of the processor originating the message. $id_m$ is the randomly chosen identity, taken from random bit generator by the processor originating the message. $count_m$ is the number of processors the message has visited. When a message passes through processor $n$ (without terminating) with $k_n < k_m$, the processor increases its $k_n = k_m$ and initiates testing for this value with confidence 0. When a message m terminates at processor n (meaning $k_m = count_m$ and processor has sent a message with $k_m$), there are several possibilities: if $k_m < k_n$, the message is forgotten - estimation in this message can not be correct; if $k_m > k_n$ the processor knows he was not author of the message, sets $k_n = k_m + 1$ and initiates testing for this value with confidence 0; if $k_m = k_n$ and processor has not sent a message or $id_m \neq id_n$ - processor also knows it wasn't author of the message, so proceeds as in previous case; finally, if $k_m = k_n$ and $id_m = id_n$ and processor has originated such a message - processor considers (possibly incorrectly) itself to be author of the message, and thus increases confidence by 1. If the confidence is below the minimal confidence, it initiates another test. Finally, the test itself is defined as sending a message ($k_n$, random bit, 1).
+A message $m$ contains $3$ fields: $k_m$, $id_m$, $count_m$. $k_m$ is the ring size estimate of the processor originating the message. $id_m$ is the randomly chosen identity, taken from random bit generator by the processor originating the message. $count_m$ is the number of processors the message has visited. When a message passes through processor $n$ (without terminating) with $k_n < k_m$, the processor increases its $k_n = k_m$ and initiates testing for this value with confidence $0$. When a message $m$ terminates at processor $n$ (meaning $k_m = count_m$ and processor has sent a message with $k_m$), there are several possibilities: if $k_m < k_n$, the message is forgotten - estimation in this message can not be correct; if $k_m > k_n$ the processor knows he was not author of the message, sets $k_n = k_m + 1$ and initiates testing for this value with confidence $0$; if $k_m = k_n$ and processor has not sent a message or $id_m \neq id_n$ - processor also knows it wasn't author of the message, so proceeds as in previous case; finally, if $k_m = k_n$ and $id_m = id_n$ and processor has originated such a message - processor considers (possibly incorrectly) itself to be the author of the message, and thus increases confidence by $1$. If the confidence is below the minimal confidence, it initiates another test. Finally, the test itself is defined as sending a message ($k_n$, random bit, $1$).
 \subsection{Correctness and complexity}
 \begin{lemma}
 Throughout the algorithm
@@ -47,17 +47,17 @@ Throughout the algorithm
 \begin{proof}
 \begin{enumerate}
     \item When a message reaches state in which $count_m = k_m$, it terminates, and is either forgotten, or initiates a test with new message that begins with $count_m = 1$.
-    \item $max_n(k_n)$ is initially 2, and possibly may be increased in two places: when $k_m > k_n$ or when $k_n = k_m = count_m$ but processor can't be the author. In both cases, there exist at least $k_m + 1$ processors, and that is the new $k_n$ set by processor. Thus, $max_n(k_n) \leq n$.
+    \item $max_n(k_n)$ is initially $2$, and possibly may be increased in two places: when $k_m > k_n$ or when $k_n = k_m = count_m$ but processor can't be the author. In both cases, there exist at least $k_m + 1$ processors, and that is the new $k_n$ set by processor. Thus, $max_n(k_n) \leq n$.
 \end{enumerate}
 \end{proof}
 
-The value of $k_n$ is non decreasing, and for each distinct $k_n$ there are at most $r*k_n$ messages initiated, and each message being sent at most $k_n$ times. Thus, it follows that
+The value of $k_n$ is non-decreasing, and for each distinct $k_n$ there are at most $r \cdot k_n$ messages initiated, and each message being sent at most $k_n$ times. Thus, it follows that
 
 \begin{lemma}
-The message complexity of the algorithm is $O(r*n^3)$.
+The message complexity of the algorithm is $O(r \cdot n^3)$.
 \end{lemma}
 
-Let $f_n$ denote final value of $k_n$ (held by processor n) - that is, the value held when algorithm terminates. We will show that the algorithm is consistent, that is returns the same value for all processors
+Let $f_n$ denote final value of $k_n$ (held by processor $n$) - that is, the value held when algorithm terminates. We will show that the algorithm is consistent, that is it returns the same value for all processors
 
 \begin{lemma}
 For all processors u, w $f_u = f_w$.
@@ -65,10 +65,10 @@ For all processors u, w $f_u = f_w$.
 
 \begin{proof} \cite{ItaiRodeh1990}
 Suppose to the contrary, that there exist processors $u$ and $w$ for
-which $f_w < f_u$. The procedure originate, increases $k_u$ to $f_u$. Thus, a message carrying $f_u$ existed. This message could not be cancelled as a result of the arrival of another message. The message could disappear at a node $v$ only if $v$ has sent a message with the same value of $f$, exactly $r$ times. Thus, some message carrying $f_u$ succeeds passing through every node, in particular through $w$,increasing $k_w$. to $f_u$, thus $k_w \geq f_u$
+which $f_w < f_u$. The procedure originate, increases $k_u$ to $f_u$. Thus, a message carrying $f_u$ existed. This message could not be cancelled as a result of the arrival of another message. The message could disappear at a node $v$ only if $v$ has sent a message with the same value of $f$, exactly $r$ times. Thus, some message carrying $f_u$ succeeds passing through every node, in particular through $w$, increasing $k_w$. to $f_u$, thus $k_w \geq f_u$
 \end{proof}
 
-Consider processors $v_0, v_1, ..., v_{n-1}$. Let $f$ be the common value of $f_i$. Consider $f < n$ - that is, algorithm message terminated with incorrect result. $v_0$ sent r messages with value $f$ and random bit $id^j_0$ (where $j$ means number of confirmation round. Those messages did not initiate a new increased $k_n$, as such $k_n$ would be equal to $k_n = f + 1$. Let $v_i$ be the processor who received these messages ($v_0 \neq v_i$). It follows that $v_i$ also sent messages with same $id^j_i$. Let R be a relation such that $v_a R v_b$ when there exists $l$ such that $a = b + l f$  $(mod$ $n)$. Note that all classes generated by same $l$ have the same number of elements. It follows from above that for all processors in each class of the relation, $id^j$ is the same
+Consider processors $v_0, v_1, ..., v_{n-1}$. Let $f$ be the common value of $f_i$. Consider $f < n$ - that is, algorithm message terminated with incorrect result. $v_0$ sent $r$ messages with value $f$ and random bit $id^j_0$ (where $j$ means number of confirmation round. Those messages did not initiate a new increased $k_n$, as such $k_n$ would be equal to $k_n = f + 1$. Let $v_i$ be the processor who received these messages ($v_0 \neq v_i$). It follows that $v_i$ also sent messages with the same $id^j_i$. Let $R$ be a relation such that $v_a R v_b$ when there exists $l$ such that $a = b + l f$  $(mod$ $n)$. Note that all classes generated by same $l$ have the same number of elements. It follows from above that for all processors in each class of the relation, $id^j$ is the same
 
 \begin{lemma}
 For each class $C_i$ of relation $R$, with $c$ elements, for all confirmations rounds $j$, $id^j_0 = id^j_1 = ... = id^j_{c-1}$.
@@ -87,24 +87,24 @@ There are $g$ classes in the relation. Because we are considering $f < n$, then 
 For any $n, r$ the probability of error is not greater than $2^{-n r/2}$
 \end{lemma}
 \begin{proof}
-${2^{-(h-1)r}}^g = 2^{-(gh-g)r} = 2^{-(n-g)r}$. Because $g = n/h$, highest possible g is $g = n/2$. Thus, probability of error is not greater than $2^{-nr/2}$
+${2^{-(h-1)r}}^g = 2^{-(gh-g)r} = 2^{-(n-g)r}$. Because $g = n/h$, the highest possible $g$ is $g = n/2$. Thus, probability of error is not greater than $2^{-nr/2}$
 \end{proof}
 
-Probability of returning erroneous result depends on arbitrarily chosen parameter $r$, that has no other implications on the algorithm (besides message complexity).
+Probability of returning an erroneous result depends on the arbitrarily chosen parameter $r$, which has no other implications on the algorithm (besides message complexity).
 
-Finally, consider average complexity. Upper bound $O(r*n^3)$ assumes each test that will fail, will fail at the last moment. In reality, expected value of retrials of test is a low constant
+Finally, consider average complexity. Upper bound $O(r \cdot n^3)$ assumes each test that will fail, will fail at the last moment. In reality, expected value of retrials of test is a low constant
 
 \begin{lemma}
 The expected number of tests $e_t$ for each wrong value is $e_t \leq 2$.
 \end{lemma}
 \begin{proof}
-As was shown, each test has a chance of passing equal to $2^{-(n-g)} $. Thus, $e_t \leq \sum_{i=1}^{\infty}i*{(1-2^{-(n-g)})}2^{-(n-g)(i-1)} \leq
-\sum_{i=1}^{\infty}i*{(1-2^{-2})}2^{-2(i-1)} = 2$.
+As was shown, each test has a chance of passing equal to $2^{-(n-g)} $. Thus, $e_t \leq \sum_{i=1}^{\infty}i \cdot {(1-2^{-(n-g)})}2^{-(n-g)(i-1)} \leq 
+\sum_{i=1}^{\infty}i \cdot {(1-2^{-2})}2^{-2(i-1)} = 2$.
 \end{proof}
 
-For $k_n = n$, the test will take r rounds. We can conclude that
+For $k_n = n$, the test will take $r$ rounds. We can conclude that
 \begin{lemma}
-Expected message complexity of the algorithm is $O(n^3 + r*n^2)$.
+Expected message complexity of the algorithm is $O(n^3 + r \cdot n^2)$.
 \end{lemma}
 
 \printbibliography
