@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/krzysztof-turowski/distributed-framework/size_estimation/directed_ring/async_itai_rodeh_2"
 	"os"
 	"strconv"
+
+	"github.com/krzysztof-turowski/distributed-framework/size_estimation/directed_ring/async_itai_rodeh_2"
 )
 
 func main() {

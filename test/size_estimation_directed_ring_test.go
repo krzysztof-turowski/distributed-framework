@@ -1,10 +1,11 @@
 package test
 
 import (
-	"github.com/krzysztof-turowski/distributed-framework/size_estimation/directed_ring/async_itai_rodeh_2"
 	"io/ioutil"
 	"log"
 	"testing"
+
+	"github.com/krzysztof-turowski/distributed-framework/size_estimation/directed_ring/async_itai_rodeh_2"
 
 	"github.com/krzysztof-turowski/distributed-framework/size_estimation/directed_ring/async_itai_rodeh"
 )
