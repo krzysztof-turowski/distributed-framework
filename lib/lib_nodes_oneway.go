@@ -55,10 +55,10 @@ func (v *oneWayNode) ReceiveMessageIfAvailable(index int) []byte {
 	return message
 }
 
-func (v *oneWayNode) ReceiveMessageWithTimeout(index int) []byte {
+func (v *oneWayNode) ReceiveMessageWithTimeout(index int, timeout time.Duration) []byte {
 	neighborsCasesTimeout := make([]reflect.SelectCase, 2)
 	neighborsCasesTimeout[0] = v.inNeighborsCases[index]
-	neighborsCasesTimeout[1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(5 * time.Second))}
+	neighborsCasesTimeout[1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(timeout))}
 	num, value, ok := reflect.Select(neighborsCasesTimeout)
 	if !ok || num == 1 {
 		return nil

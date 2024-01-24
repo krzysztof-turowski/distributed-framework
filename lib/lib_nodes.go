@@ -1,10 +1,12 @@
 package lib
 
+import "time"
+
 type Node interface {
 	ReceiveMessage(index int) []byte
 	ReceiveAnyMessage() (int, []byte)
 	ReceiveMessageIfAvailable(index int) []byte
-	ReceiveMessageWithTimeout(index int) []byte
+	ReceiveMessageWithTimeout(index int, timeout time.Duration) []byte
 	SendMessage(index int, message []byte)
 	GetInChannelsCount() int
 	GetOutChannelsCount() int

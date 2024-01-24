@@ -3,10 +3,12 @@ package sync_yoyo
 import (
 	"encoding/json"
 	"flag"
-	"github.com/krzysztof-turowski/distributed-framework/lib"
 	"io/ioutil"
 	"log"
 	"testing"
+	"time"
+
+	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 var isLogOn = flag.Bool("log", false, "Log output to screen")
@@ -36,7 +38,7 @@ func (v *testNode) ReceiveMessageIfAvailable(index int) []byte {
 	return nil
 }
 
-func (v *testNode) ReceiveMessageWithTimeout(index int) []byte {
+func (v *testNode) ReceiveMessageWithTimeout(index int, timeout time.Duration) []byte {
 	return nil
 }
 
