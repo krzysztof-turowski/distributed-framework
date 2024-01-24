@@ -40,7 +40,7 @@ func getState(node lib.Node) State {
 }
 
 func receive(node lib.Node) (Message, State) {
-	inMessage := node.ReceiveMessageWithTimeout(0)
+	inMessage := node.ReceiveMessageWithTimeout(0, 5*time.Second)
 	var msg Message
 	if inMessage != nil {
 		err := json.Unmarshal(inMessage, &msg)
