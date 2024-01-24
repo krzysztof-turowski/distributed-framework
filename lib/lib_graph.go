@@ -2,6 +2,7 @@ package lib
 
 import (
 	"log"
+	"math"
 	"math/rand"
 )
 
@@ -208,6 +209,44 @@ func BuildUndirectedMesh(a int, b int) ([]Node, Runner) {
 func BuildSynchronizedUndirectedMesh(a int, b int) ([]Node, Synchronizer) {
 	vertices, runner := BuildUndirectedMesh(a, b)
 	return vertices, asSynchronizer(runner)
+}
+
+func square_check(x int) bool {
+	var int_root int = int(math.Sqrt(float64(x)))
+	return (int_root * int_root) == x
+}
+
+func BuildSynchronizedTorus(n int) ([]Node, Synchronizer) {
+	if n <= 0 {
+		panic("Size cannot be <= 0.")
+	}
+	if !square_check(n) {
+		panic("n is not a perfect square.")
+	}
+
+	if int(math.Sqrt(float64(n))) <= 4 {
+		panic("Sqrt(n) should be greater than 4.")
+	}
+
+	log.Println("Building torus size", n)
+	adjacencyList := make([][]int, n)
+
+	for i := range adjacencyList {
+		adjacencyList[i] = make([]int, 0)
+	}
+
+	side := int(math.Sqrt(float64(n)))
+
+	for i := 0; i < side; i++ {
+		for j := 0; j < side; j++ {
+			adjacencyList[i*side+j] = append(adjacencyList[i*side+j], i*side+((j-1+side)%side))
+			adjacencyList[i*side+j] = append(adjacencyList[i*side+j], i*side+((j+1+side)%side))
+			adjacencyList[i*side+j] = append(adjacencyList[i*side+j], (((i-1+side)%side)*side + j))
+			adjacencyList[i*side+j] = append(adjacencyList[i*side+j], (((i+1+side)%side)*side + j))
+		}
+	}
+
+	return BuildSynchronizedGraphFromAdjacencyList(adjacencyList, GetRandomGenerator())
 }
 
 func BuildHypercube(dim int, oriented bool) ([]Node, Runner) {
