@@ -185,7 +185,7 @@ func (s *state) receiveBits(node lib.Node) {
 		received := *receiveMessage(node, i) // in this stage, bits are always sent, so it is safe to dereference
 		bit := s.getNeighborBit(neighbor)
 		if bit != received { // symmetry is broken
-			neighbor.Wins[neighbor.WinPhase] = bit // we know whether we won this phase against this neighbor
+			neighbor.Wins[neighbor.WinPhase] = !bit // we know whether we won this phase against this neighbor
 			neighbor.WinPhase++                    // we can start the next phase of symmetry breaking
 			neighbor.BitIndex = 0
 		} else { // still symmetrical
