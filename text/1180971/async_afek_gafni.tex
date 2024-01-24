@@ -129,8 +129,8 @@ We will define some types of messages:
     \item ARRIVE - the message send by candidate process to ordinary to try to capture the ordinary node. If the ordinary process of the node was never captured that means the candidate process of the node is still alive. The ARRIVE sequence will cause one of the to die.
     \item ACCEPT\_ANSWER - the message send by the ordinary process to candidate to accept him as his father, the ordinary process is no longer candidate (if it was).
     \item ASK - the message send by the ordinary process to candidate because he saw node with higher (level, id) than the ordinary node - he send it to the father to eliminate one node (father or sender). He waits for one of the three messages below (he doesn't process other messages in between - not including LEADER, END).
-    \item ANSWER\_ACCEPT\_CND - the message send by candidate process in response to ASK message. The candidate accepted his fate and was killed by the ASK message, he needs to inform the sender of ASK message.
-    \item ANSWER\_DENY\_CND - the message send by candidate process in response to ASK message. The candidate managed to defeat ASK message but need to response to the asker.
+    \item ANSWER\_ACCEPT\_CANDIDATE - the message send by candidate process in response to ASK message. The candidate accepted his fate and was killed by the ASK message, he needs to inform the sender of ASK message.
+    \item ANSWER\_DENY\_CANDIDATE - the message send by candidate process in response to ASK message. The candidate managed to defeat ASK message but need to response to the asker.
     \item DEAD - the message send by candidate process in response to ASK message. However the node is already dead (ordinary process and candidate process runs until the end of program - dead candidate process only answers the ASK messages and don't send new ARRIVE messages).
     \item LEADER - the leader was found! The node send that information to every node with his id. Every other node will now send END message to the leader and prepare to end the program.
     \item END - if the node is not the leader then he sends this messages to the leader informing leader that he is ready to end the program (he will receive messages but it will discard them). If leader gets n - 1 END messages (from every neighbour) then he sends END message to all nodes and then the program ends. It is needed to have two kinds of messages because if there was only END message (if node receive it - ends) then there would be a possibility that some node would send on closed channel.
@@ -139,11 +139,11 @@ We will define some types of messages:
 \section*{Implementation details}
 First of all algorithm above assume that channels are not blocking. However in our implementation the node can only send one message without blocking the channel. If it sends two to the same channel the node waits until the first message is read.
 
-So the first change we implement is that every ordinary process wait for response from candidate father. We need to change also candidate process, Now candidate on response to ASK message from ordinary process will return one of three values:
+So the first change we implement is that every ordinary process wait for response from candidate's father. We need to change also candidate process, Now candidate on response to ASK message from ordinary process will return one of three values:
 \begin{enumerate}
     \item DEAD 
-    \item ANSWER\_ACCEPT\_CND 
-    \item ANSWER\_DENY\_CND
+    \item ANSWER\_ACCEPT\_CANDIDATE 
+    \item ANSWER\_DENY\_CANDIDATE
 \end{enumerate}
 
 \section*{Proof of correctness}
@@ -154,7 +154,7 @@ The pair (level, id) is always increasing so there will always be the maximum ca
 For any given \(k\), the number of candidates that own \(\frac{n}{k}\) or more nodes is at most \(k\). 
 \end{lemma}
 \begin{proof}
-Let \(C_1\) and \(C_2\) be any two candidates which owned \(\frac{n}{k}\) nodes at some point in time. \(C1\) and \(C2\) must have owned disjoint sets of at least \(\frac{n}{k}\) nodes each. If they never tried to claim a node from each other, we are
+Let \(C_1\) and \(C_2\) be any two candidates which owned \(\frac{n}{k}\) nodes at some point in time. \(C_1\) and \(C_2\) must have owned disjoint sets of at least \(\frac{n}{k}\) nodes each. If they never tried to claim a node from each other, we are
 done. The first time that \(C_1\) (without loss of generality) tries to claim a node, say \(v\),
 from \(C_2\), either one of them dies, or \(C_2\) has already been killed. If \(C_1\), without loss
 of generality, caused the death of \(C_2\), then clearly it must have owned at least \(\frac{n}{k}\)
@@ -162,10 +162,10 @@ nodes disjoint from \(C_2\), at the time of killing. If \(C_2\) is already dead,
 at least \(\frac{n}{k}\) nodes in order to claim \(v\) to itself. Remember that level is the number of nodes that candidate captures.
 \end{proof}
 \begin{corollary}
-The largest candidate to be killed by another candidate owns at most \(\frac{n}{2}\) nodes; the next largest owns at most \(\frac{n}{3}\) nodes.
+The largest candidate to be killed by another candidate owns at most \(\frac{n}{2}\) nodes; the next largest owns at most \(\frac{n}{3}\) nodes. The \(k\)-th largest candidate killed by another candidate owns at most \(\frac{n}{k + 1}\) nodes.
 \end{corollary}
 \begin{lemma}
-The message complexity of Algorithm B is \(4n\) \( \ln{n} \) \(=\) \(2,773n\) \( \log_2{n}\) messages plus \(\mathcal{O}(n)\) ending sequence messages.
+The message complexity of Algorithm B is \(4n\) \( \ln{n} = 2,773n\) \( \log_2{n}\) messages plus \(\mathcal{O}(n)\) ending sequence messages.
 \end{lemma}
 \begin{proof}
 Capturing the nodes take at most 4 messages (ARRIVE, ASK, response to ASK, ANSWER\_ACCEPT) in other cases less. So candidate that owns \(k\) nodes, created (not send) at most \(4k\) messages. By Corollary 1 the total send messages is bounded by \(4n\sum_{i=1}^n(\frac{1}{i})\) plus the messages by ending sequence which is equal to \(3(n-1)\).
@@ -174,8 +174,6 @@ Capturing the nodes take at most 4 messages (ARRIVE, ASK, response to ASK, ANSWE
 
 \begin{thebibliography}{9}
 \bibitem{article}
-Yehuda Afek, Eli Gafni (1985)
-\emph{Time and message bounds for election in
-synchronous and asynchronous complete networks}
+Yehuda Afek, Eli Gafni (1985). \emph{Time and Message Bounds for Election in Synchronous and Asynchronous Complete Networks.} SIAM Journal on Computing, Vol. 20, No. 2, pp. 376–394 (1991).
 \end{thebibliography}
 \end{document}
