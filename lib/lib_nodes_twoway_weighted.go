@@ -2,6 +2,7 @@ package lib
 
 import (
 	"math/rand"
+	"time"
 )
 
 type twoWayWeightedGraphNode struct {
@@ -27,6 +28,10 @@ func (v *twoWayWeightedGraphNode) ReceiveAnyMessage() (int, []byte) {
 
 func (v *twoWayWeightedGraphNode) ReceiveMessageIfAvailable(index int) []byte {
 	return v.node.ReceiveMessageIfAvailable(index)
+}
+
+func (v *twoWayWeightedGraphNode) ReceiveMessageWithTimeout(index int, timeout time.Duration) []byte {
+	return v.node.ReceiveMessageWithTimeout(index, timeout)
 }
 
 func (v *twoWayWeightedGraphNode) SendMessage(index int, message []byte) {
