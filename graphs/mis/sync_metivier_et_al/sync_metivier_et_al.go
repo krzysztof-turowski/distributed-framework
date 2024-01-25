@@ -10,6 +10,7 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
+// Run the Métivier et al. randomized MIS algorithm on a random graph
 func Run(n int, p float64) (int, int) {
 	nodes, synchronizer := lib.BuildSynchronizedRandomGraph(n, p)
 	for _, node := range nodes {
@@ -166,7 +167,7 @@ func (s *state) receiveBits(node lib.Node) {
 		bit := s.getNeighborBit(neighbor)
 		if bit != received { // symmetry is broken
 			neighbor.Wins[neighbor.WinPhase] = !bit // we know whether we won this phase against this neighbor
-			neighbor.WinPhase++                    // we can start the next phase of symmetry breaking
+			neighbor.WinPhase++                     // we can start the next phase of symmetry breaking
 			neighbor.BitIndex = 0
 		} else { // still symmetrical
 			neighbor.BitIndex++ // we will have to send another bit

@@ -239,11 +239,10 @@ The exact way in which the two processes of algorithm \(\mathcal{C}\) alternate 
     \item In my implementation, many bit exchange phases are processed concurrently. However, the second process is only concerned with one phase at a~time. I~do not know, how it could be made concurrent. I~believe that it would bring catastrophic consequences, e.g. a~node entering the set in anticipation, only to learn that it should have been deleted some phases earlier. However, the paper does not clearly reject that option.
     \item Currently, the logical rounds are organized in triplets: win --- in --- out. Probably, they could also be organized in quadruplets: win --- in --- win --- out. This might be in closer correspondence with the paper's original phrasing: one round of each process. However, I~believe that this only has the potential to shave off a~constant.
 \end{enumerate}
-Despite all those doubts, I~believe that my implementation is correct, i.e. \(\bigO\pars{\log n}\) and not \(\bigO\pars{\log^2n}\). For \(n\) up to \(305\), the average number of rounds seems to match the logarithmic curve with an empirically adjusted constant equal to \(7.1\).
+Despite all those doubts, I~believe that my implementation is correct, i.e. \(\bigO\pars{\log n}\) and not \(\bigO\pars{\log^2n}\). For \(n\) up to \(350\), the average number of rounds seems to match the logarithmic curve with an empirically adjusted constant equal to \(7.1\).
 \begin{figure}[H]
     \centering
     \includegraphics{comparison.png}
-    \caption{Comparison}
 \end{figure}
 
 \bibliographystyle{plain}
