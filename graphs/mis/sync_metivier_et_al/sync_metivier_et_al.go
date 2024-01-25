@@ -3,7 +3,6 @@ package sync_metivier_et_al
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"time"
@@ -11,20 +10,7 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
-func Run(n int, p float64) {
-	x := []float64{0, 0.25, 0.3, 0.5, 0.7, 0.75, 0.9}
-	for i := 1; i <= 150; i++ {
-		//fmt.Println(i)
-		for _, a := range x {
-			for m := 0; m < 5; m++ {
-				Runn(i, a)
-			}
-		}
-	}
-}
-
-func Runn(n int, p float64) (int, int) {
-	log.SetOutput(io.Discard)
+func Run(n int, p float64) (int, int) {
 	nodes, synchronizer := lib.BuildSynchronizedRandomGraph(n, p)
 	for _, node := range nodes {
 		log.Println("Node", node.GetIndex(), "about to run")
@@ -32,13 +18,7 @@ func Runn(n int, p float64) (int, int) {
 	}
 	synchronizer.Synchronize(0)
 	check(nodes)
-	msg, rnd := synchronizer.GetStats()
-	edges := 0
-	for _, node := range nodes {
-		edges += node.GetOutChannelsCount()
-	}
-	fmt.Println(n, edges/2, p, msg, rnd)
-	return msg, rnd
+	return synchronizer.GetStats()
 }
 
 /* CHECKS */
