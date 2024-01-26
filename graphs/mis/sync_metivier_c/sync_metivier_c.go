@@ -1,4 +1,4 @@
-package sync_metivier_et_al
+package sync_metivier_c
 
 import (
 	"encoding/json"

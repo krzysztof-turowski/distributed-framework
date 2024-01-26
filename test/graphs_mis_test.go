@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/krzysztof-turowski/distributed-framework/graphs/mis/sync_luby"
-	"github.com/krzysztof-turowski/distributed-framework/graphs/mis/sync_metivier_et_al"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/mis/sync_metivier_c"
 )
 
 func TestLuby(t *testing.T) {
@@ -21,14 +21,14 @@ func BenchmarkLuby(b *testing.B) {
 	}
 }
 
-func TestMetivierEtAl(t *testing.T) {
+func TestMetivierC(t *testing.T) {
 	checkLogOutput()
-	sync_metivier_et_al.Run(100, 0.75)
+	sync_metivier_c.Run(100, 0.75)
 }
 
-func BenchmarkMetivierEtAl(b *testing.B) {
+func BenchmarkMetivierC(b *testing.B) {
 	log.SetOutput(io.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-		sync_metivier_et_al.Run(100, 0.75)
+		sync_metivier_c.Run(100, 0.75)
 	}
 }

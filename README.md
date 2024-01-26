@@ -77,7 +77,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Synchronized maximal independent set
 1. Luby algorithm
-2. Métivier et al. algorithm (by Métivier, Robson, Saheb-Djahromi, and Zemmari)
+2. Métivier-Robson-Saheb-Djahromi-Zemmari algorithm (C)
 
 #### Synchronized dominating set
 1. Local Randomized Greedy (Jia-Rajaraman-Suel) algorithm

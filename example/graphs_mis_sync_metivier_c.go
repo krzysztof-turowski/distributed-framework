@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/krzysztof-turowski/distributed-framework/graphs/mis/sync_metivier_et_al"
+	"github.com/krzysztof-turowski/distributed-framework/graphs/mis/sync_metivier_c"
 )
 
 const exitFailure = 1
@@ -30,5 +30,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Invalid p specification")
 	}
 
-	sync_metivier_et_al.Run(n, p)
+	sync_metivier_c.Run(n, p)
 }
