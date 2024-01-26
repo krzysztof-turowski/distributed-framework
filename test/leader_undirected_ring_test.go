@@ -11,10 +11,17 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_franklin"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_hirschberg_sinclair"
+	SecondEdition "github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_hirschberg_sinclair_second_edition"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_prob_as_far"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
+func TestUndirectedRingAsyncHirschbergSinclairSecondEdition(t *testing.T) {
+	for n := 1; n < 100; n++ {
+		arr := SecondEdition.GenerateShuffledArray(n)
+		SecondEdition.BuildUndirectedRingAndRun(n, arr)
+	}
+}
 func TestUndirectedRingAsyncHirschbergSinclair(t *testing.T) {
 	checkLogOutput()
 	for n := 2; n <= 100; n++ {
