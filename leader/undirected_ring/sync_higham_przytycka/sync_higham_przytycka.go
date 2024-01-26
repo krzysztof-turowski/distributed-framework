@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 const DEBUG_ID_MOD = 1000
+const FIB64_UPPER_LIM = 93
+const LOG_PREFIX = "[%d:%01d] "
 
 type ID = int
-type direction byte
+type direction = int
+type step = uint64
 
 const (
 	Left  direction = iota
@@ -24,32 +26,22 @@ type uhpEnvelope struct {
 	Id    ID
 	Dir   direction
 	Round uint
-	Cnt   int
+	Cnt   step
 	Max   ID
 }
-
 type uhpBroadcast = ID
-
-type uhpMessageType byte
-
-const (
-	UHP_T_ENVELOPE  uhpMessageType = iota
-	UHP_T_BROADCAST uhpMessageType = iota
-)
 
 type uhpMessage struct {
 	ENVELOPE  *uhpEnvelope
 	BROADCAST *uhpBroadcast
 }
-type uhpMailbox = uhpMessage
 
 // endregion
 
 // region state struct
 type undirectedHighamPrzytycka struct {
-	IsLeader           bool // dependent on both processors
-	ReceivedBroadcasts [2]bool
-	Processors         [2]uhpProcessor
+	IsLeader   bool // dependent on both processors
+	Processors [2]uhpProcessor
 }
 
 // used as namespace
@@ -58,106 +50,157 @@ type uhpState = uhp
 
 // endregion
 
-// region utility types
-type uhpSender = func([]byte)
-type uhpReceiver = func() []byte // receiving as a means of creating a new state is easier than generics
-type uhpCallbacks struct {
-	send    uhpSender
-	receive uhpReceiver
+// region processor
+
+type status = byte
+
+const (
+	Active     status = iota
+	TempLeader status = iota
+	Dead       status = iota
+	TrueLeader status = iota
+)
+
+// region Promoter
+type uhpPromotionStrategy interface {
+	Test(last uhpEnvelope, curr uhpEnvelope) (drop bool, promote bool)
+	Promote(newEnvelope *uhpEnvelope)
 }
 
-type uhpProcessor struct {
-	Mailbox   *uhpMailbox
-	Callbacks uhpCallbacks
+// region Promoter::simple
+type simplePromoter struct{}
 
+func (simplePromoter) Test(last uhpEnvelope, curr uhpEnvelope) (drop bool, promote bool) {
+	promote = curr.Round == last.Round
+	drop = promote &&
+		(curr.Round%2 == 0 && curr.Id > last.Id) ||
+		(curr.Round%2 == 1 && curr.Id < last.Id)
+	return drop, promote
+}
+
+func (simplePromoter) Promote(newEnvelope *uhpEnvelope) {
+	newEnvelope.Round += 1
+}
+
+// endregion
+
+// region Promoter::hp
+type hpPromoter struct {
+	F [FIB64_UPPER_LIM]step
+}
+
+func (hpPromoter) Test(last uhpEnvelope, curr uhpEnvelope) (drop bool, promote bool) {
+	drop = curr.Round == last.Round // equal rounds are a necessary condition to drop envelope
+	switch curr.Round % 2 {
+	case 0: // even
+		drop = drop && curr.Id < last.Id
+		promote = last.Round == curr.Round-1
+	case 1: // odd
+		promote = drop || curr.Cnt == 0
+		drop = drop && curr.Id > last.Id
+	}
+	promote = promote && !drop // promote implies !drop
+	return drop, promote
+}
+
+func (p *hpPromoter) fib(n int) step {
+	if n <= 1 {
+		return step(n)
+	}
+	if p.F[n] != 0 {
+		return p.F[n]
+	}
+	return p.fib(n-1) + p.fib(n-2)
+}
+
+func (p *hpPromoter) Promote(newEnvelope *uhpEnvelope) {
+	newEnvelope.Round += 1
+	newEnvelope.Cnt = p.fib(int(newEnvelope.Round + 2))
+}
+
+// endregion
+// endregion
+
+type uhpProcessor struct {
 	Id       ID
 	Dir      direction // for observability
 	Last     uhpEnvelope
-	IsLeader bool
+	Status   status
+	Promoter uhpPromotionStrategy
 }
 
 // endregion
 
 // region uhp:: (scope: bidirectional)
 
-// needed this function because closures aren't serializable
-// and won't be preserved when saving state to JSON
-func (uhp) prepareCallbacks(state *uhpState, node lib.Node) {
-	senderBuilder := func(d direction) uhpSender {
-		return func(payload []byte) {
-			node.SendMessage(ID(d), payload)
-		}
-	}
-
-	receiverBuilder := func(d direction) uhpReceiver {
-		return func() []byte {
-			return node.ReceiveMessage(int(d))
-		}
-	}
-
-	rtlCallbacks := uhpCallbacks{
-		send:    senderBuilder(Left),
-		receive: receiverBuilder(Right),
-	}
-	ltrCallbacks := uhpCallbacks{
-		send:    senderBuilder(Right),
-		receive: receiverBuilder(Left),
-	}
-
-	state.Processors[Left].Callbacks = ltrCallbacks
-	state.Processors[Right].Callbacks = rtlCallbacks
-}
-
+// region uhp::state
 func (uhp) getState(node lib.Node) (state uhpState) {
 	json.Unmarshal(node.GetState(), &state)
-	uhp{}.prepareCallbacks(&state, node)
+	// couldn't figure out how to serialize interface nicely
+	state.Processors[Left].Promoter = &hpPromoter{}
+	state.Processors[Right].Promoter = state.Processors[Left].Promoter
 	return state
 }
 
-func (uhp) updateState(node lib.Node, state uhpState) {
-	if payload, err := json.Marshal(state); err == nil {
-		node.SetState(payload)
+func (uhp) updateState(node lib.Node, state *uhpState) {
+	payload, _ := json.Marshal(state)
+	node.SetState(payload)
+}
+
+// endregion
+
+func (uhp) send(d direction, node lib.Node, state *uhpState, msg *uhpMessage) {
+	if msg == nil {
+		return
+	}
+	if (*msg == uhpMessage{}) {
+		node.SendMessage(d, nil)
 	} else {
-		panic(err)
+		payload, _ := json.Marshal(msg)
+		node.SendMessage(d, payload)
 	}
 }
 
+func (uhp) receive(d direction, node lib.Node, state *uhpState) *uhpMessage {
+	var msg *uhpMessage
+	json.Unmarshal(node.ReceiveMessage(d), &msg)
+	if msg == nil {
+		return &uhpMessage{}
+	}
+	return msg
+}
+
 // region uhp::constructors
-func (uhp) newInstance(node lib.Node) uhpState {
-	// assuming ID type doesn't overflow so processors have different IDs,
-	// but it is not required for correctness
+func (uhp) newInstance(node lib.Node) *uhpState {
 	id := node.GetIndex()
-	res := uhpState{
-		IsLeader:           false,
-		ReceivedBroadcasts: [2]bool{},
+	res := &uhpState{
+		IsLeader: false,
 		Processors: [2]uhpProcessor{
 			uhp{}.newProcessor(id, Left),
 			uhp{}.newProcessor(id, Right),
 		},
 	}
-	uhp{}.prepareCallbacks(&res, node)
 	return res
 }
 
-func (uhp) newEnvelope(id int, d direction) *uhpMessage {
+func (uhp) newEnvelope(id int, d direction) uhpEnvelope {
 	// id = id % DEBUG_ID_MOD
-	log.Printf("Created envelope with id: %+04d", id)
-	return &uhpMessage{
-		ENVELOPE: &uhpEnvelope{
-			Id:    id,
-			Dir:   d,
-			Round: 0,
-			Max:   id,
-		},
+	// log.Printf(LOG_PREFIX+"created envelope", id, d)
+	return uhpEnvelope{
+		Id:    id,
+		Dir:   d,
+		Round: 0,
+		Max:   id,
 	}
 }
 
 func (uhp) newProcessor(id int, d direction) uhpProcessor {
+	log.Printf(LOG_PREFIX+"created processor", id, d)
 	return uhpProcessor{
 		Id:       id,
 		Dir:      d,
-		IsLeader: false,
-		Mailbox:  uhp{}.newEnvelope(id, d),
+		Status:   Active,
+		Promoter: &hpPromoter{},
 	}
 }
 
@@ -166,170 +209,143 @@ func (uhp) newProcessor(id int, d direction) uhpProcessor {
 func (uhp) initiateElection(node lib.Node) {
 	state := uhp{}.newInstance(node)
 
-	var wg sync.WaitGroup
 	singlePass := func(p *uhpProcessor) {
-		defer wg.Done()
-		go p.send(p.Mailbox)
-		p.Last = *p.Mailbox.ENVELOPE
-		p.Mailbox = p.receive()
+		p.Last = uhp{}.newEnvelope(p.Id, p.Dir)
+		uhp{}.send(p.Dir, node, state, &uhpMessage{ENVELOPE: &p.Last})
 	}
 
-	wg.Add(2)
-	go singlePass(&state.Processors[Left])
-	go singlePass(&state.Processors[Right])
-	wg.Wait()
-
+	singlePass(&state.Processors[Left])
+	singlePass(&state.Processors[Right])
 	uhp{}.updateState(node, state)
 }
 
 func (uhp) round(node lib.Node) (finished bool) {
 	state := uhp{}.getState(node)
+	defer uhp{}.updateState(node, &state)
 
-	results := make(chan bool)
-	runRound := func(proc *uhpProcessor) {
-		rc := &state.ReceivedBroadcasts[proc.Dir]
-		if *rc {
-			results <- true
-		} else {
-			*rc = proc.process()
-			results <- *rc
-		}
+	if state.Processors[Left].testFinished() &&
+		state.Processors[Right].testFinished() {
+		state.IsLeader = state.Processors[Left].Status == TrueLeader &&
+			state.Processors[Right].Status == TrueLeader
+		return true
 	}
 
-	go runRound(&state.Processors[Left])
-	go runRound(&state.Processors[Right])
+	// log.Printf("[%d] State before round: %#v", node.GetIndex(), state)
 
-	<-results
-	<-results
-
-	testTrueLeader := func(proc uhpProcessor) bool {
-		return proc.IsLeader
+	mailbox := [2]*uhpMessage{nil, nil}
+	if state.Processors[Left].testReceive() {
+		mailbox[Left] = uhp{}.receive(Right, node, &state)
 	}
-	if state.ReceivedBroadcasts[Left] && state.ReceivedBroadcasts[Right] {
-		state.IsLeader = testTrueLeader(state.Processors[Left]) &&
-			testTrueLeader(state.Processors[Right])
-		finished = true
+	if state.Processors[Right].testReceive() {
+		mailbox[Right] = uhp{}.receive(Left, node, &state)
 	}
+	mailbox[Left] = state.Processors[Left].process(mailbox[Left])
+	mailbox[Right] = state.Processors[Right].process(mailbox[Right])
+	uhp{}.send(Left, node, &state, mailbox[Left])
+	uhp{}.send(Right, node, &state, mailbox[Right])
 
-	// silly defer evaluation made me lose hours on this line
-	uhp{}.updateState(node, state)
-	return finished
+	// log.Printf("[%d] State after round: %#v", node.GetIndex(), state)
+
+	return false
 }
 
 // endregion
 
 // region uhp::Processor (scope: unidirectional)
-// region uhp::Processor::test (TODO)
-func (proc uhpProcessor) testEnvelope(curr uhpEnvelope) (drop bool, promote bool) {
-	last := proc.Last
-	drop = curr.Round == last.Round // equal rounds are a necessary condition to drop envelope
-	switch curr.Round % 2 {
-	case 0: // even
-		drop = drop && curr.Id < last.Id
-		promote = last.Round == curr.Round-1
-	case 1: // odd
-		drop = drop && curr.Id > last.Id
-		promote = curr.Cnt == 0
-	}
-	promote = promote && !drop // promote implies !drop
-	return drop, promote
-	// return drop, promote
-	// from the paper:
-	// Casualty-test
-	// return last.Round == curr.Round &&
-	// 	((curr.Round%2 == 1 && curr.Id > last.Id) ||
-	// 		(curr.Round%2 == 0 && curr.Id < last.Id))
-	// Promotion-test:
-	// (even(rnd) and fwd_round = rnd—1 and id > fwd_label) or
-	// (odd(rnd) and ent= 0) or
-	// (odd(rnd) and fwd_round = rnd and id < fwd_label).
-}
-
+// region uhp::Processor::test
 func (proc uhpProcessor) testLeader(curr uhpEnvelope) bool {
 	// envelope returned to owner
 	return curr == proc.Last
 }
 
-// endregion
-
-// region uhp::Processor::send
-func (proc uhpProcessor) send(msg *uhpMessage) {
-	if payload, err := json.Marshal(msg); err == nil {
-		proc.Callbacks.send(payload)
-	} else {
-		panic("Failed to encode message")
+func (proc uhpProcessor) testReceive() bool {
+	switch proc.Status {
+	case Active:
+		return true
+	case TempLeader:
+		return true
+	default:
+		return false
 	}
 }
 
-// endregion
-
-// region uhp::Processor::receive
-func (proc *uhpProcessor) receive() (result *uhpMessage) {
-	payload := proc.Callbacks.receive()
-
-	if err := json.Unmarshal(payload, &result); err == nil {
-		return result
-	} else {
-		return &uhpMessage{}
+func (proc uhpProcessor) testFinished() bool {
+	switch proc.Status {
+	case Active:
+		return false
+	case TempLeader:
+		return false
+	case TrueLeader:
+		return true
+	case Dead:
+		return true
+	default:
+		return true
 	}
 }
 
 // endregion
 
 // region uhp::Processor::process
-func (proc *uhpProcessor) process() (receivedBroadcast bool) {
+func (proc *uhpProcessor) process(received *uhpMessage) (optSend *uhpMessage) {
 	switch {
-	case proc.Mailbox == nil:
-		log.Printf("Assuming empty mailbox...")
-		go proc.send(nil)
-	case proc.Mailbox.ENVELOPE != nil:
-		proc.processEnvelope()
-	case proc.Mailbox.BROADCAST != nil:
-		proc.processBroadcast()
-		log.Printf("RECEIVED BROADCAST: Processor %#v", proc)
-		return true
+	case received == nil:
+		return nil
+	case received.ENVELOPE != nil:
+		return proc.processEnvelope(*received.ENVELOPE)
+	case received.BROADCAST != nil:
+		// log.Printf(LOG_PREFIX+"[BROADCAST:%d] received. processor: %#v", &proc.Id, &proc.Dir, *received.BROADCAST, proc)
+		return proc.processBroadcast(*received.BROADCAST)
+	case proc.Status == Active:
+		return &uhpMessage{}
+	default:
+		return nil
 	}
-
-	proc.Mailbox = proc.receive()
-	return false
 }
 
-func (proc *uhpProcessor) processEnvelope() {
-	curr := *proc.Mailbox.ENVELOPE
+func (proc *uhpProcessor) processEnvelope(curr uhpEnvelope) *uhpMessage {
 	if curr.Max < proc.Id {
 		curr.Max = proc.Id
 	}
-
-	// log.Printf("REceived envelope %#v", curr)
+	// log.Printf(LOG_PREFIX+"Received envelope %#v", proc.Id, proc.Dir, curr)
 	if proc.testLeader(curr) {
-		proc.IsLeader = true
-		log.Printf("LEADER FOUND!!!!!!!!!!! %#v", proc)
-		go proc.send(&uhpMessage{BROADCAST: &curr.Max})
-	} else if drop, _ := proc.testEnvelope(curr); !drop {
-		log.Printf("comparing... [%#v] vs [%#v] -> %#v", proc.Last, curr, drop)
+		proc.Status = TempLeader
+		log.Printf(LOG_PREFIX+"UHP found one of two leaders: %#v", proc.Id, proc.Dir, proc)
+		return &uhpMessage{BROADCAST: &curr.Max}
+	}
 
-		curr := curr
-		if curr.Round == proc.Last.Round {
-			curr.Round++
-			// curr.cnt = F[rnd+2] __jm__ +2 to the new value?
+	// log.Printf(LOG_PREFIX+"comparing... [%#v] vs [%#v]", proc.Id, proc.Dir, proc.Last, curr)
+	if drop, promote := proc.Promoter.Test(proc.Last, curr); !drop {
+		if promote {
+			log.Printf(LOG_PREFIX+"envelope promoted!", proc.Id, proc.Dir)
+			proc.Promoter.Promote(&curr)
 		}
-
 		proc.Last = curr
-		go proc.send(&uhpMessage{ENVELOPE: &curr})
+		return &uhpMessage{ENVELOPE: &curr}
 	} else {
-		log.Printf("comparing... [%#v] vs [%#v] -> %#v", proc.Last, curr, drop)
-		log.Printf("dropping envelope %#v!", curr)
-		go proc.send(nil)
+		log.Printf(LOG_PREFIX+"dropping envelope!", proc.Id, proc.Dir)
+		return &uhpMessage{}
 	}
 }
 
-func (proc *uhpProcessor) processBroadcast() {
-	if proc.IsLeader {
-		proc.IsLeader = false
-	} else {
-		proc.IsLeader = proc.Id == *proc.Mailbox.BROADCAST
-		go proc.send(proc.Mailbox)
+func (proc *uhpProcessor) processBroadcast(curr uhpBroadcast) (toSend *uhpMessage) {
+	switch proc.Status {
+	case Active:
+		toSend = &uhpMessage{BROADCAST: &curr}
+	case TempLeader:
+		log.Printf(LOG_PREFIX+"[BROADCAST:%d] performed round trip. demoting UHP leader...", proc.Id, proc.Dir, curr)
+		toSend = nil
+	default:
+		log.Panicf(LOG_PREFIX+"[BROADCAST:%d] invalid state received broadcast", proc.Id, proc.Dir, curr)
 	}
+
+	if proc.Id == curr {
+		proc.Status = TrueLeader
+		log.Printf(LOG_PREFIX+"[BROADCAST:%d] processor is true leader", proc.Id, proc.Dir, curr)
+	} else {
+		proc.Status = Dead
+	}
+	return toSend
 }
 
 // endregion
@@ -346,10 +362,6 @@ func run(v lib.Node) {
 		v.StartProcessing()
 		finished = uhp{}.round(v)
 		v.FinishProcessing(finished)
-		if _round == 50 {
-			v.FinishProcessing(true)
-			break
-		}
 	}
 }
 
