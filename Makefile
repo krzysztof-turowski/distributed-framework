@@ -27,7 +27,8 @@ leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
 
 leader_undirected_clique_example:
-	go run example/leader_clique_async_korach_moran_zaks.go
+	go run example/leader_clique_async_korach_moran_zaks.go 10
+	go run example/leader_clique_async_afek_gafni.go 10
 
 leader_undirected_mesh_example:
 	go run example/leader_undirected_mesh_sync_peterson.go 6 9
@@ -44,6 +45,7 @@ orientation_example:
 
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
+	go run example/size_estimation_directed_ring_async_itai_rodeh_2.go 10
 
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random

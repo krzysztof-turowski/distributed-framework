@@ -49,6 +49,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Asynchronous clique
 1. Korach-Moran-Zaks algorithm
+2. Afek-Gafni B algorithm
 
 #### Asynchronous oriented clique
 1. Loui-Matsushita-West algorithm
