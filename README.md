@@ -17,6 +17,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Synchronized undirected ring
 1. Franklin algorithm
 1. Hirschberg-Sinclair algorithm
+1. Hirschberg-Sinclair algorithm2.0
 1. ProbAsFar (Korach-Rotem-Santoro) algorithm
 
 #### Synchronized undirected mesh
