@@ -255,7 +255,7 @@ func (uhp) round(node lib.Node) (finished bool) {
 // region uhp::Processor::test
 func (proc uhpProcessor) testLeader(curr uhpEnvelope) bool {
 	// envelope returned to owner
-	return curr == proc.Last
+	return curr.Round == proc.Last.Round && curr.Id == proc.Last.Id
 }
 
 func (proc uhpProcessor) testReceive() bool {
@@ -314,12 +314,14 @@ func (proc *uhpProcessor) processEnvelope(curr uhpEnvelope) *uhpMessage {
 		return &uhpMessage{BROADCAST: &curr.Max}
 	}
 
-	// log.Printf(LOG_PREFIX+"comparing... [%#v] vs [%#v]", proc.Id, proc.Dir, proc.Last, curr)
+	log.Printf(LOG_PREFIX+"comparing... [%#v] vs [%#v]", proc.Id, proc.Dir, proc.Last, curr)
 	if drop, promote := proc.Promoter.Test(proc.Last, curr); !drop {
 		if promote {
 			log.Printf(LOG_PREFIX+"envelope promoted!", proc.Id, proc.Dir)
 			proc.Promoter.Promote(&curr)
 		}
+
+		curr.Cnt -= 1
 		proc.Last = curr
 		return &uhpMessage{ENVELOPE: &curr}
 	} else {
