@@ -153,7 +153,7 @@ func (s *state) sendBits(node lib.Node) {
 	for i, neighbor := range s.Neighbors {
 		if neighbor.Responsive {
 			bit := s.getNeighborBit(neighbor)
-			sendMessage(node, i, &bit)
+			sendMessage(node, i, bit)
 		}
 	}
 }
@@ -163,7 +163,7 @@ func (s *state) receiveBits(node lib.Node) {
 		if !neighbor.Responsive {
 			continue
 		}
-		received := *receiveMessage(node, i) // in this stage, bits are always sent, so it is safe to dereference
+		received, _ := receiveMessage(node, i) // in this stage, bits are always sent, so it is safe to ignore the flag
 		bit := s.getNeighborBit(neighbor)
 		if bit != received { // symmetry is broken
 			neighbor.Wins[neighbor.WinPhase] = !bit // we know whether we won this phase against this neighbor
@@ -176,15 +176,13 @@ func (s *state) receiveBits(node lib.Node) {
 }
 
 func (s *state) sendIns(node lib.Node) {
-	in := s.canEnterMIS()
-	for i, neighbor := range s.Neighbors {
-		if neighbor.Responsive {
-			sendMessage(node, i, in)
-		}
-	}
-	if in != nil {
+	in, known := s.canEnterMIS()
+	if known {
+		s.announce(node, in)
 		s.InsSent = true
-		s.Chosen = *in
+		s.Chosen = in
+	} else {
+		s.announceEmpty(node)
 	}
 }
 
@@ -193,24 +191,21 @@ func (s *state) receiveIns(node lib.Node) {
 		if !neighbor.Responsive {
 			continue
 		}
-		in := receiveMessage(node, i)
-		if in != nil {
-			neighbor.Ins[neighbor.InPhase] = *in
+		if in, ok := receiveMessage(node, i); ok {
+			neighbor.Ins[neighbor.InPhase] = in
 			neighbor.InPhase++
 		}
 	}
 }
 
 func (s *state) sendOuts(node lib.Node) {
-	out := s.shouldDisconnect()
-	for i, neighbor := range s.Neighbors {
-		if neighbor.Responsive {
-			sendMessage(node, i, out)
-		}
-	}
-	if out != nil {
+	out, known := s.shouldDisconnect()
+	if known {
+		s.announce(node, out)
 		s.OutsSent = true
-		s.Done = *out
+		s.Done = out
+	} else {
+		s.announceEmpty(node)
 	}
 }
 
@@ -219,10 +214,9 @@ func (s *state) receiveOuts(node lib.Node) {
 		if !neighbor.Responsive {
 			continue
 		}
-		out := receiveMessage(node, i)
-		if out != nil {
-			neighbor.Responsive = !*out
-			neighbor.Outs[neighbor.OutPhase] = *out
+		if out, ok := receiveMessage(node, i); ok {
+			neighbor.Responsive = !out
+			neighbor.Outs[neighbor.OutPhase] = out
 			neighbor.OutPhase++
 		}
 	}
@@ -245,59 +239,52 @@ func (s *state) getBit(phase int, index int) bool {
 	return bits[index]
 }
 
-func (s *state) canEnterMIS() *bool {
+// Returns (`enter`, `known`)
+// If we have enough information to decide whether we should enter the MIS, `known` is `true` and `enter` represents the decision
+// If we are missing some information, `known` is `false` and `enter` is undefined
+func (s *state) canEnterMIS() (bool, bool) {
 	if s.InsSent {
-		return nil
+		return false, false
 	}
-	all := true
 	enter := true
 	for _, neighbor := range s.Neighbors {
 		win, ok := neighbor.Wins[s.Phase]
 		if !ok {
-			all = false
+			return false, false // we do not have enough information yet
 		} else if !win {
 			enter = false
 		}
 	}
-	if !all {
-		return nil
-	}
-	return &enter
+	return enter, true
 }
 
-func (s *state) shouldDisconnect() *bool {
+// Returns (`disconnect`, `known`)
+// If we have enough information to decide whether we should disconnect, `known` is `true` and `disconnect` represents the decision
+// If we are missing some information, `known` is `false` and `disconnect` is undefined
+func (s *state) shouldDisconnect() (bool, bool) {
 	if s.OutsSent {
-		return nil
+		return false, false
 	}
-	all := true
 	disconnect := false
 	for _, neighbor := range s.Neighbors {
 		in, ok := neighbor.Ins[s.Phase]
 		if !ok {
-			all = false
+			return false, false // we do not have enough information yet
 		} else if in {
 			disconnect = true
 		}
 	}
-	if !all {
-		return nil
-	}
 	if s.Chosen {
 		disconnect = true
 	}
-	return &disconnect
+	return disconnect, true
 }
 
 func (s *state) advancePhase() {
-	all := true
 	for _, neighbor := range s.Neighbors {
-		_, ok := neighbor.Outs[s.Phase]
-		if !ok {
-			all = false
+		if _, ok := neighbor.Outs[s.Phase]; !ok {
+			return
 		}
-	}
-	if !all {
-		return
 	}
 	for i, neighbor := range s.Neighbors {
 		if neighbor.Outs[s.Phase] {
@@ -310,8 +297,25 @@ func (s *state) advancePhase() {
 	}
 	delete(s.Bits, s.Phase)
 	s.Phase++
-	s.InsSent = false
-	s.OutsSent = false
+	s.InsSent, s.OutsSent = false, false
+}
+
+// Sends `bit` to all `Responsive` neighbors
+func (s *state) announce(node lib.Node, bit bool) {
+	for i, neighbor := range s.Neighbors {
+		if neighbor.Responsive {
+			sendMessage(node, i, bit)
+		}
+	}
+}
+
+// Sends an empty message to all `Responsive` neighbors
+func (s *state) announceEmpty(node lib.Node) {
+	for i, neighbor := range s.Neighbors {
+		if neighbor.Responsive {
+			sendEmptyMessage(node, i)
+		}
+	}
 }
 
 /* GENERAL UTILS */
@@ -327,23 +331,26 @@ func getState(node lib.Node) state {
 	return s
 }
 
-func sendMessage(node lib.Node, to int, bit *bool) {
-	var message []byte = nil
-	if bit != nil {
-		var content byte = 0
-		if *bit {
-			content = 1
-		}
-		message = []byte{content}
+func sendMessage(node lib.Node, to int, bit bool) {
+	var content byte = 0
+	if bit {
+		content = 1
 	}
-	node.SendMessage(to, message)
+	node.SendMessage(to, []byte{content})
 }
 
-func receiveMessage(node lib.Node, from int) *bool {
+func sendEmptyMessage(node lib.Node, to int) {
+	node.SendMessage(to, nil)
+}
+
+// Returns (`received`, `ok`)
+// If there was a message, `ok` is `true` and `received` is set to the received bit
+// If there was no message, `ok` is `false` and `received` is undefined
+func receiveMessage(node lib.Node, from int) (bool, bool) {
 	message := node.ReceiveMessage(from)
 	if message == nil {
-		return nil
+		return false, false
 	}
 	content := message[0] == 1
-	return &content
+	return content, true
 }
