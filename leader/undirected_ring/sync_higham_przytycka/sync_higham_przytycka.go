@@ -16,8 +16,8 @@ type direction = int
 type step = uint64
 
 const (
-	Left  direction = iota
-	Right           = iota
+	Left direction = iota
+	Right
 )
 
 // region message types
@@ -54,10 +54,10 @@ type uhpState = uhp
 type status = byte
 
 const (
-	Active     status = iota
-	TempLeader        = iota
-	Dead              = iota
-	TrueLeader        = iota
+	Active status = iota
+	TempLeader
+	Dead
+	TrueLeader
 )
 
 // region Promoter
