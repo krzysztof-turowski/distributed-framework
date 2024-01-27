@@ -73,8 +73,8 @@ type simplePromoter struct{}
 func (simplePromoter) Test(last uhpEnvelope, curr uhpEnvelope) (drop bool, promote bool) {
 	promote = curr.Round == last.Round
 	drop = promote &&
-		(curr.Round%2 == 0 && curr.Id > last.Id) ||
-		(curr.Round%2 == 1 && curr.Id < last.Id)
+		((curr.Round%2 == 0 && curr.Id > last.Id) ||
+			(curr.Round%2 == 1 && curr.Id < last.Id))
 	return drop, promote
 }
 
