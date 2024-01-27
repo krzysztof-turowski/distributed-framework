@@ -18,6 +18,7 @@ leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
 	go run example/leader_undirected_ring_sync_franklin.go 10
 	go run example/leader_undirected_ring_sync_prob_as_far.go 10
+	go run example/leader_undirected_ring_sync_higham_przytycka.go 10
 	go run example/leader_undirected_ring_async_hirschberg_sinclair.go 10
 	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
 	go run example/leader_undirected_ring_async_franklin.go 10
@@ -27,7 +28,8 @@ leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
 
 leader_undirected_clique_example:
-	go run example/leader_clique_async_korach_moran_zaks.go
+	go run example/leader_clique_async_korach_moran_zaks.go 10
+	go run example/leader_clique_async_afek_gafni.go 10
 
 leader_undirected_mesh_example:
 	go run example/leader_undirected_mesh_sync_peterson.go 6 9
@@ -45,6 +47,7 @@ orientation_example:
 
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
+	go run example/size_estimation_directed_ring_async_itai_rodeh_2.go 10
 
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
@@ -54,11 +57,15 @@ consensus_example:
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
 
+byzantine_example:
+	go run example/byzantine_sync_chor_coan.go 7 2  0 0 -1 1 0 -1 0
+
 graphs_mst_example:
 	go run example/graphs_mst_sync_ghs.go 10 30 100
 
 graphs_mis_example:
 	go run example/graphs_mis_sync_luby.go 20 0.25
+	go run example/graphs_mis_sync_metivier_c.go 20 0.25
 
 graphs_ds_example:
 	go run example/graphs_ds_sync_lrg.go 10 0.70
