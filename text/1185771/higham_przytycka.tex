@@ -32,7 +32,7 @@
 \maketitle
 
 \section{A starting point}
-We begin by proposing a simple, round-based leader election scheme on directed rings which we will then extend with two heuristics that lead to an improvement in the number of rounds and sent messages.
+We begin by proposing a simple, round-based leader election scheme on directed rings, which we will then extend with two heuristics that lead to an improvement in the number of rounds and sent messages.
 \\
 \begin{algorithmic}
 \Function{DropMessage}{}
@@ -68,7 +68,7 @@ We begin by proposing a simple, round-based leader election scheme on directed r
 \end{algorithmic}
 \end{algorithm}
 
-From a high-level perspective the algorithm works as follows: each node sends an envelope containing its ID, and saves it as the last envelope it has sent. The nodes (referred to as processors in the paper, a nomenclature we too shall use) then act as actors comparing received envelopes to the last seen envelope, and eliminating them if the defined conditions hold. This effectively produces a "chain" reaction where each round, the surviving envelopes are gathered into maximal chains of descending (ascending, depending on the round's parity) ID's, from which only the minimum (maximum) of its chain remains.
+From a high-level perspective, the algorithm works as follows: each node sends an envelope containing its ID, and saves it as the last envelope it has sent. The nodes (referred to as processors in the paper, a nomenclature we too shall use) then act as actors comparing received envelopes to the last seen envelope, and eliminating them if the defined conditions hold. This effectively produces a "chain" reaction where in each round, the surviving envelopes are gathered into maximal chains of descending (ascending, depending on the round's parity) ID's, from which only the minimum (maximum) of its chain remains.
 \\\\\\
 \newpage
 This perspective immediately establishes the algorithm's correctness based on the following properties:
@@ -79,23 +79,17 @@ This perspective immediately establishes the algorithm's correctness based on th
 \\
 3. Correct termination: The algorithm terminates when a processor detects the received envelope is the one it has last sent, meaning it has made a round trip uninterrupted. \\
 \\
-It can be shown the algorithm uses no more than $n\log_{\phi}{n} \leq 1.44n$ messages, based on the following property:\\
-
-\begin{lemma}
-An envelope in round $i$ travels a distance of at least $F_{i+1}$ before advancing to the next round (where $F_i$ is the i'th Fibonacci number)
-\end{lemma}
-The proof follows by induction and considering a few cases which we will omit for the sake of the modified algorithm.
-With this in mind, and the fact that during each round the envelopes make exactly $n$ hops in total, we can bound the number of envelopes left after round $i$ to be at most $\frac{n}{F_{i+1}}$, giving us the expected number of rounds, and as a consequence, of sent messages.
+It can be shown the algorithm uses no more than $n\log_{\phi}{n} \leq 1.44n$ messages. The authors attribute this to an equivalence with an algorithm published by Peterson, which achieves the same message complexity while maintaining most of the state in the stationary processors instead of the shifting envelopes. We shall omit the analysis by proceeding to an improved variant shortly.
 
 \section{Early promotions}
-There are cases where an envelope may be promoted before it reaches the next processor that may decide to drop it. Thus a round can be finished with a total number of hops less than $n$. The paper considers two such possibilities for promotion:
+There are cases where an envelope may be promoted before it reaches the next processor that may decide to drop it. Thus, a round can be finished with a total number of hops less than $n$. The paper considers two such possibilities for promotion:
 \\\\
 The first promotion may happen due to a 'witness'. Let $<a, i>$ mean an envelope with ID $a$ and round $i$.
 \begin{lemma} 
     An envelope $<b, i>$, where $i$ is even, upon encountering a processor whose last sent envelope was $<a, i-1>$ with $a < b$, may be promoted early, because the next processor with round $i$ will necessarily have an ID no greater than $a$.
 \end{lemma}
 \begin{proof}
-Call $w$ the next processor with round $i$ that $<b, i>$ will encounter, and $x$ the witness for $<b, i>$, whose last sent envelope was $<a, i-1>$. Moreover, let $z$ be the processor that promoted $<a, i-1>$ to round $i$ or dropped it. In the first case, $z = w$ and since it promoted $<a, i-1>$ it shall also promote $<b, i>$. For the second case, $<a, i-1>$ being dropped necessitates it to have belonged to some chain, the minimum of which, let's call it $<a', i-1>$, had become promoted to round $i$. Thus, $<b, i>$ wil necessarily pass through all processors up to this processor, whose last envelope sent will be $<a', i>$, and it will have to promote $<b, i>$. An analogous reasoning follows if $i$ is odd.
+Call $w$ the next processor with round $i$ that $<b, i>$ will encounter, and $x$ the witness for $<b, i>$, whose last sent envelope was $<a, i-1>$. Moreover, let $z$ be the processor that promoted $<a, i-1>$ to round $i$ or dropped it. In the first case, $z = w$ and since it promoted $<a, i-1>$ it shall also promote $<b, i>$. For the second case, $<a, i-1>$ being dropped necessitates it to have belonged to some chain, the minimum of which, let's call it $<a', i-1>$, had become promoted to round $i$. Thus, $<b, i>$ will necessarily pass through all processors up to this processor, whose last envelope sent will be $<a', i>$, and it will have to promote $<b, i>$. An analogous reasoning follows if $i$ is odd.
 \end{proof}
 \leavevmode
 \\
@@ -127,14 +121,14 @@ The second type of early promotion is called 'promotion by distance'. The reason
 \end{algorithm}
 \end{algorithmic}
 
-It is trivial to prove the correctness of this algorithm as it is not very different from the first one. One non-trivial issue might come up in regards to termination, in the case all envelopes become stuck, never meeting their successor's processor because they're being promoted by distance. Fortunately, at some point the envelope must be promoted with a count number high enough that it will reach the processor without being promoted by distance first. This ensures that for any round with more than one envelope, there exists a round no smaller than it, where at least one envelope must be dropped.
+It is trivial to prove the correctness of this algorithm, as it is not very different from the first one. One non-trivial issue might come up in regard to termination, in the case all envelopes become stuck, never meeting their successor's processor because they're being promoted by distance. Fortunately, at some point, the envelope must be promoted with a count number high enough that it will reach the processor without being promoted by distance first. This ensures that for any round with more than one envelope, there exists a round no smaller than it, where at least one envelope must be dropped.
 \\
 \section{Complexity analysis}
 We will denote $host_i(a)$ to be the processor that promoted the envelope from round $i-1$ to $i$, and, if applicable, $destroyer_i(a)$ the processor that dropped it in round $i$.
 \\
 We shall denote the distance between two processors $p$ and $q$ with $\delta(p, q)$.
 \\
-We will ocassionally refer to envelopes by their IDs, since they do not change over the algorithm's run.
+We will occasionally refer to envelopes by their IDs, since they do not change over the algorithm's run.
 \\
 Envelope $b$ is the \it{immediate successor in round i} of envelope $a$ when the first round $i$ envelope encountered after envelope b in round $i$, travelling in the direction of the ring, is envelope $a$.
 Contrary to the paper, we will use lemmas only after proving them, instead of in order of utility.
@@ -147,7 +141,7 @@ Contrary to the paper, we will use lemmas only after proving them, instead of in
 with a processor that has round number $k$ and label, say $d$, less than $c$. The processor that promoted
 envelope $d $to round $k$, $host_k(d)$, has label $d$ and round number $k$ and all other processors with label
 $d$ and round number $k$ must follow $host_k(d)$. Envelope $c$ could not have reached $host_k(d)$ in round $k$
-since otherwise it would have been destroydd by $host_k(d)$, so it encounters $host_k(d)$ in round $k+1$. 
+since otherwise it would have been destroyed by $host_k(d)$, so it encounters $host_k(d)$ in round $k+1$. 
 \end{proof}
 
 \begin{lemma}\label{p2}
@@ -155,7 +149,7 @@ since otherwise it would have been destroydd by $host_k(d)$, so it encounters $h
 \end{lemma}
 \begin{proof}
     Consider $b$’s travel in odd round $k$. If $b$ was promoted to round $k+1$ after travelling
-$F_{k+2}$ links then the observation is immediate. Otherwise, b was promoted by some processor, say
+$F_{k+2}$ links, then the observation is immediate. Otherwise, b was promoted by some processor, say
 $host_k(c)$ and $b < c$, and, by the induction hypothesis, $d(host_k(b), host_k(c)) > F_{k+1}$. Since $b$ reaches
 round $k + 2$, in round $k + 1$, $b$ travels from $host_{k+1}(b) (= host_k(c))$ to some witness $w$ for round $k + 1$ with label $d < b$ that promotes $b$ to round $k + 2$. By the inequalities, $c \neq d$, and hence $w$
 must be some processor not in the interval $[host_k(c), host_{k+1}(c))$. Hence $\delta(host_{k+1}(b), host_{k+2}(b))
@@ -168,11 +162,11 @@ least $F_k + F_{k+1} = F_{k+2}$.
     If $a$ is destroyed in odd round $i$, then $\delta(host_i(a), destroyer_i(a)) \geq F_i$
 \end{lemma}
 \begin{proof}
-    The proof is by induction on the odd round numbers. The basis, round $1$, holds trivialy because each envelope travels $1 = F_1 = F_2$ link. So suppose that the lemma holds for round $k$ where $k > 1$ and $k$ is odd. Let $a$ and $b$ be labels of two envelopes in round $k + 2$ where envelope $b$ is the immediate successor in round $k + 2$ of envelope $a$. According to the algorithm, envelope $a$ travels $F_{k+4}$ links in round $k + 2$ unless it reaches $host_{k+2}(b)$ before travelling this distance. Therefore, we need to estimate $\delta(host_{k+2}(a), host_{k+2}(b))$.
+    The proof is by induction on the odd round numbers. The basis, round $1$, holds trivially because each envelope travels $1 = F_1 = F_2$ link. So suppose that the lemma holds for round $k$ where $k > 1$ and $k$ is odd. Let $a$ and $b$ be labels of two envelopes in round $k + 2$ where envelope $b$ is the immediate successor in round $k + 2$ of envelope $a$. According to the algorithm, envelope $a$ travels $F_{k+4}$ links in round $k + 2$ unless it reaches $host_{k+2}(b)$ before travelling this distance. Therefore, we need to estimate $\delta(host_{k+2}(a), host_{k+2}(b))$.
     \\
     Suppose $a$ is eliminated in round $k+2$. Since $k+2$ is odd, $a > b$. Since $a$ reached round $k + 2$, $a$ must have been promoted by a witness for round $k + 1$. By~\cref{p2}, the witness for round $k+1$ that could promote $a$ and most closely precedes $host_{k+2}(b)$ is $host_k(b)$. Thus, $\delta(host_{k+2}(a), host_{k+2}(b)) > \delta(host_k(b), host_{k+2}(b)) > F_{k+2}$ by~\cref{p2}. Therefore, the lemma holds for round $k + 2$ in this case.
     \\
-    Suppose $a$ survives round $k + 2$. If $a$ survives because it travels $a$ distance of $F_{k+4}$ without encountering a processor with round number $k + 2$ then the lemma holds trivially for round $k + 2$. Otherwise, $a$ travels to $host_{k+2}(b)$ and is promoted because $a < b$. Now, $a$ was promoted from round $k + 1$ to round $k + 2$ by some witness for round $k + 1$ that had label smaller than $a$. Since $b > a$, that witness cannot be $host_k(b)$. By~\cref{p1}, the witness for round $k + 1$ that promotes $a$ must be $host_k(g)$ for some envelope with label $g$ that is between envelope $a$ and envelope $b$ in round $k + 1$. By the induction hypothesis, $\delta(host_k(g), host_{k+1}(g)) > F_{k+1}$. Then, 
+    Suppose $a$ survives round $k + 2$. If $a$ survives because it travels a distance of $F_{k+4}$ without encountering a processor with round number $k + 2$ then the lemma holds trivially for round $k + 2$. Otherwise, $a$ travels to $host_{k+2}(b)$ and is promoted because $a < b$. Now, $a$ was promoted from round $k + 1$ to round $k + 2$ by some witness for round $k + 1$ that had label smaller than $a$. Since $b > a$, that witness cannot be $host_k(b)$. By~\cref{p1}, the witness for round $k + 1$ that promotes $a$ must be $host_k(g)$ for some envelope with label $g$ that is between envelope $a$ and envelope $b$ in round $k + 1$. By the induction hypothesis, $\delta(host_k(g), host_{k+1}(g)) > F_{k+1}$. Then, 
 \[
 \begin{aligned}    
     \delta(host_{k+2}(a), host_{k+2}(b)) & =    \delta(host_k(g), host_{k+2}(b)) \\
@@ -225,7 +219,7 @@ $a$ saves $k$ links in round $i$ if, in round $i$, the distance envelope $a$ tra
         2n - n\frac{F_i}{F_{i+3}} < n(2 - \phi^{-3} + \phi{-2i}) = n \left( 2-\frac{8}{(1+5)^3 + \phi^{-2i}} \right) = n(4-\sqrt{5}+\phi^{-2i})
     \]
 
-    Hence there are at most
+    Hence, there are at most
     \[
     \begin{aligned}
         \sum_{\textbf{even}(i) \textbf{and} 2\leq i \leq F^{-1}(n)} 
