@@ -23,7 +23,7 @@ func BenchmarkOrientationSyrotiukPachl(b *testing.B) {
 
 func TestOrientationTorusMans(t *testing.T) {
 	checkLogOutput()
-	sync_torus.Run(400)
+	sync_torus.Run(10000)
 }
 
 func BenchmarkOrientationTorusMans(b *testing.B) {

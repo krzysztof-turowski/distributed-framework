@@ -20,8 +20,8 @@
 
 \section{Topological structure}
 Informally \textit{torus} is a two-dimensional (wrap-around) array of $n$ processors. It is a regular graph. Each processor has exactly 4 neighbours.
-\textit{Torus} of dimensions $a \times b $ has $n = ab$ processors $v_i_,_j(0 <= i <= a - 1, 0 <= j <= b - 1)$. Each node $v_i_,_j$ is connected by a bidirectional link with $v_i_,_j_+_1$, $v_i_,_j_-_1$, $v_i_+_1,_j$, 
-$v_i_-_1_,_j$, where all
+\textit{Torus} of dimensions $a \times b $ has $n = ab$ processors $v_{i,j}(0 \leq i \leq a - 1, 0 \leq j \leq b - 1)$. Each node $v_{i,j}$ is connected by a bidirectional link with $v_{i,j+1}$, $v_{i,j-1}$, $v_{i+1,j}$, 
+$v_{i-1,j}$, where all
 the operations on the first index are $\textit{modulo } a$, while those on the second index are
 $\textit{modulo } b$ (Figure 1). For the rest of sections, I will assume that, \textit{torus} is a square \mbox{$a=b=\sqrt{n}$}.
 
@@ -36,7 +36,7 @@ $\textit{modulo } b$ (Figure 1). For the rest of sections, I will assume that, \
 
 \section{Sense of direction in \textit{tori}}
 Imagine you are looking at the network from a bird's-eye view. Each edge has a label from the set $\{north, south, east, west\}$ assigned in the
-natural globally consistent way (Figure 2). Having such a labeling, it is trivial to check if 2 paths lead to the same processor. The lack of sense of direction is known to increase the message complexity of the election problem. For example in a \textit{torus} we can choose leader in $\Theta(n)$, instead of $\Theta(n\log{}n)$ \cite{mans}, when nodes have the sense of direction.
+natural globally consistent way (Figure 2). Having such a labeling, it is trivial to check if 2 paths lead to the same processor. The lack of sense of direction is known to increase the message complexity of the election problem. For example in a \textit{torus} we can choose leader in $\Theta(n)$, instead of $\Theta(n\log{n})$ \cite{mans}, when nodes have the sense of direction.
 
 \begin{figure}[h!]
 \centering

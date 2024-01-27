@@ -10,7 +10,7 @@ import (
 
 /* TESTS */
 const (
-	testCases int = 100
+	TEST_CASES int = 10
 )
 
 /* NODE LABELS */
@@ -19,10 +19,49 @@ type NodeLabelType int
 /* DIRECTIONS */
 type DirectionType int
 
+type SenseOfDirectionMaps struct {
+	Processed                 bool
+	ParallelLink              map[DirectionType]DirectionType
+	PerpendicularWithHandrail map[DirectionType](map[NodeLabelType]DirectionType)
+}
+
+func newSenseOfDirectionMaps() *SenseOfDirectionMaps {
+	var m SenseOfDirectionMaps
+	m.Processed = false
+	m.ParallelLink = make(map[DirectionType]DirectionType)
+	m.PerpendicularWithHandrail = make(map[DirectionType](map[NodeLabelType]DirectionType))
+	for i := DirectionType(0); i < DIRECTIONS; i++ {
+		m.PerpendicularWithHandrail[i] = make(map[NodeLabelType]DirectionType)
+	}
+	return &m
+}
+
+func processInformation(st *StateNodeTorus) {
+	if !getDirections(st).Processed {
+		// parallel
+		for i := DirectionType(0); i < DIRECTIONS; i++ {
+			getDirections(st).ParallelLink[i] = findParallelTo(st, i)
+		}
+		// perpendicular including handrail info
+		for i := DirectionType(0); i < DIRECTIONS; i++ {
+			for j := range st.H2[i] {
+				handrail := st.H2[i][j]
+				link := findPerpendicularTo(st, handrail, i)
+				if link == -1 {
+					// parallel link
+					continue
+				}
+				getDirections(st).PerpendicularWithHandrail[i][handrail] = link
+			}
+		}
+		getDirections(st).Processed = true
+	}
+}
+
 /* BOUNDS */
 const (
-	msgBound   int           = 16
-	directions DirectionType = 4
+	MSG_BOUND  int           = 16
+	DIRECTIONS DirectionType = 4
 )
 
 /* NODE TYPES ONLY USED IN SKETCHES */
@@ -40,7 +79,7 @@ const (
 	_ MessageType = iota
 	one
 	two
-	token
+	token // for leader election
 )
 
 type Message struct {
@@ -62,25 +101,23 @@ type StateNodeTorus struct {
 	H2 map[DirectionType][]NodeLabelType
 	// messages waiting to be sent (one per neighbor per round)
 	Pending [][]*Message
-	// only to check if handrail works
-	State          NodeStateType
-	BoundaryClosed bool
+	// sense of direction
+	Directions *SenseOfDirectionMaps
 }
 
 func newState() *StateNodeTorus {
 	st := StateNodeTorus{
-		Count:          0,
-		H1:             make(map[DirectionType]NodeLabelType),
-		H2:             make(map[DirectionType][]NodeLabelType),
-		Pending:        make([][]*Message, directions),
-		State:          passive,
-		BoundaryClosed: false,
+		Count:      0,
+		H1:         make(map[DirectionType]NodeLabelType),
+		H2:         make(map[DirectionType][]NodeLabelType),
+		Pending:    make([][]*Message, DIRECTIONS),
+		Directions: newSenseOfDirectionMaps(),
 	}
 	for i := range st.Pending {
 		st.Pending[i] = make([]*Message, 0)
 	}
 	// always 4 directions
-	for i := DirectionType(0); i < directions; i++ {
+	for i := DirectionType(0); i < DIRECTIONS; i++ {
 		st.H2[i] = make([]NodeLabelType, 0)
 	}
 	return &st
@@ -90,6 +127,10 @@ func getState(v lib.Node) *StateNodeTorus {
 	var st StateNodeTorus
 	json.Unmarshal(v.GetState(), &st)
 	return &st
+}
+
+func getDirections(st *StateNodeTorus) *SenseOfDirectionMaps {
+	return st.Directions
 }
 
 func setState(v lib.Node, st *StateNodeTorus) {
@@ -213,8 +254,10 @@ func orient(v lib.Node) bool {
 	st := getState(v)
 	finish := false
 
-	if st.Count == msgBound {
+	if st.Count == MSG_BOUND {
 		finish = true
+		// process links
+		processInformation(st)
 	}
 
 	process(v, st)
@@ -276,8 +319,8 @@ func emptyIntersect(h21 []NodeLabelType, h22 []NodeLabelType) bool {
 func findPerpendicularAny(st *StateNodeTorus) (DirectionType, DirectionType) {
 	// links
 	k, r := DirectionType(-1), DirectionType(-1)
-	for i := DirectionType(0); i < directions; i++ {
-		for j := i + 1; j < directions; j++ {
+	for i := DirectionType(0); i < DIRECTIONS; i++ {
+		for j := i + 1; j < DIRECTIONS; j++ {
 			if !emptyIntersect(st.H2[i], st.H2[j]) {
 				k, r = i, j
 				break
@@ -293,7 +336,7 @@ func findPerpendicularAny(st *StateNodeTorus) (DirectionType, DirectionType) {
 func findParallelTo(st *StateNodeTorus, link DirectionType) DirectionType {
 	// links
 	s := DirectionType(-1)
-	for i := DirectionType(0); i < directions; i++ {
+	for i := DirectionType(0); i < DIRECTIONS; i++ {
 		if emptyIntersect(st.H2[link], st.H2[i]) {
 			s := i
 			return s
@@ -303,23 +346,23 @@ func findParallelTo(st *StateNodeTorus, link DirectionType) DirectionType {
 	return s
 }
 
-func findPerpendicularTo(st *StateNodeTorus, handrail NodeLabelType, link DirectionType) (DirectionType, DirectionType) {
+func findPerpendicularTo(st *StateNodeTorus, handrail NodeLabelType, link DirectionType) DirectionType {
 	// links
-	r, k := link, DirectionType(-1)
-	for i := DirectionType(0); i < directions; i++ {
+	k := DirectionType(-1)
+	for i := DirectionType(0); i < DIRECTIONS; i++ {
 		if i == link {
 			continue
 		}
 		for j := range st.H2[i] {
 			if st.H2[i][j] == handrail {
 				k = i
-				return r, k
+				return k
 			}
 		}
 
 	}
-	// not reachable
-	return r, k
+	// reachable only if given parallel handrail
+	return k
 }
 
 func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
@@ -330,6 +373,8 @@ func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
 	currentNode := vertices[initiatorNode]
 	prevNode := vertices[initiatorNode]
 	st := getState(currentNode)
+
+	// this is necessary, you have to specify rotation
 	k, r := findPerpendicularAny(st)
 	handrail := st.H1[k]
 	toGo := d
@@ -344,12 +389,14 @@ func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
 	for distance < 4*d {
 		prevNode = currentNode
 		currentNode = vertices[getNodeInd(vertices, nextNodeId)]
+		st = getState(currentNode)
 		soFar++
-		r, k = findPerpendicularTo(getState(currentNode), handrail, getLinkFromId(currentNode, NodeLabelType(prevNode.GetIndex())))
+		r = getLinkFromId(currentNode, NodeLabelType(prevNode.GetIndex()))
+		k = getDirections(st).PerpendicularWithHandrail[r][handrail]
 		if soFar != toGo {
 			st = getState(currentNode)
 			handrail = st.H1[k]
-			s := findParallelTo(st, r)
+			s := getDirections(st).ParallelLink[r]
 			nextNodeId = st.H1[s]
 		} else {
 			st = getState(currentNode)
@@ -369,7 +416,7 @@ func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
 func multipleTests(vertices []lib.Node) {
 	gen := lib.GetRandomGenerator()
 	initiatiorNode := gen.Int() % len(vertices)
-	for i := 0; i < testCases; i++ {
+	for i := 0; i < TEST_CASES; i++ {
 		checkWithoutRunning(vertices, initiatiorNode)
 	}
 

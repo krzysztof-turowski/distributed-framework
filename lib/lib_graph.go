@@ -211,7 +211,7 @@ func BuildSynchronizedUndirectedMesh(a int, b int) ([]Node, Synchronizer) {
 	return vertices, asSynchronizer(runner)
 }
 
-func square_check(x int) bool {
+func squareCheck(x int) bool {
 	var int_root int = int(math.Sqrt(float64(x)))
 	return (int_root * int_root) == x
 }
@@ -220,7 +220,7 @@ func BuildSynchronizedTorus(n int) ([]Node, Synchronizer) {
 	if n <= 0 {
 		panic("Size cannot be <= 0.")
 	}
-	if !square_check(n) {
+	if !squareCheck(n) {
 		panic("n is not a perfect square.")
 	}
 
