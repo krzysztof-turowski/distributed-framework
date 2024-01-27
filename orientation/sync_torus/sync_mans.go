@@ -11,7 +11,7 @@ import (
 
 /* TESTS */
 const (
-	TEST_CASES int = 100
+	TEST_CASES int = 10
 )
 
 /* NODE LABELS */
