@@ -18,6 +18,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 1. Franklin algorithm
 1. Hirschberg-Sinclair algorithm
 1. ProbAsFar (Korach-Rotem-Santoro) algorithm
+1. Higham-Przytycka algorithm
 
 #### Synchronized undirected mesh
 1. Peterson algorithm
