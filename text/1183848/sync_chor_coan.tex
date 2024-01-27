@@ -1,0 +1,126 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage[noend]{algpseudocode}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{color}
+\usepackage{amsthm}
+\usepackage{amsmath}
+
+\algnewcommand\And{\textbf{and} }
+\algnewcommand\Or{\textbf{or} }
+\algnewcommand{\algorithmicgoto}{\textbf{go to}}%
+\algnewcommand{\GoTo}[1]{\algorithmicgoto~\ref{#1}}%
+
+\newtheorem{lemma}{Lemma}
+
+
+\title{A simple and efficient randomized byzantine agreement algorithm}
+\author{Filip Jasionowicz}
+
+\author{Filip Jasionowicz}
+\date{January 2024}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    The goal of this project is to implement a byzantine algorithm proposed by Benny Chor and Brian A. Coan \cite{chor1985simple} as well as provide a sketch of the correctness analysis.
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Problem formulation}
+Goal of the algorithm is to produce an agreement (consensus) on one bit between non-faulty processors having initial preferences $v_1,...,v_n$. We want agreed value to fulfill the following conditions:
+\begin{itemize}
+    \item it's the same for all non-faulty processors
+    \item if $v_1=v_2=...=v_n$ then the decided value is also $v_1$ 
+\end{itemize}
+
+\subsection{Model of computation}
+Implemented algorithm operates in the following model:
+\begin{itemize}
+    \item System is synchronous
+    \item Each processor can communicate with any other in the network and connections never fail
+    \item All non-faulty processors run the same code
+    \item Each processor knows the total number of processors $n$ and maximum number of faulty processors $t$
+    \item There are no limitations on the behaviour of the faulty processors, in particular they can try to intentionally disrupt the agreement
+\end{itemize}
+Before presenting the algorithm it is necessary to make some assumptions about the value of $t$. Lamport et al. have proven in \cite{pease1982byzantine} that for the correct deterministic solution to exist we need $n \geq 3t +1$. Since their reasoning can be simply translated into the non-deterministic case we will assume from this point that $n \geq 3t +1$. For the sake of simplicity in the following reasoning we will assume that any bit can either have a regular value ($0$ or $1$) or unknown/undecided value which we denote by "$?$". This assumption makes algorithm easier to read at the same time being trivial to implement.
+
+\section{The algorithm}
+
+The following pseudocode is intended to run on each non-faulty processor:
+
+\begin{algorithm}[H]
+  \caption{Byzantine agreement} \label{algo}
+  \begin{algorithmic}[1]
+    \State $curr \leftarrow \textbf{input}$
+    \State $toss \leftarrow "?"$
+    \State $epoch \leftarrow 0$
+    \Repeat
+        \State \textbf{broadcast}($curr$) \Comment{round one}
+        \State \textbf{receive\_all}($v_{curr}$)
+        \If{for some bit $b$ we got $\geq n-t$ messages containing $b$}
+            \State $curr \leftarrow b$
+        \Else
+            \State $curr \leftarrow "?"$
+        \EndIf
+        \If{$my\_group\_id \equiv epoch \mod \left\lfloor \frac{n}{g} \right\rfloor$}
+            \State $toss \leftarrow$ \textbf{toss\_coin()}
+        \Else
+            \State $toss \leftarrow "?"$
+        \EndIf
+        
+        \State
+        
+        \State \textbf{broadcast}($curr,toss$) \Comment{round two}
+        \State \textbf{receive\_all}($v_{curr},v_{toss}$)
+        \State $ans \leftarrow$ the bit $b \neq "?"$ such that ($b,*$) messages are most frequent
+        \State $num \leftarrow$ number of ocurrences of ($ans,*$) messages
+        \If{$num \geq n-t$}
+            \State \textbf{decide} $ans$ \Comment{Agreement reached with $ans$ as value}
+            \State \Return
+        \ElsIf{$num \geq t+1$}
+            \State $curr \leftarrow ans$
+        \Else
+            \State $curr \leftarrow$ the bit $b \neq "?"$ such that ($*,b$) messages are most frequent
+        \EndIf
+        
+        \State $epoch \leftarrow epoch+1$
+    \Until agreement reached
+  \end{algorithmic}
+\end{algorithm}
+
+
+Algorithm is divided into phases, each of them consisting two rounds. Phases are conducted until agreement is reached. Processors are divided into $\left \lfloor \frac{n}{g} \right \rfloor$ groups of size $g$. The value of $g$ is set to be around $\log(n)$ for the reasons provided in the section \ref{sketch}.
+
+In turn one $curr$ value is broadcasted and updated accordingly to received messages. After that, processors from the group which $id$ is corresponding to $epoch$ modulo $\left \lfloor \frac{n}{g} \right \rfloor$ perform a coin toss - uniformly at random select 0 or 1.
+
+In turn two $curr$ and $toss$ values are broadcasted and $curr$ is updated accordingly to received messages. Additionally we determine whether consensus has been reached. If not - we continue the algorithm and perform next epoch. Otherwise we finish. 
+
+\section{Sketch of analysis} \label{sketch}
+\subsection{Partial correctness}
+
+First, let's notice that if all processors get the same input $v$, they automatically decide on it in one phase since in round one all($\geq n-t$) non-faulty processors send $v$ and in round two they accept it.
+\begin{lemma} \label{lem1}
+At most one value (by value we understand 0 or 1, "?" is not a value) is sent in round 2 by non-faulty processors.
+\begin{proof}
+When a processor sends a non-"?" value $v$, it must have been gotten in round one from at least $n-t$ processors of which at least $n-2t$ were non-faulty. This means that in round one each processor has gotten at least $n-2t$ values $v$, thus at most $2t < n-t$ messages contained a value other than $v$ so it couldn't be chosen by any other non-faulty processor.
+\end{proof}
+\end{lemma}
+
+To decide on $v$ in round two processors need to see at least $n-t$ messages containing $v$. At least $n-2t \geq t+1$ of those messages are from non-faulty processors, since by Lemma \ref{lem1} only faulty processors could have sent values different than $v$. All of non-faulty processors either immediately decide on value or save it as $curr$ and decide on it in next round.
+
+\subsection{Termination}
+By Lemma \ref{lem1} there is at most one value $v$ broadcasted by a non-faulty processor. This implies, that each non-faulty processor either sets $curr$ to $v$ or looks at majority coin toss. Since there are not too many faulty processors, they can't decide the majority of coin tosses in all groups, so there is at least one group in which both values can be selected as a majority coin toss (although probability distribution will not necessarily be uniform). After some computation we can conclude that for group size $g = \log(n)$ the expected number of epochs to reach agreement is bounded by $O \left( \frac{t}{\log(n)} \right)$.
+
+\bibliographystyle{plain}
+\bibliography{biblio.bib}
+
+\end{document}

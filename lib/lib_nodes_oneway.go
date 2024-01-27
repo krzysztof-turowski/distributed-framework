@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	"reflect"
+	"time"
 )
 
 type oneWayNode struct {
@@ -45,6 +46,21 @@ func (v *oneWayNode) ReceiveMessageIfAvailable(index int) []byte {
 	neighborsCasesDefault[1] = reflect.SelectCase{Dir: reflect.SelectDefault}
 	_, value, ok := reflect.Select(neighborsCasesDefault)
 	if !ok {
+		return nil
+	}
+	message := value.Interface().([]byte)
+	if message != nil {
+		v.stats.receivedMessages++
+	}
+	return message
+}
+
+func (v *oneWayNode) ReceiveMessageWithTimeout(index int, timeout time.Duration) []byte {
+	neighborsCasesTimeout := make([]reflect.SelectCase, 2)
+	neighborsCasesTimeout[0] = v.inNeighborsCases[index]
+	neighborsCasesTimeout[1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(timeout))}
+	num, value, ok := reflect.Select(neighborsCasesTimeout)
+	if !ok || num == 1 {
 		return nil
 	}
 	message := value.Interface().([]byte)

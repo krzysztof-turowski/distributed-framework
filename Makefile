@@ -27,7 +27,8 @@ leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
 
 leader_undirected_clique_example:
-	go run example/leader_clique_async_korach_moran_zaks.go
+	go run example/leader_clique_async_korach_moran_zaks.go 10
+	go run example/leader_clique_async_afek_gafni.go 10
 
 leader_undirected_mesh_example:
 	go run example/leader_undirected_mesh_sync_peterson.go 6 9
@@ -41,9 +42,11 @@ leader_undirected_graph_example:
 
 orientation_example:
 	go run example/orientation_async_syrotiuk_pachl.go 10
+	go run example/orientation_sync_torus_mans.go 25
 
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
+	go run example/size_estimation_directed_ring_async_itai_rodeh_2.go 10
 
 consensus_example:
 	go run example/consensus_sync_ben_or.go 11 2  0 1 0 1 0 1 1 0 0 0 1  1 2  Random
@@ -52,6 +55,9 @@ consensus_example:
 	go run example/consensus_sync_phase_king.go 10 3  0 1 0 1 0 1 1 0 0 0  1 2 3  Optimal
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Random
 	go run example/consensus_sync_single_bit.go 9 2  0 1 0 1 0 1 1 0 0  1 2  Optimal
+
+byzantine_example:
+	go run example/byzantine_sync_chor_coan.go 7 2  0 0 -1 1 0 -1 0
 
 graphs_mst_example:
 	go run example/graphs_mst_sync_ghs.go 10 30 100

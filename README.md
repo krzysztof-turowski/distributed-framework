@@ -25,6 +25,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Synchronized oriented hypercube
 1. Hyperelect algorithm
 
+#### Synchronized torus
+1. Mans orientation algorithm (prelude to Peterson leader election)
+
 #### Synchronized oriented clique
 1. Humblet algorithm
 
@@ -49,6 +52,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 #### Asynchronous clique
 1. Korach-Moran-Zaks algorithm
+2. Afek-Gafni B algorithm
 
 #### Asynchronous oriented clique
 1. Loui-Matsushita-West algorithm
@@ -65,10 +69,13 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 
 ### Consensus
 
+#### Byzantine problem
+
 #### Synchronized network
 1. Single Bit (Garay-Berman) algorithm
 1. Phase King (Garay-Berman-Perry) algorithm
 1. Ben-Or randomized algorithm
+1. Chor-Coan algorithm
 
 ### Graph algorithms
 
