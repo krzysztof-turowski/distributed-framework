@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
 /* TESTS */
 const (
-	TEST_CASES int = 10
+	TEST_CASES int = 100
 )
 
 /* NODE LABELS */
@@ -281,10 +282,42 @@ func run(v lib.Node) {
 }
 
 /* CHECK */
-func getNodeInd(vertices []lib.Node, id NodeLabelType) int {
-	for i := range vertices {
-		if NodeLabelType(vertices[i].GetIndex()) == id {
-			return i
+func getNodeInd(vertices []lib.Node, id NodeLabelType, prevInd int) int {
+	side := int(math.Sqrt(float64(len(vertices))))
+	row := int(math.Floor(float64(prevInd) / float64(side)))
+	offset := prevInd - row*side
+
+	// indexes to check
+	nodesToCheck := make([]int, 0)
+
+	// -1 row
+	if row-1 < 0 {
+		nodesToCheck = append(nodesToCheck, (side-1)*side+offset)
+	} else {
+		nodesToCheck = append(nodesToCheck, (row-1)*side+offset)
+	}
+	// +1 row
+	if row+1 > side-1 {
+		nodesToCheck = append(nodesToCheck, 0+offset)
+	} else {
+		nodesToCheck = append(nodesToCheck, (row+1)*side+offset)
+	}
+	// -1 column
+	if offset-1 < 0 {
+		nodesToCheck = append(nodesToCheck, row*side+side-1)
+	} else {
+		nodesToCheck = append(nodesToCheck, row*side+offset-1)
+	}
+	// +1 column
+	if offset+1 > side-1 {
+		nodesToCheck = append(nodesToCheck, row*side)
+	} else {
+		nodesToCheck = append(nodesToCheck, row*side+offset+1)
+	}
+
+	for i := range nodesToCheck {
+		if NodeLabelType(vertices[nodesToCheck[i]].GetIndex()) == id {
+			return nodesToCheck[i]
 		}
 	}
 	// not reachable
@@ -371,6 +404,7 @@ func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
 	d := gen.Int()%len(vertices) + dMin
 	distance := 0
 	currentNode := vertices[initiatorNode]
+	currentNodeInd := initiatorNode
 	prevNode := vertices[initiatorNode]
 	st := getState(currentNode)
 
@@ -388,7 +422,8 @@ func checkWithoutRunning(vertices []lib.Node, initiatorNode int) {
 
 	for distance < 4*d {
 		prevNode = currentNode
-		currentNode = vertices[getNodeInd(vertices, nextNodeId)]
+		currentNodeInd = getNodeInd(vertices, nextNodeId, currentNodeInd)
+		currentNode = vertices[currentNodeInd]
 		st = getState(currentNode)
 		soFar++
 		r = getLinkFromId(currentNode, NodeLabelType(prevNode.GetIndex()))
