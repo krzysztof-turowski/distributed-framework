@@ -25,6 +25,9 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Synchronized oriented hypercube
 1. Hyperelect algorithm
 
+#### Synchronized torus
+1. Mans orientation algorithm (prelude to Peterson leader election)
+
 #### Synchronized oriented clique
 1. Humblet algorithm
 

@@ -42,6 +42,7 @@ leader_undirected_graph_example:
 
 orientation_example:
 	go run example/orientation_async_syrotiuk_pachl.go 10
+	go run example/orientation_sync_torus_mans.go 25
 
 size_estimation_example:
 	go run example/size_estimation_directed_ring_async_itai_rodeh.go 10
