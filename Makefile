@@ -26,6 +26,7 @@ leader_undirected_ring_example:
 
 leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
+	go run example/leader_clique_async_loui_matsushita_west_2.go 10
 
 leader_undirected_clique_example:
 	go run example/leader_clique_async_korach_moran_zaks.go 10
@@ -66,6 +67,7 @@ graphs_mst_example:
 graphs_mis_example:
 	go run example/graphs_mis_sync_luby.go 20 0.25
 	go run example/graphs_mis_sync_metivier_c.go 20 0.25
+	go run example/graphs_mis_sync_metivier_a.go 20 0.25
 
 graphs_ds_example:
 	go run example/graphs_ds_sync_lrg.go 10 0.70
