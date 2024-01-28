@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/krzysztof-turowski/distributed-framework/leader/clique/async_loui_matsushita_west_2"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -47,6 +48,14 @@ func TestAfekGafniB(t *testing.T) {
 	}
 }
 
+func TestLouiMatsushitaWest2(t *testing.T) {
+	checkLogOutput()
+	for n := 2; n <= 100; n++ {
+		nodes, runner := lib.BuildCompleteGraph(n)
+		async_loui_matsushita_west_2.Run(nodes, runner)
+	}
+}
+
 func BenchmarkHumblet(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 
@@ -84,5 +93,15 @@ func BenchmarkAfekGafniB(b *testing.B) {
 		rand.Seed(0)
 		nodes, runner := lib.BuildCompleteGraph(100)
 		async_afek_gafni_b.Run(nodes, runner)
+	}
+}
+
+func BenchmarkLouiMatsushitaWest2(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+
+	for i := 0; i < b.N; i++ {
+		rand.Seed(0)
+		nodes, runner := lib.BuildCompleteGraph(100)
+		async_loui_matsushita_west_2.Run(nodes, runner)
 	}
 }
