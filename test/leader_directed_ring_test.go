@@ -6,12 +6,18 @@ import (
 	"testing"
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_hirschberg_sinclair"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_chang_roberts"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_dolev_klawe_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_itai_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_peterson"
 )
+
+func TestDirectedRingAsyncHirschbergSinclair(t *testing.T) {
+	checkLogOutput()
+	async_hirschberg_sinclair.Run(1000)
+}
 
 func TestDirectedRingChangRoberts(t *testing.T) {
 	checkLogOutput()

@@ -7,6 +7,7 @@ import (
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_franklin"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_hirschberg_sinclair"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_hirschberg_sinclair_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_probabilistic_franklin"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_franklin"
@@ -16,6 +17,12 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
+func TestUndirectedRingAsyncHirschbergSinclair2(t *testing.T) {
+	checkLogOutput()
+	for n := 1; n < 100; n++ {
+		async_hirschberg_sinclair_2.Run(n)
+	}
+}
 func TestUndirectedRingAsyncHirschbergSinclair(t *testing.T) {
 	checkLogOutput()
 	for n := 2; n <= 100; n++ {

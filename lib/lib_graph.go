@@ -77,6 +77,24 @@ func BuildRing(n int) ([]Node, Runner) {
 	return vertices, runner
 }
 
+func BuildRingWithOriginalTopology(n int) ([]Node, Runner) {
+	vertices, runner := BuildEmptyGraph(n, GetRandomGenerator())
+	chans := getSynchronousChannels(2 * n)
+	for i := 0; i < n; i++ {
+		addTwoWayConnection(
+			vertices[i].(*oneWayNode), vertices[(i+1)%n].(*oneWayNode),
+			chans[2*i], chans[(2*i+1)%(2*n)])
+		log.Println("Channel", vertices[i].GetIndex(), "->", vertices[(i+1)%n].GetIndex(), "set up")
+		log.Println("Channel", vertices[(i+1)%n].GetIndex(), "->", vertices[i].GetIndex(), "set up")
+	}
+	return vertices, runner
+}
+
+func BuildSynchronizedRingWithOriginalTopology(n int) ([]Node, Synchronizer) {
+	vertices, runner := BuildRingWithOriginalTopology(n)
+	return vertices, asSynchronizer(runner)
+}
+
 func BuildSynchronizedRing(n int) ([]Node, Synchronizer) {
 	vertices, runner := BuildRing(n)
 	return vertices, asSynchronizer(runner)
