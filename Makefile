@@ -13,6 +13,7 @@ leader_directed_ring_example:
 	go run example/leader_directed_ring_sync.go 10 peterson
 	go run example/leader_directed_ring_async.go 10 higham_przytycka
 	go run example/leader_directed_ring_async.go 10 itai_rodeh
+	go run example/leader_directed_ring_async_hirschberg_sinclair.go 10
 
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
