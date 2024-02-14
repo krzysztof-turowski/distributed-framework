@@ -59,7 +59,7 @@ Previous successes belong to:
 \end{itemize}
 
 
-\section*{Algorithm}
+\section*{Algorithm: Undirected Ring}
 A naive algorithm, which achieves
 \(\mathcal{O}(n^2)\), involves simply passing our
 $Id$ in different directions. However, this quadratic time complexity can be reduced to \(\mathcal{O}(n)\) rounds. Our algorithm takes steps of length
@@ -117,8 +117,7 @@ receive_message ("end", value):
     inform next processor of end
     stop process
 \end{lstlisting}
-
-This pseudocode is more suitable for a solution based on maintaining references to neighboring processes. However, in the implementation I provided, solution stuck to to passing information through channels, requiring a slight modification in the code structure. Nevertheless the given pseudocode effectively reflects the algorithm's flow, as much, as it reduces the number of messages).
+The given pseudocode effectively reflects the algorithm's flow, as much, as it reduces the number of messages.
 
 
 \section*{Correctness}
@@ -136,22 +135,80 @@ There is not much to say:
 \subsection*{The worst case}
    Note that each active processor by the start of a round $i$(starting with 0) can initiate at most $4*2^i$ messages to be sent. \\
    Another observation gives us on start of round $i$:
-   \[\textbf{number of "candidate" processes} \leq \ceil*{\frac{n}{2^{i-1} + 1}}\]
+   \begin{equation}
+   \textbf{number of "candidate" processes} \leq \ceil*{\frac{n}{2^{i-1} + 1}}
+   \end{equation}
    It follows from the fact, that if we separate all nodes on blocks of length $2^{i-1} + 1$, then after round $i-1$ only one of nodes(processes) in block could stay active.\\
 
    \bigskip
    \noindent
    It all provides us to the fact that total number of sent messages is bounded from above by:
-   \[4\cdot(\sum_0^{\ceil*{\log n}} 2^i \cdot \ceil*{\frac{n}{2^{i-1} + 1}})
-   \quad\leq\quad 4\cdot(\sum_0^{\ceil{\log n}} 2n) \quad \approx \quad 8\, n \,\log n\]
+   \begin{equation}
+   4\cdot(\sum_0^{\ceil*{\log n}} 2^i \cdot \ceil*{\frac{n}{2^{i-1} + 1}})
+   \quad\leq\quad 4\cdot(\sum_0^{\ceil{\log n}} 2n) \quad \approx \quad 8\, n \,\log n
+   \end{equation}
   \subsection*{The "better can't imagine" case}
     In case we would have instance of size $2^k$ which look like this:
-    \[\cdots p_{n-1} < p_0 > p_1 > p_2 \cdots\]
+    \begin{equation}
+    \cdots p_{n-1} < p_0 > p_1 > p_2 \cdots
+    \end{equation}
     After first round the is possibility, that could happen, that every one but the biggest process ($p_0$), would get "lost" status, what provide us to comlexity:
-    \[4\cdot n + \sum_0^{\ceil*{\log n}} 2^i \cdot 1 \,\,= \,\,
+    \begin{equation}
+    4\cdot n + \sum_0^{\ceil*{\log n}} 2^i \cdot 1 \,\,= \,\,
     4\cdot n + \sum_0^{k} 2^i
     \,\, <= \,\,
-    4\cdot n + 2 \cdot n\,\, = \,\,\mathcal{O}(n)\]
+    4\cdot n + 2 \cdot n\,\, = \,\,\mathcal{O}(n)
+    \end{equation}
+\bigskip
+
+\section*{Algorithm: Directed Ring}
+To fit Hirschberg-Sinclair algorithm to directed ring we need to provide the ability to receive a response to initiated messages, because of which we will adhere to the method of "twisting" the cycle. \\
+We are using structure of undirected ring with unshuffled topology simulating directed ring by initiating sending messages only clockwise.\\
+
+\begin{lstlisting}
+The Algorithm
+
+The Pseudocode is the same as in "Algorithm: Undirected Ring" with only two differences.
+
+1. sendboth ("from", myvalue, 0, maxnum) is replaced with:
+sendClockwise ("from", myvalue, 0, maxnum)
+2. await both replies (but react to other messages) is replaced with:
+await reply (but react to other messages)
+
+\end{lstlisting}
+
+\section*{Correctness}
+The proof of correctness is the same as in "Algorithm: Undirected Ring".
+
+
+\section*{Proof of complexity}
+\subsection*{The worst case}
+   Note that each active processor by the start of a round $i$(starting with 0) can initiate process in which at most $2*2^i$ messages would be about to sent. \\
+   Another observation gives us on start of round $i > 2$:
+   \begin{equation}
+   \textbf{number of "candidate" processes} \leq \ceil*{\frac{n}{2^{i-2} + 1}}
+   \end{equation}
+   It follows from the fact, that if we separate all nodes on blocks of length $2^{i-2} + 1$, then after round $i-1$ only one of nodes(processes) in block could stay active.\\
+
+
+   \bigskip
+   \noindent
+   It all provides us to the fact that total number of sent messages is bounded from above by:
+   \begin{equation}
+   2\cdot(\sum_0^{\ceil*{\log n}} 2^i \cdot \ceil*{\frac{n}{2^{i-2} + 1}})
+   \quad \leq \quad
+   4\cdot2\cdot(\sum_0^{\ceil*{\log n}} 2^i \cdot \ceil*{\frac{n}{2 \cdot(2^{i-2} + 1)}})
+   \quad\leq\quad
+   8\cdot(\sum_0^{\ceil*{\log n}} 2^i \cdot \ceil*{\frac{n}{2^{i-1} + 1}})
+   \quad\leq\quad
+   16\, n \,\log n
+   \end{equation}
+   Where the last transition comes from (2).
+  \subsection*{The best case}
+    Example and proof are exactly the same as in "Algorithm: Undirected Ring".\\
+    So the number of sent messages is bounded from below by \mathcal{O}(n).
+\bigskip
+
 
 
 \begin{thebibliography}{9}
