@@ -36,9 +36,14 @@ type statsNode struct {
 }
 
 func getSynchronousChannels(n int) []chan []byte {
+	return getBufferedChannels(n, 1)
+}
+
+// in case for a given round turn we can recevive more (size) messages without blocking the gocorouting
+func getBufferedChannels(n int, size int) []chan []byte {
 	channels := make([]chan []byte, n)
 	for i := range channels {
-		channels[i] = make(chan []byte, 1)
+		channels[i] = make(chan []byte, size)
 	}
 	return channels
 }

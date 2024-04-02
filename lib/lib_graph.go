@@ -127,8 +127,33 @@ func BuildRandomGraph(n int, p float64) ([]Node, Runner) {
 	return vertices, runner
 }
 
+func BuildRandomBufferedChannelsGraph(n int, p float64, channelSize int) ([]Node, Runner) {
+	vertices, runner := BuildEmptyGraph(n, GetGenerator())
+	for i := 0; i < n; i++ {
+		for j := i + 1; j < n; j++ {
+			if p < rand.Float64() {
+				chans := getBufferedChannels(2, channelSize)
+				addTwoWayConnection(
+					vertices[i].(*oneWayNode), vertices[j].(*oneWayNode),
+					chans[0], chans[1])
+				log.Println("Channel", vertices[i].GetIndex(), "->", vertices[j].GetIndex(), "set up")
+				log.Println("Channel", vertices[j].GetIndex(), "->", vertices[i].GetIndex(), "set up")
+			}
+		}
+	}
+	for _, vertex := range vertices {
+		vertex.(*oneWayNode).shuffleTopology()
+	}
+	return vertices, runner
+}
+
 func BuildSynchronizedRandomGraph(n int, p float64) ([]Node, Synchronizer) {
 	vertices, runner := BuildRandomGraph(n, p)
+	return vertices, asSynchronizer(runner)
+}
+
+func BuildSynchronizedRandomBufferedChannelsGraph(n int, p float64, channelSize int) ([]Node, Synchronizer) {
+	vertices, runner := BuildRandomBufferedChannelsGraph(n, p, channelSize)
 	return vertices, asSynchronizer(runner)
 }
 
