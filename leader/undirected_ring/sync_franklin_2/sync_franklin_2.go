@@ -22,7 +22,7 @@ const (
 
 type state struct {
 	State byte
-	Stop  [2]bool
+	Stop  bool
 }
 
 type message struct {
@@ -52,7 +52,7 @@ func receive(v lib.Node, d int) (int, message) {
 	json.Unmarshal(bytes, &msg)
 	if msg.Stop {
 		s := getState(v)
-		s.Stop[d] = true
+		s.Stop = true
 		setState(v, s)
 	}
 
@@ -109,13 +109,13 @@ func processActive(v lib.Node) bool {
 }
 
 func processRelay(v lib.Node) bool {
-	d, msg1 := receive(v, any)
-	send(v, 1-d, msg1)
+	d, msg := receive(v, any)
+	send(v, 1-d, msg)
 
-	_, msg2 := receive(v, 1-d)
-	send(v, d, msg2)
+	_, msg = receive(v, 1-d)
+	send(v, d, msg)
 
-	return msg1.Stop || msg2.Stop
+	return getState(v).Stop
 }
 
 func processLeader(v lib.Node) bool {
