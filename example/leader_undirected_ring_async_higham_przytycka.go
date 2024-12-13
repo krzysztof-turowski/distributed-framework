@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/HubertBer/distributed-framework/leader/undirected_ring/async_higham_przytycka"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/lib"
 )
 
