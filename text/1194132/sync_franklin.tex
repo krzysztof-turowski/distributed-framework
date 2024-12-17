@@ -39,13 +39,14 @@ Let's consider two phases of this algorithm: before leader sends \textit{STOP} a
 \end{itemize}
 \subsection{After \textit{STOP} message}
 \begin{itemize}
-    \item At the end of previous round, only the leader node was considered to be active
-    \item Each inactive node, starting from leader's immediate neighbors, receives a \textit{STOP} message and retransmits it to the next node. After sending two messages, the process returns \textit{NOT LEADER}
+    \item At the end of previous round, only the leader node was considered to be active and it sent \textit{STOP} to one of its neighbors.
+    \item Each inactive node, starting from leader's immediate neighbors, receives a \textit{STOP} message and retransmits it to the opposite node.
 \end{itemize}
 \section{Time Complexity}
-Since at least one of each adjacent active nodes becomes inactive in each round, the number of rounds is $O(lgn)$. In each round, there are exactly $2n$ messages sent. In conclusion, the total number of messages sent is $O(nlgn)$
+Since at least one of each adjacent active nodes becomes inactive in each round, the number of rounds is at most $\lfloor lgn \rfloor$. In each round, there are exactly $2n$ messages sent. Additionally, we send $2n$ message before the first round and additional $n$ \textit{STOP} messages.
+In conclusion, the total number of messages sent is $O(nlgn)$, with at most $2nlgn + 3n$ messages.
 \section{Bonus: Gracefully Stopping}
-By adding two extra receives for the leader, we can guarantee that all channels are empty upon the end. The leader only has to receive a message from both his neighbors in the last round.
+By adding an extra receive to the leader, we can guarantee that all channels are empty upon the end. The leader only has to receive a message from the opposite channel it sent the \textit{STOP} message.
 
 In each round before \textit{STOP}, all sent messages are being received.
 In the \textit{STOP} round, each inactive process receives and sends exactly two \textit{STOP} messages. The leader process then receives the last two messages.

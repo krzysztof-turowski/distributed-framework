@@ -92,7 +92,7 @@ func processActive(v lib.Node) bool {
 
 	if msgMax == index {
 		setState(v, state{State: leader})
-		sendBoth(v, message{index, true})
+		send(v, right, message{index, true})
 	} else if msgMax > index {
 		setState(v, state{State: notLeader})
 	} else {
@@ -103,17 +103,21 @@ func processActive(v lib.Node) bool {
 }
 
 func processRelay(v lib.Node) bool {
-	d, msg1 := receive(v, any)
-	send(v, 1-d, msg1)
+	d, msg := receive(v, any)
+	send(v, 1-d, msg)
 
-	_, msg2 := receive(v, 1-d)
-	send(v, d, msg2)
+	if msg.Stop {
+		return true
+	}
 
-	return msg1.Stop || msg2.Stop
+	_, msg = receive(v, 1-d)
+	send(v, d, msg)
+
+	return false
 }
 
 func processLeader(v lib.Node) bool {
-	receiveBoth(v)
+	receive(v, left)
 
 	return true
 }
