@@ -22,5 +22,7 @@ func main() {
 		async_higham_przytycka.Run(n)
 	case "itai_rodeh":
 		async_itah_rodeh.Run(n)
+	case "itai_rodeh_2":
+
 	}
 }
