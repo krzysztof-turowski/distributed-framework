@@ -57,7 +57,7 @@ func getRandBit() async_itah_rodeh_2.IRandomBit {
 func TestAsyncDirectedRingItaiRodehRand(b *testing.T) {
 	checkLogOutput()
 	n := 2000
-	async_itah_rodeh_2.Run(n, int(math.Log2(float64(n))), getRandBit())
+	async_itah_rodeh_2.Run(n, int(math.Log2(float64(n))/5.), getRandBit())
 }
 
 func TestDirectedRingRunDolevKlaweRodehA(t *testing.T) {

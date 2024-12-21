@@ -35,6 +35,7 @@ type MessageType byte
 const (
 	Elimination MessageType = iota
 	Counter
+	Elected
 )
 
 type message struct {
@@ -55,7 +56,6 @@ func getMessage(bytes []byte) message {
 	msg.Data = make([]byte, len(bytes)-1)
 
 	copy(msg.Data, bytes[1:])
-	// log.Printf("DLUGOSC %d MESSAGE TYPE %s", len(msg.Data), msg.MessageType)
 
 	return msg
 }
@@ -80,12 +80,8 @@ func eliminationPhase(v lib.Node, c uint32, randomBit IRandomBit) bool {
 }
 
 func verificationPhase(v lib.Node, n uint32) {
-	if getState(v) == NonLeader {
-		return
-	}
-
 	bytes := binary.BigEndian.AppendUint32([]byte{}, 1)
-	// log.Printf("WERYFUKACJA BAJTY %d", len(bytes))
+
 	v.SendMessage(0, message{
 		MessageType: Counter,
 		Data:        bytes,
@@ -95,6 +91,9 @@ func verificationPhase(v lib.Node, n uint32) {
 
 	if msg.MessageType == Counter && binary.BigEndian.Uint32(msg.Data) == n {
 		setState(v, Leader)
+		v.SendMessage(0, message{
+			MessageType: Elected,
+		}.Bytes())
 	}
 }
 
@@ -113,6 +112,8 @@ func inactive(v lib.Node) {
 				MessageType: Counter,
 				Data:        newBytes,
 			}.Bytes())
+		case Elected:
+			v.SendMessage(0, bytes)
 			return
 		}
 	}
@@ -123,11 +124,17 @@ func run(v lib.Node, n uint32, c uint32, randomBit IRandomBit) {
 	v.StartProcessing()
 	initialize(v)
 	log.Printf("%d initialized\n", v.GetIndex())
-	if eliminationPhase(v, c, randomBit) {
-		verificationPhase(v, n)
-	} else {
+	for getState(v) == Unknown {
+		log.Printf("%d started phase I\n", v.GetIndex())
+
+		if eliminationPhase(v, c, randomBit) {
+			verificationPhase(v, n)
+		}
+	}
+	if getState(v) == NonLeader {
 		inactive(v)
 	}
+
 	v.FinishProcessing(true)
 }
 
@@ -143,7 +150,7 @@ func setState(v lib.Node, state ModeType) {
 	v.SetState([]byte(state))
 }
 
-func check(vertices []lib.Node) {
+func check(vertices []lib.Node) bool {
 	var nonleaders int = 0
 
 	for _, v := range vertices {
@@ -155,10 +162,12 @@ func check(vertices []lib.Node) {
 
 	leaders := len(vertices) - nonleaders
 	if leaders < 1 {
-		log.Fatalln("Zero leaders were found")
+		panic("Zero leaders were found")
 	} else if leaders > 1 {
-		log.Fatalln("More than one active vertices. Maybe try again or change the number of stages constant")
+		panic("More than one active vertices. Maybe try again or change the number of stages constant")
 	}
+
+	return true
 }
 
 func Run(n int, c int, randomBit IRandomBit) (int, int) {
@@ -167,8 +176,8 @@ func Run(n int, c int, randomBit IRandomBit) (int, int) {
 	for _, v := range vertices {
 		go run(v, uint32(n), uint32(c), randomBit)
 	}
-
 	runner.Run(false)
+
 	check(vertices)
 	log.Println("Single leader elected")
 
