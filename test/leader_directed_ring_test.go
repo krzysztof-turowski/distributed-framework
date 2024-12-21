@@ -53,7 +53,6 @@ func getRandBit() async_itah_rodeh_2.IRandomBit {
 	}
 }
 
-// Fails if the leader is not elected: consider increasing c constant
 func TestAsyncDirectedRingItaiRodehRand(b *testing.T) {
 	checkLogOutput()
 	n := 2000
