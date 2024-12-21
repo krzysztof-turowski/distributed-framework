@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Skryg/distributed-framework/leader/directed_ring/async_itah_rodeh_2"
+	async_itah_rodeh_2 "github.com/Skryg/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
 )

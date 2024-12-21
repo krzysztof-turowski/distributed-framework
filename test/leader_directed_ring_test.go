@@ -4,11 +4,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
 	"testing"
 	"time"
 
-	"github.com/Skryg/distributed-framework/leader/directed_ring/async_itah_rodeh_2"
+	async_itah_rodeh_2 "github.com/Skryg/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_chang_roberts"
@@ -27,12 +28,13 @@ func TestDirectedRingItaiRodeh(t *testing.T) {
 	sync_itai_rodeh.Run(1000)
 }
 
+// Fails with little probability
 func TestAsyncDirectedRingItaiRodeh2(t *testing.T) {
 	checkLogOutput()
 	async_itah_rodeh_2.RunDefault(5000)
 }
 
-const PROB = 0.01
+const PROB = 0.1
 
 type RandBit struct {
 	rand *rand.Rand
@@ -50,9 +52,12 @@ func getRandBit() async_itah_rodeh_2.IRandomBit {
 		rand.New(rand.NewSource(time.Now().UnixMilli())),
 	}
 }
+
+// Fails if the leader is not elected: consider increasing c constant
 func TestAsyncDirectedRingItaiRodehRand(b *testing.T) {
 	checkLogOutput()
-	async_itah_rodeh_2.Run(5000, getRandBit())
+	n := 2000
+	async_itah_rodeh_2.Run(n, int(math.Log2(float64(n))), getRandBit())
 }
 
 func TestDirectedRingRunDolevKlaweRodehA(t *testing.T) {
