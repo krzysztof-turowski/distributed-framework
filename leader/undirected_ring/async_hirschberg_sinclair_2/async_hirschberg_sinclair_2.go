@@ -2,8 +2,6 @@ package async_hirschberg_sinclair_2
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"sync"
 
@@ -22,6 +20,7 @@ const (
 	no          = iota
 	ok          = iota
 	leaderfound = iota
+	finished    = iota
 )
 
 type message struct {
@@ -30,11 +29,12 @@ type message struct {
 }
 
 type state struct {
-	id          int
-	phase       int
-	Status      int
-	confirm     int
-	outMessages chan message
+	id            int
+	phase         int
+	Status        int
+	confirm       int
+	waitingToSent int
+	mu            sync.Mutex
 }
 
 type messageContent struct {
@@ -42,141 +42,160 @@ type messageContent struct {
 	Content     []int
 }
 
-func send(node lib.Node, m messageContent, direction int, waitGroup *sync.WaitGroup, outMessages chan message) {
+func send(m messageContent, direction int, state *state, node lib.Node) {
+	log.Println("Sending message", m, "to", direction)
 	bytesMessage, _ := json.Marshal(m)
-	waitGroup.Add(1)
-	outMessages <- message{
-		content:   bytesMessage,
-		direction: direction,
-	}
+	state.mu.Lock()
+	state.waitingToSent++
+	state.mu.Unlock()
+	go func() {
+		defer func() {
+			state.mu.Lock()
+			state.waitingToSent--
+			state.mu.Unlock()
+		}()
+		node.SendMessage(direction, bytesMessage)
+	}()
+
 }
 
 func recive(node lib.Node) (messageContent, int) {
 	direction, bytesMessage := node.ReceiveAnyMessage()
 	var message messageContent
 	json.Unmarshal(bytesMessage, &message)
+	log.Println("Node", node.GetIndex(), "recived message", message, "from", direction)
 	return message, direction
 }
 
-func sendBack(node lib.Node, m messageContent, direction int, waitGroup *sync.WaitGroup, outMessages chan message) {
-	send(node, m, direction, waitGroup, outMessages)
+func sendBack(m messageContent, direction int, state *state, node lib.Node) {
+	send(m, direction, state, node)
 }
 
-func sendForward(node lib.Node, m messageContent, direction int, waitGroup *sync.WaitGroup, outMessages chan message) {
-	send(node, m, (direction ^ 1), waitGroup, outMessages)
+func sendForward(m messageContent, direction int, state *state, node lib.Node) {
+	send(m, (direction ^ 1), state, node)
 }
 
-func startNewStage(node lib.Node, state *state, waitGroup *sync.WaitGroup) {
+func startNewStage(state *state, node lib.Node) {
 	state.phase++
 	state.confirm = 0
 	messageContent := messageContent{
 		MessegeType: from,
 		Content:     []int{state.id, 0, (1 << state.phase)},
 	}
-	send(node, messageContent, 0, waitGroup, state.outMessages)
-	send(node, messageContent, 1, waitGroup, state.outMessages)
+	send(messageContent, 0, state, node)
+	send(messageContent, 1, state, node)
 }
 
-func handleMessage(node lib.Node, content messageContent, direction int, state *state, waitGroup *sync.WaitGroup) {
+func handleMessage(content messageContent, direction int, state *state, node lib.Node) {
 	messageStatus := content.MessegeType
-	if messageStatus == from {
-		senderId := content.Content[0]
-		stepCounter := content.Content[1] + 1
-		StepLimit := content.Content[2]
-		if senderId == state.id {
-			if state.Status != leader {
-				state.Status = leader
-				send(node, messageContent{
-					MessegeType: leaderfound,
-					Content:     []int{stepCounter},
-				}, 0, waitGroup, state.outMessages)
+	if state.Status != over && state.Status != leader {
+		if messageStatus == from {
+			senderId := content.Content[0]
+			stepCounter := content.Content[1] + 1
+			StepLimit := content.Content[2]
+			if senderId == state.id {
+				if state.Status != leader {
+					state.confirm = 0
+					state.Status = leader
+					send(messageContent{
+						MessegeType: leaderfound,
+						Content:     []int{senderId},
+					}, 0, state, node)
+				}
+				return
+			} else if senderId < state.id {
+				sendBack(messageContent{
+					MessegeType: no,
+					Content:     []int{senderId},
+				}, direction, state, node)
+			} else if senderId > state.id {
+				state.Status = out
+				if stepCounter == StepLimit {
+					sendBack(messageContent{
+						MessegeType: ok,
+						Content:     []int{senderId},
+					}, direction, state, node)
+				} else {
+					sendForward(messageContent{
+						MessegeType: from,
+						Content:     []int{senderId, stepCounter, StepLimit},
+					}, direction, state, node)
+				}
 			}
 			return
-		} else if senderId < state.id {
-			sendBack(node, messageContent{
-				MessegeType: no,
-				Content:     []int{senderId},
-			}, direction, waitGroup, state.outMessages)
-		} else if senderId > state.id {
-			state.Status = out
-			if stepCounter == StepLimit {
-				sendBack(node, messageContent{
-					MessegeType: ok,
-					Content:     []int{senderId},
-				}, direction, waitGroup, state.outMessages)
+		}
+		if messageStatus == ok || messageStatus == no {
+			adressant := content.Content[0]
+			if adressant != state.id {
+				sendForward(content, direction, state, node)
 			} else {
-				sendForward(node, messageContent{
-					MessegeType: from,
-					Content:     []int{senderId, stepCounter, StepLimit},
-				}, direction, waitGroup, state.outMessages)
+				if messageStatus == no {
+					state.Status = out
+				}
+				state.confirm++
+				if state.confirm == 2 && state.Status == candidate {
+					startNewStage(state, node)
+				}
 			}
+			return
 		}
+	} else if messageStatus == finished {
+		state.confirm++
 		return
 	}
-	if messageStatus == ok || messageStatus == no {
-		adressant := content.Content[0]
-		if adressant != state.id {
-			sendForward(node, content, direction, waitGroup, state.outMessages)
-		} else {
-			if messageStatus == no {
-				state.Status = out
-			}
+	if messageStatus == leaderfound {
+		sendBack(messageContent{
+			MessegeType: finished,
+			Content:     []int{},
+		}, direction, state, node)
+
+		if state.Status == leader {
 			state.confirm++
-			if state.confirm == 2 && state.Status == candidate {
-				startNewStage(node, state, waitGroup)
-			}
+		} else {
+			state.Status = over
+			state.confirm = 1
+			sendForward(messageContent{
+				MessegeType: leaderfound,
+				Content:     []int{state.id},
+			}, direction, state, node)
 		}
+
 		return
 	}
-	if messageStatus == leaderfound && content.Content[0] != 1 {
-		state.Status = over
-		sendForward(node, messageContent{
-			MessegeType: leaderfound,
-			Content:     []int{content.Content[0] - 1},
-		}, direction, waitGroup, state.outMessages)
-		return
-	}
+
 }
 
-func processRun(node lib.Node, WaitGroup *sync.WaitGroup) {
+func processRun(node lib.Node) {
 	state := state{
-		id:          node.GetIndex(),
-		phase:       -1,
-		Status:      candidate,
-		confirm:     0,
-		outMessages: make(chan message, 10000),
+		id:            node.GetIndex(),
+		phase:         -1,
+		Status:        candidate,
+		confirm:       0,
+		waitingToSent: 0,
 	}
-
-	go func() {
-		for msg := range state.outMessages {
-			node.SendMessage(msg.direction, msg.content)
-		}
-	}()
 
 	node.StartProcessing()
-	startNewStage(node, &state, WaitGroup)
+	startNewStage(&state, node)
 	for {
 		messageContent, direction := recive(node)
-		handleMessage(node, messageContent, direction, &state, WaitGroup)
-		if state.Status == leader || state.Status == over {
-			WaitGroup.Done()
+		handleMessage(messageContent, direction, &state, node)
+		if (state.Status == leader || state.Status == over) && state.confirm == 2 {
 			break
 		}
+		log.Println("Node", node.GetIndex(), "status", state.Status, "confirm", state.confirm)
 	}
 
-	go func() {
-		for {
-			recive(node)
-		}
-	}()
-
-	WaitGroup.Wait()
+	for state.waitingToSent > 0 {
+	}
 
 	bytesState, _ := json.Marshal(state)
 	node.SetState(bytesState)
+
 	node.FinishProcessing(true)
 	if state.Status == leader {
 		log.Println("Node", node.GetIndex(), "is a selected leader")
+	} else {
+		log.Println("Node", node.GetIndex(), "is not a leader")
 	}
 }
 
@@ -204,18 +223,11 @@ func resultChecker(vertices []lib.Node) {
 }
 
 func Run(n int) (int, int) {
-	log.SetOutput(ioutil.Discard)
-	for i := 0; i < 100; i++ {
-		fmt.Println("Iteration", i)
-		WaitGroup := sync.WaitGroup{}
-		WaitGroup.Add(n)
-		vertices, runner := lib.BuildRing(n)
-		for _, vertex := range vertices {
-			go processRun(vertex, &WaitGroup)
-		}
-		runner.Run(true)
-		WaitGroup.Wait()
-		resultChecker(vertices)
+	vertices, runner := lib.BuildRing(n)
+	for _, vertex := range vertices {
+		go processRun(vertex)
 	}
-	return 0, 0
+	runner.Run(true)
+	resultChecker(vertices)
+	return runner.GetStats()
 }
