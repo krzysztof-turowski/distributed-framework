@@ -1,5 +1,5 @@
 # distributed-framework
-A collection of algorithms for _Distributed Systems_ course (winter semesters 2020/21, 2021/22, 2022/23, 2023/24) at [Jagiellonian University](https://uj.edu.pl), [Theoretical Computer Science Department](https://tcs.uj.edu.pl).
+A collection of algorithms for _Distributed Systems_ course (winter semesters 2020/21, 2021/22, 2022/23, 2023/24, 2024/25) at [Jagiellonian University](https://uj.edu.pl), [Theoretical Computer Science Department](https://tcs.uj.edu.pl).
 
 ## Algorithms
 
@@ -47,6 +47,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Asynchronous undirected ring
 1. Franklin algorithm
 1. Hirschberg-Sinclair algorithm
+1. Hirschberg-Sinclair algorithm B
 1. Stages with feedback (Korach-Rotem-Santoro) algorithm
 1. Probabilistic Franklin algorithm
 1. Itai-Rodeh algorithm
