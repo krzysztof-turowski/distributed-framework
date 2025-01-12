@@ -23,11 +23,6 @@ const (
 	finished    = iota
 )
 
-type message struct {
-	content   []byte
-	direction int
-}
-
 type state struct {
 	id            int
 	phase         int
@@ -43,7 +38,6 @@ type messageContent struct {
 }
 
 func send(m messageContent, direction int, state *state, node lib.Node) {
-	log.Println("Sending message", m, "to", direction)
 	bytesMessage, _ := json.Marshal(m)
 	state.mu.Lock()
 	state.waitingToSent++
@@ -63,7 +57,6 @@ func recive(node lib.Node) (messageContent, int) {
 	direction, bytesMessage := node.ReceiveAnyMessage()
 	var message messageContent
 	json.Unmarshal(bytesMessage, &message)
-	log.Println("Node", node.GetIndex(), "recived message", message, "from", direction)
 	return message, direction
 }
 
