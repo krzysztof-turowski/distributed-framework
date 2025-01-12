@@ -1,4 +1,4 @@
-package main
+package async_syrotiuk_pachl_2
 
 import (
 	"encoding/json"
@@ -201,8 +201,4 @@ func Run(n int) (int, int) {
 	check(vertices)
 
 	return runner.GetStats()
-}
-
-func main() {
-	Run(10001)
 }
