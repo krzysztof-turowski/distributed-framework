@@ -10,6 +10,7 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_probabilistic_franklin"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_franklin"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_franklin_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_hirschberg_sinclair"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/sync_prob_as_far"
@@ -59,6 +60,11 @@ func BenchmarkUndirectedRingSyncProbAsFar(b *testing.B) {
 func TestUndirectedRingSyncFranklin(t *testing.T) {
 	checkLogOutput()
 	sync_franklin.Run(1000)
+}
+
+func TestUndirectedRingSyncFranklin_2(t *testing.T) {
+	checkLogOutput()
+	sync_franklin_2.Run(1000)
 }
 
 func BenchmarkUndirectedRingSyncFranklin(b *testing.B) {
