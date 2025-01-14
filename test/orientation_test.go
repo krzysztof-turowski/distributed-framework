@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/krzysztof-turowski/distributed-framework/orientation/async_syrotiuk_pachl"
+	"github.com/krzysztof-turowski/distributed-framework/orientation/async_syrotiuk_pachl_2"
 	"github.com/krzysztof-turowski/distributed-framework/orientation/sync_torus"
 )
 
@@ -18,6 +19,13 @@ func BenchmarkOrientationSyrotiukPachl(b *testing.B) {
 	log.SetOutput(io.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		async_syrotiuk_pachl.Run(1000)
+	}
+}
+
+func BenchmarkOrientationSyrotiukPachl2(b *testing.B) {
+	log.SetOutput(io.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		async_syrotiuk_pachl_2.Run(1000)
 	}
 }
 

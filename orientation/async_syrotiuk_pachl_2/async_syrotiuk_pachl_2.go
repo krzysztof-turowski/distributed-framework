@@ -138,6 +138,7 @@ func check(vertices []lib.Node) {
 			panic("Node state unknown at the end")
 		}
 	}
+
 	if undecidedNodes != 0 {
 		// Check if all nodes are undecided
 		if undecidedNodes != len(vertices) {
@@ -169,6 +170,9 @@ func check(vertices []lib.Node) {
 		if diff != 0 {
 			panic("Orientation undecided but majority agrees on some orientation")
 		}
+
+		// Tests passed
+		return
 	}
 
 	// Check if orientation is the same for all nodes
@@ -185,6 +189,7 @@ func check(vertices []lib.Node) {
 			((stateV.State == stateU1.State) != (u1.GetInNeighbors()[0] == v)) {
 			panic("Some nodes are oriented differently")
 		}
+
 	}
 }
 
