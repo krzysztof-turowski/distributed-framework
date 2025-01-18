@@ -66,6 +66,7 @@ graphs_mst_example:
 graphs_mis_example:
 	go run example/graphs_mis_sync_luby.go 20 0.25
 	go run example/graphs_mis_sync_metivier_c.go 20 0.25
+	go run example/graphs_mis_sync_karp_widgerson.go 20 0.25
 
 graphs_ds_example:
 	go run example/graphs_ds_sync_lrg.go 10 0.70
