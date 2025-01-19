@@ -135,9 +135,6 @@ func boolToBytes(b bool) []byte {
 	return result
 }
 
-func initializeBeforeHeavyFind(v lib.Node, s *state) {
-}
-
 func initialize(v lib.Node) {
 	outIdByNeighbor := make(map[int]int)
 	outNeghbourId := make([]int, 0, v.GetOutChannelsCount())
@@ -168,9 +165,10 @@ func initialize(v lib.Node) {
 		RoundsLeftLeader:   v.GetSize(),
 		SenderOfMaxId:      -1,
 		PassMsgFromLeader:  passMsgFromLeader,
-		LeaderIterations:   0,
 		DistanceFromLeader: 0,
 
+		Degree:              0,
+		LeaderIterations:    0,
 		HSize:               -1,
 		CurrentI:            -1,
 		ShouldTerminate:     false,
