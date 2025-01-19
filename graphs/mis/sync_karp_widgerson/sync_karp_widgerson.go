@@ -46,42 +46,44 @@ const (
 	scoreFindPushResults
 )
 
-// Extend state with fields necessary for algorithm logic.
 type state struct {
 	Phase      phaseType
 	PhaseStage phaseStage
-	Active     bool
+	Active     bool // Is vertex still in H
 	InPhaseSet bool
 	InMIS      bool
 
-	OutIdByNeighbor map[int]int
-	OutNeghbourId   []int
-	IsNeigbourAlive []bool
+	OutIdByNeighbor map[int]int // Map of neighbour id to out channel id
+	OutNeghbourId   []int       // List of neighbour ids
+	IsNeigbourAlive []bool      // Is neighbour alive
 	NeighbourInMIS  bool
 
-	MaxId              int // For FINDLEADER: maximum ID in the graph
-	RoundsLeftLeader   int // For FINDLEADER: rounds left to be sure MaxId is leader
-	SenderOfMaxId      int // Id, to towards which there is sender
-	PassMsgFromLeader  []bool
+	// FindLeader helpers
+	MaxId              int    // For FINDLEADER: maximum ID in the graph
+	RoundsLeftLeader   int    // For FINDLEADER: rounds left to be sure MaxId is leader
+	SenderOfMaxId      int    // For FINDLEADER: id of neighbour, to towards which there is sender
+	PassMsgFromLeader  []bool // For FINDLEADER: for each neighbour, if we should pass message from leader to him
 	DistanceFromLeader int
 
+	// HeavyFind helpers
 	Degree              int // For HEAVYFIND: current value of i
-	LeaderIterations    int
+	LeaderIterations    int // HEAVYFIND: Number of iterations
 	HSize               int
 	CurrentI            int
-	ShouldTerminate     bool
+	ShouldTerminate     bool // HEAVYFIND: flag if we should finish HEAVYFIND
 	CntOfAboveThreshold int
 	LeaderThreshold     int
 
-	// Leader communications helpers
-	PushUpLeaderRound   int
-	PushDownLeaderRound int
+	// Leader communication helpers
+	PushUpLeaderRound   int // For PUSHUP: current round
+	PushDownLeaderRound int // For PUSHDOWN: current round
 
+	// ScoreFind helpers
 	VertexIsInT map[int]struct{} // For SCOREFIND: map of vertices in set T
 
+	// IndFind helpers
 	IsRemoved             bool   // For INDFIND: flag for removal from set T
 	ShouldRemoveNeighbour []bool // FOR INDFIND: decisions if if we should remove neighbour
-
 }
 
 type message struct {
@@ -133,6 +135,9 @@ func boolToBytes(b bool) []byte {
 	return result
 }
 
+func initializeBeforeHeavyFind(v lib.Node, s *state) {
+}
+
 func initialize(v lib.Node) {
 	outIdByNeighbor := make(map[int]int)
 	outNeghbourId := make([]int, 0, v.GetOutChannelsCount())
@@ -148,25 +153,34 @@ func initialize(v lib.Node) {
 	}
 
 	s := state{
-		Phase:              initPhase,
-		PhaseStage:         findLeaderSend,
-		Active:             true,
-		InPhaseSet:         true,
-		InMIS:              false,
-		NeighbourInMIS:     false,
-		OutIdByNeighbor:    outIdByNeighbor,
-		OutNeghbourId:      outNeghbourId,
-		RoundsLeftLeader:   v.GetSize(),
+		Phase:      initPhase,
+		PhaseStage: findLeaderSend,
+		Active:     true,
+		InPhaseSet: true,
+		InMIS:      false,
+
+		OutIdByNeighbor: outIdByNeighbor,
+		OutNeghbourId:   outNeghbourId,
+		IsNeigbourAlive: isNeigbourAlive,
+		NeighbourInMIS:  false,
+
 		MaxId:              v.GetIndex(),
+		RoundsLeftLeader:   v.GetSize(),
+		SenderOfMaxId:      -1,
 		PassMsgFromLeader:  passMsgFromLeader,
 		LeaderIterations:   0,
 		DistanceFromLeader: 0,
 
+		HSize:               -1,
+		CurrentI:            -1,
+		ShouldTerminate:     false,
+		CntOfAboveThreshold: 0,
+		LeaderThreshold:     0,
+
 		PushDownLeaderRound: 0,
 		PushUpLeaderRound:   0,
-		HSize:               -1,
-		IsNeigbourAlive:     isNeigbourAlive,
-		SenderOfMaxId:       -1,
+
+		VertexIsInT: make(map[int]struct{}),
 	}
 	setState(v, s)
 }
@@ -193,30 +207,27 @@ func pushUpLeader(v lib.Node, s *state, initInfo func(v lib.Node, s *state) []by
 	currentHeight := v.GetSize() - s.PushUpLeaderRound - 1
 
 	if currentHeight == s.DistanceFromLeader {
-
 		messageValue := initInfo(v, s)
 
 		for i := 0; i < v.GetInChannelsCount(); i++ {
 			if s.PassMsgFromLeader[i] {
 				if msg, ok := receiveMessage(v, i); ok {
 					messageValue = concatChildInfo(messageValue, msg)
-				} else if !ok {
-					panic("Couldn't receive message")
 				}
 			}
 		}
 
 		if s.MaxId == v.GetIndex() {
 			if currentHeight != 0 {
-				panic("Leader should be at height 0")
+				panic("Leader is not at height 0")
 			}
 			onLeader(v, s, messageValue)
 		} else {
 			if s.SenderOfMaxId == -1 {
-				panic("SenderOfMaxId should be set")
+				panic("SenderOfMaxId is not set")
 			}
 			if _, exists := s.OutIdByNeighbor[s.SenderOfMaxId]; !exists {
-				panic("SenderOfMaxId should be in OutIdByNeighbor")
+				panic("SenderOfMaxId is not in OutIdByNeighbor")
 			}
 			sendMessage(v, s.OutIdByNeighbor[s.SenderOfMaxId], message{Value: messageValue, SenderID: v.GetIndex()})
 		}
@@ -237,7 +248,7 @@ func pushDownLeader(v lib.Node, s *state, onParentInfo func(lib.Node, *state, me
 		var messageValue []byte
 		if s.MaxId == v.GetIndex() { // Leader
 			if currentHeight != 0 {
-				panic("Leader should be at height 0")
+				panic("Leader is not at height 0")
 			}
 			messageValue = onLeader(v, s)
 		} else { // Not leader
@@ -308,7 +319,7 @@ func processFindLeader(v lib.Node, s *state) {
 		}
 
 		if !foundSomebody && !(v.GetIndex() == s.MaxId) {
-			panic(fmt.Sprintf("Couldn't find from leader nodeId:%d, maxId:%d", v.GetIndex(), s.MaxId))
+			panic(fmt.Sprintf("Couldn't find SenderOfMaxId nodeId:%d, senderId:%d, maxId:%d", v.GetIndex(), s.SenderOfMaxId, s.MaxId))
 		}
 		s.PhaseStage = findLeaderHandleNotifies
 	} else if s.PhaseStage == findLeaderHandleNotifies {
@@ -520,7 +531,7 @@ func processScoreFind(v lib.Node, s *state) {
 				return
 			}
 
-			// l ← max{l′ | 2^l′ − 1 ∈ [1, (|H|/⌊log |H|⌋)]}
+			// l ← max{l | 2^l − 1 ∈ [1, (|H|/⌊log |H|⌋)]}
 			l := 0
 			for math.Pow(2, float64(l+1))-1 <= float64(s.HSize)/math.Floor(math.Log2(float64(s.HSize))) {
 				l++
@@ -547,7 +558,7 @@ func processScoreFind(v lib.Node, s *state) {
 				delta = int(math.Max(float64(delta), float64(len(adjNodes))))
 			}
 
-			// sc ← max{s′ | 2s′ − 1 ∈ [1, ⌈m/(16∆)⌉]}
+			// sc ← max{sc | 2^sc − 1 ∈ [1, ⌈m/(16∆)⌉]}
 			upperBound := float64(max(1, int(math.Ceil(float64(m)/(16*float64(delta))))))
 
 			sc := 1
@@ -592,7 +603,7 @@ func processScoreFind(v lib.Node, s *state) {
 			}
 
 			for j := l; j >= sc+1; j-- {
-				//Construct a block design with set of elements U and parameters: v = 2j − 1, r = k = 2j−1 − 1, λ = 2j−2 − 1
+				// Construct a block design
 				maxRating := float64(math.MinInt64)
 				maxNodes := make([]int, 0)
 				for mask := 1; mask < 1<<uint(j); mask++ {
@@ -671,7 +682,6 @@ func processScoreFind(v lib.Node, s *state) {
 	}
 }
 
-// Process INDFIND phase.
 func processIndFind(v lib.Node, s *state) {
 	type IndFindMessage struct {
 		IsSenderInPhaseSet bool
@@ -785,7 +795,6 @@ func processIndFind(v lib.Node, s *state) {
 			s.Active = false
 			s.Phase = finalPhase
 		} else {
-
 			s.MaxId = v.GetIndex()
 			s.IsRemoved = false
 			s.InPhaseSet = true
