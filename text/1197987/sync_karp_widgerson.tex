@@ -1,0 +1,168 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\definecolor{vertexcolor}{RGB}{52, 152, 219}
+\definecolor{edgecolor}{RGB}{41, 128, 185}
+\definecolor{selectedcolor}{RGB}{231, 76, 60}
+\definecolor{heavycolor}{RGB}{46, 204, 113}
+\definecolor{removedcolor}{RGB}{189, 195, 199}
+
+\usetikzlibrary{graphs,graphs.standard}
+
+\title{Karp and Widger Fast MIS}
+\author{Bogdan Tolstik}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Main Algorithm Structure}
+
+The main algorithm structure is described as follows:
+
+\begin{algorithm}[H]
+    \caption{Main Algorithm Structure}
+    \begin{algorithmic}[1]
+        \STATE $I \leftarrow \emptyset$ \hfill \textcolor{blue}{// Initialize empty solution}
+        \STATE $H \leftarrow V$ \hfill \textcolor{blue}{// All vertices active}
+        \WHILE{$H \neq \emptyset$}
+            \STATE $K \leftarrow \text{HEAVYFIND}(H)$ \hfill \textcolor{blue}{// Find set with frequent vertices}
+            \STATE $T \leftarrow \text{SCOREFIND}(K)$ \hfill \textcolor{blue}{// Select promising subset}
+            \STATE $S \leftarrow \text{INDFIND}(T)$ \hfill \textcolor{blue}{// Ensure independence}
+            \STATE $I \leftarrow I \cup S$ \hfill \textcolor{blue}{// Add to solution}
+            \STATE $H \leftarrow H - (S \cup N_H(S))$ \hfill \textcolor{blue}{// Remove used vertices}
+        \ENDWHILE
+        \RETURN $I$
+    \end{algorithmic}
+\end{algorithm}
+
+\section*{INDFIND Algorithm}
+
+The \texttt{INDFIND} algorithm ensures independence within the selected set $T$:
+
+\begin{algorithm}[H]
+    \caption{INDFIND(T)}
+    \begin{algorithmic}[1]
+        \STATE For each pair $\{u,w\} \subseteq T$:
+        \IF{$(u,w) \in E(T)$}
+            \STATE Remove random vertex
+        \ENDIF
+        \RETURN remaining vertices
+    \end{algorithmic}
+\end{algorithm}
+
+Comments:
+\begin{itemize}
+    \item There are 3 rounds in this algorithm:
+    \begin{enumerate}
+        \item In the first round, each vertex exchanges its ID with its neighbors.
+        \item In the second round, the leader (the vertex with the highest ID among pairs) decides who will be removed and sends the bit.
+        \item In the third round if we are not removed we become inactive and we notify our neighbours that they became inactive too, or that everything is fine and we both are active. We also add flag that we are in maximal independent set.
+    \end{enumerate}
+\end{itemize}
+
+\section*{HEAVYFIND Algorithm}
+
+The goal of the \texttt{HEAVYFIND} algorithm is to identify a set of frequent heavy vertices. Heavy vertices are defined as those with a degree at least half the maximum degree in the graph.
+
+\begin{algorithm}[H]
+    \caption{HEAVYFIND(H)}
+    \begin{algorithmic}[1]
+        \STATE $K \leftarrow H$
+        \STATE $i \leftarrow \lceil \log |H| \rceil$
+        \STATE success $\leftarrow$ FALSE
+        \WHILE{success = FALSE}
+            \STATE $i \leftarrow i - 1$
+            \IF{$|\{u \mid d_K(u) \geq 2^i - 1\}| \geq |H|/\lceil \log |H| \rceil$}
+                \STATE success $\leftarrow$ TRUE
+            \ELSE
+                \STATE $K \leftarrow \{u \mid d_K(u) < 2^i - 1\}$
+            \ENDIF
+        \ENDWHILE
+        \RETURN $K$
+    \end{algorithmic}
+\end{algorithm}
+
+Comments:
+\begin{itemize}
+    \item We can assume that the graph is connected and can elect a leader.
+    \item Each vertex then could ask the leader about $|H|$ and set $i = \lceil \log |H| \rceil$.
+    \item We will also keep a flag whether the vertex is still in K or not.
+    \item The algorithm proceeds in iterations, one iteration is:
+    \begin{itemize}
+        \item Round 1: Vertices send their status (whether they are still in $K$) to neighbors and compute their degree.
+        \item Round 2: Vertices notify the leader about their degrees, and the leader determines whether the condition is met.
+        \item Round 3: Vertex receives the message from the leader and checks whether it should finish algorithm execution or not. If we are not finishing and our degree is at least $2^i - 1$ - we set the flag to 0.
+    \end{itemize}
+\end{itemize}
+
+\section*{SCOREFIND Algorithm}
+Let helper functions defined as
+\text{prof}_K(u) &= 1 + d_K(u) \\
+\text{kill}_K(\{u,w\}) &= 1 + \max(d_K(u), d_K(w)) \\
+\text{double}_K(\{u,w\}) &= |N_K(u) \cap N_K(w)| \\
+\text{cost}_K(\{u,w\}) &= \begin{cases}
+\text{kill}_K(\{u,w\}) & \text{if } \{u,w\} \in E(K) \\
+\text{double}_K(\{u,w\}) & \text{if } \{u,w\} \notin E(K)
+\end{cases}
+  
+ Then for every set $T \subseteq K$, define,
+ \[
+   \text{Score}_K(T) = \sum_{u \in T} \text{prof}_K(u) - \sum_{\{u,w\} \subseteq T} \text{cost}_K(\{u, w\}).
+ \]
+ If t = \(|T|\), we also define:
+ \[
+ \text{Rating}_K(R) = t \cdot \frac{1}{|R|} \sum_{u \in R} \text{prof}_K(u) - \binom{t}{2} \cdot \frac{1}{\binom{|R|}{2}} \sum_{\{u, w\} \subseteq R} \text{cost}_K(\{u, w\}),
+ \]
+The \texttt{SCOREFIND} algorithm identifies promising subsets of vertices based on scores and predefined criteria:
+
+\begin{algorithm}[H]
+    \caption{SCOREFIND(K)}
+    \begin{algorithmic}[1]
+        \STATE $\ell \gets \max\{ \ell' \mid 2^{\ell'} - 1 \in [1, (|H| / \lfloor \log |H| \rfloor)] \}$
+        \STATE $n \gets 2^\ell - 1$
+        \STATE $M \gets \text{an arbitrary set of $m$ heavy vertices in $K$}$
+        \FOR{$u \in M$}
+            \STATE compute $\text{prof}_{\kappa}(u)$
+        \ENDFOR
+        \FOR{each $\{u, w\} \subseteq M$}
+            \STATE compute $\text{cost}_{\kappa}(\{u, w\})$
+        \ENDFOR
+        \STATE $\Delta \gets \text{maximum degree of a vertex in $K$}$
+        \STATE $s \gets \max\{s' \mid 2^{s'} - 1 \in [1, \lceil m / (16 \Delta) \rceil] \}$
+        \STATE $t \gets 2^s - 1$
+        \STATE $U_\ell \gets M$
+        \FOR{$j \gets \ell$ \textbf{down to} $s + 1$}
+            \STATE Construct a block design with set of elements $U$ and parameters:
+            \STATE $v = 2^j - 1, \; r = k = 2^{j-1} - 1, \; \lambda = 2^{j-2} - 1$
+            \FOR{each block $R$}
+                \STATE Compute $\text{Rating}_{K}(R)$
+            \ENDFOR
+            \STATE $U_{j-1} \gets \text{the block for which $\text{Rating}_{\kappa}(\cdot)$ is largest}$
+        \ENDFOR
+        \STATE $T \gets U_{j-1}$
+    \end{algorithmic}
+\end{algorithm}
+
+Comments:
+\begin{itemize}
+    \item Communication with the leader of $H$ is required.
+    \item Vertices notify the leader about every edge and statuses of them two.
+    \item The leader processes the algorithm step-by-step, computing costs and profits, and notifies each vertex if they belong to $T$.
+\end{itemize}
+
+\section*{Overall Complexity}
+
+The algorithm's complexity is as follows:
+\begin{itemize}
+    \item Number of iterations: $O(\log^2(n))$.
+    \item Message complexity: $O(m^2 \cdot \log^2(n))$ (dominated by edge information sharing in each iteration).
+    \item Time complexity: $O(n^3)$ (dominated by block rating calculations on the first iteration in leader).
+\end{itemize}
+
+\end{document}
