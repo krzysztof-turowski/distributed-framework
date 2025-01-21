@@ -158,7 +158,7 @@ func handleMessage(content messageContent, direction int, state *state, node lib
 
 }
 
-func processRun(node lib.Node) {
+func run(node lib.Node) {
 	state := state{
 		id:            node.GetIndex(),
 		phase:         -1,
@@ -192,7 +192,7 @@ func processRun(node lib.Node) {
 	}
 }
 
-func resultChecker(vertices []lib.Node) {
+func check(vertices []lib.Node) {
 	leaderCount, leaderMax, realMax := 0, 0, 0
 	for _, vertex := range vertices {
 		state := state{}
@@ -218,9 +218,9 @@ func resultChecker(vertices []lib.Node) {
 func Run(n int) (int, int) {
 	vertices, runner := lib.BuildRing(n)
 	for _, vertex := range vertices {
-		go processRun(vertex)
+		go run(vertex)
 	}
 	runner.Run(true)
-	resultChecker(vertices)
+	check(vertices)
 	return runner.GetStats()
 }
