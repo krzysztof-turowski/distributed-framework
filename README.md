@@ -47,7 +47,6 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 #### Asynchronous undirected ring
 1. Franklin algorithm
 1. Hirschberg-Sinclair algorithm
-1. Hirschberg-Sinclair algorithm B
 1. Stages with feedback (Korach-Rotem-Santoro) algorithm
 1. Probabilistic Franklin algorithm
 1. Itai-Rodeh algorithm
