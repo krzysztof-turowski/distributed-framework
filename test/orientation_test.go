@@ -22,6 +22,11 @@ func BenchmarkOrientationSyrotiukPachl(b *testing.B) {
 	}
 }
 
+func TestOrientationSyrotiukPachl2(t *testing.T) {
+	checkLogOutput()
+	async_syrotiuk_pachl_2.Run(1000)
+}
+
 func BenchmarkOrientationSyrotiukPachl2(b *testing.B) {
 	log.SetOutput(io.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
