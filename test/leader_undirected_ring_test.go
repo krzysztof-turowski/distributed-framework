@@ -62,15 +62,22 @@ func TestUndirectedRingSyncFranklin(t *testing.T) {
 	sync_franklin.Run(1000)
 }
 
+func BenchmarkUndirectedRingSyncFranklin(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		sync_franklin.Run(1000)
+	}
+}
+
 func TestUndirectedRingSyncFranklin_2(t *testing.T) {
 	checkLogOutput()
 	sync_franklin_2.Run(1000)
 }
 
-func BenchmarkUndirectedRingSyncFranklin(b *testing.B) {
+func BenchmarkUndirectedRingSyncFranklin_2(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
-		sync_franklin.Run(1000)
+		sync_franklin_2.Run(1000)
 	}
 }
 
