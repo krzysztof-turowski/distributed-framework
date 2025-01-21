@@ -17,6 +17,7 @@ leader_directed_ring_example:
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
 	go run example/leader_undirected_ring_sync_franklin.go 10
+	go run example/leader_undirected_ring_sync_franklin_2.go 10
 	go run example/leader_undirected_ring_sync_prob_as_far.go 10
 	go run example/leader_undirected_ring_sync_higham_przytycka.go 10
 	go run example/leader_undirected_ring_async_hirschberg_sinclair.go 10

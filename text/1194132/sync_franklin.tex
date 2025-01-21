@@ -1,0 +1,55 @@
+\documentclass{article}
+\usepackage{biblatex}
+
+\addbibresource{sample.bib}
+
+\title{Franklin algorithm for leader election on synchronous, undirected ring}
+\author{Marcin Wykpis}
+\date{12 December 2024}
+
+\begin{document}
+
+\maketitle
+\section{Problem definition}
+Our goal is to elect exactly one leader node. The nodes are placed on a bidirectional ring connected by synchronous channels. 
+
+Here we analyze an algorithm proposed by Randolph Franklin \cite{franklin} that sends $O(n lgn)$ messages.
+
+\section{Algorithm}
+At the beginning of the algorithm, each process sends messages containing its id to both neighbors. Each node can be active or inactive. At the beginning, we mark every node as active.
+
+Let's consider an active node. In each round, the node receives both messages and compares their values with its own id.
+One of three cases is possible:
+\begin{itemize}
+    \item One of the values is larger than the node's id. Then the process becomes inactive.
+    \item Both values are smaller than the id. Then the process stays active and transmits its id to the neighbors.
+    \item One of the values is equal to the id. The process is considered a leader and transmits \textit{STOP} message to its neighbors
+\end{itemize}
+An inactive node simply retransmits received messages to the opposite channels until \textit{STOP} is received.
+
+\newpage
+\section{Correctness}
+Let's consider two phases of this algorithm: before leader sends \textit{STOP} and after the message is sent.
+\subsection{Before \textit{STOP} message}
+\begin{itemize}
+    \item For the adjacent active nodes (connected by a series of inactive ones), at most one will stay active in the next round.
+    \item Each active node received one message each from both adjacent active nodes
+    \item Each node that stayed active transmitted exactly two messages
+    \item If a node received its own id, it means that the value traveled through the whole ring and was compared (and considered larger) with every node in the ring. Only then the node sends \textit{STOP} message and returns \textit{LEADER}.
+\end{itemize}
+\subsection{After \textit{STOP} message}
+\begin{itemize}
+    \item At the end of previous round, only the leader node was considered to be active and it sent \textit{STOP} to one of its neighbors.
+    \item Each inactive node, starting from leader's immediate neighbors, receives a \textit{STOP} message and retransmits it to the opposite node.
+\end{itemize}
+\section{Time Complexity}
+Since at least one of each adjacent active nodes becomes inactive in each round, the number of rounds is at most $\lfloor lgn \rfloor$. In each round, there are exactly $2n$ messages sent. Additionally, we send $2n$ message before the first round and additional $n$ \textit{STOP} messages.
+In conclusion, the total number of messages sent is $O(nlgn)$, with at most $2nlgn + 3n$ messages.
+\section{Bonus: Gracefully Stopping}
+By adding an extra receive to the leader, we can guarantee that all channels are empty upon the end. The leader only has to receive a message from the opposite channel it sent the \textit{STOP} message.
+
+In each round before \textit{STOP}, all sent messages are being received.
+In the \textit{STOP} round, each inactive process receives and sends exactly two \textit{STOP} messages. The leader process then receives the last two messages.
+
+\printbibliography
+\end{document}
