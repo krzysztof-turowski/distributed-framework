@@ -5,6 +5,7 @@ import (
 	"log"
 	"testing"
 
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_chang_roberts"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_franklin"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_hirschberg_sinclair"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_hirschberg_sinclair_2"
@@ -155,5 +156,17 @@ func BenchmarkUndirectedRingHighamPrzytycka(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		sync_higham_przytycka.Run(100)
+	}
+}
+
+func TestAsyncChangRoberts(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	async_chang_roberts.Run(1000)
+}
+
+func BenchmarkAsyncChangRoberts(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		async_chang_roberts.Run(1000)
 	}
 }
