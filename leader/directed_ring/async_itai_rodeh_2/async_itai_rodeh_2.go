@@ -1,4 +1,4 @@
-package async_itah_rodeh_2
+package async_itai_rodeh_2
 
 import (
 	"encoding/binary"
@@ -23,7 +23,7 @@ func (randomBit DefaultRandomBit) ReadBit() uint8 {
 	return uint8(randomBit.rand.Intn(2))
 }
 
-func GetDefaultRandomBit() IRandomBit {
+func getDefaultRandomBit() IRandomBit {
 	rng := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	return DefaultRandomBit{
 		rand: rng,
@@ -170,9 +170,8 @@ func check(vertices []lib.Node) bool {
 	return true
 }
 
-func Run(n int, c int, randomBit IRandomBit) (int, int) {
+func startRunners(n int, c int, randomBit IRandomBit) (int, int) {
 	vertices, runner := lib.BuildDirectedRing(n)
-
 	for _, v := range vertices {
 		go run(v, uint32(n), uint32(c), randomBit)
 	}
@@ -184,6 +183,31 @@ func Run(n int, c int, randomBit IRandomBit) (int, int) {
 	return runner.GetStats()
 }
 
-func RunDefault(n int) (int, int) {
-	return Run(n, int(math.Ceil(5*math.Log2(float64(n)))), GetDefaultRandomBit())
+func Run(n int) (int, int) {
+	c := int(math.Ceil(5 * math.Log2(float64(n))))
+	return startRunners(n, c, GetDefaultRandomBit())
+}
+
+type RandBit struct {
+	rand *rand.Rand
+	p    float64
+}
+
+func (r RandBit) ReadBit() uint8 {
+	if rand.Float64() > r.p {
+		return 0
+	}
+	return 1
+}
+
+func getRandBit(p float64) IRandomBit {
+	return RandBit{
+		rand.New(rand.NewSource(time.Now().UnixMilli())),
+		p,
+	}
+}
+
+func RunProb(n int, p float64) (int, int) {
+	c := int(math.Ceil(5 * math.Log2(float64(n))))
+	return startRunners(n, c, getRandBit(p))
 }

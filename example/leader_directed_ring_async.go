@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	async_itah_rodeh_2 "github.com/Skryg/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	case "itai_rodeh":
 		async_itah_rodeh.Run(n)
 	case "itai_rodeh_2":
-		async_itah_rodeh_2.RunDefault(n)
+		async_itai_rodeh_2.Run(n)
 	}
 
 }
