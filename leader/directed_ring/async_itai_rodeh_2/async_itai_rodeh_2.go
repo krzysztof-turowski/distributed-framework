@@ -185,7 +185,7 @@ func startRunners(n int, c int, randomBit IRandomBit) (int, int) {
 
 func Run(n int) (int, int) {
 	c := int(math.Ceil(5 * math.Log2(float64(n))))
-	return startRunners(n, c, GetDefaultRandomBit())
+	return startRunners(n, c, getDefaultRandomBit())
 }
 
 type RandBit struct {
