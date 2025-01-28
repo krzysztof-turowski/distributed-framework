@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_franklin"
+	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_hirschberg_sinclair"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_probabilistic_franklin"
 	"github.com/krzysztof-turowski/distributed-framework/leader/undirected_ring/async_stages_with_feedback"
@@ -127,5 +128,21 @@ func BenchmarkUndirectedRingHighamPrzytycka(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for i := 0; i < b.N; i++ {
 		sync_higham_przytycka.Run(100)
+	}
+}
+
+func TestAsynchronousUndirectedRingHighamPrzytycka(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	for n := 2; n <= 100; n++ {
+		nodes, runner := lib.BuildRing(n)
+		async_higham_przytycka.Run(nodes, runner)
+	}
+}
+
+func BenchmarkAsynchronousUndirectedRingHighamPrzytycka(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	for i := 0; i < b.N; i++ {
+		nodes, runner := lib.BuildRing(1000)
+		async_higham_przytycka.Run(nodes, runner)
 	}
 }
