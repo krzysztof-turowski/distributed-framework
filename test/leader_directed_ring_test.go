@@ -1,12 +1,14 @@
 package test
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"testing"
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_chang_roberts"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_dolev_klawe_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_itai_rodeh"
@@ -21,6 +23,18 @@ func TestDirectedRingChangRoberts(t *testing.T) {
 func TestDirectedRingItaiRodeh(t *testing.T) {
 	checkLogOutput()
 	sync_itai_rodeh.Run(1000)
+}
+
+// Fails with little probability
+func TestAsyncDirectedRingItaiRodeh2(t *testing.T) {
+	checkLogOutput()
+	async_itai_rodeh_2.Run(5000)
+}
+
+func TestAsyncDirectedRingItaiRodehRand(b *testing.T) {
+	checkLogOutput()
+	n := 2000
+	async_itai_rodeh_2.RunProb(n, 0.1)
 }
 
 func TestDirectedRingRunDolevKlaweRodehA(t *testing.T) {
@@ -82,6 +96,13 @@ func BenchmarkAsyncDirectedRingItaiRodeh(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		async_itah_rodeh.Run(1000)
+	}
+}
+
+func BenchmarkAsyncDirectedRingItaiRodeh2(b *testing.B) {
+	log.SetOutput(io.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		async_itai_rodeh_2.Run(1000)
 	}
 }
 

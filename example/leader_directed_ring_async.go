@@ -8,6 +8,7 @@ import (
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 )
 
 func main() {
@@ -22,5 +23,7 @@ func main() {
 		async_higham_przytycka.Run(n)
 	case "itai_rodeh":
 		async_itah_rodeh.Run(n)
+	case "itai_rodeh_2":
+		async_itai_rodeh_2.Run(n)
 	}
 }
