@@ -1,0 +1,148 @@
+\documentclass{article}
+
+\usepackage{graphicx}
+\usepackage{algorithm2e}
+\usepackage{polski}
+\usepackage{amsmath} 
+\usepackage{amsthm}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+
+\title{Rozproszony alogrytm orientacji cyklu}
+\author{Marcin Wykpis}
+\date{Styczeń 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Algorytm}
+\begin{algorithm}[H]
+send(RIGHT, [1, 1])\\
+\While{true}
+{
+    from := receive([vote, distance, stop, undecided])
+
+    \eIf{stop}
+    {
+        send(!from, [stop])\\
+        \uIf{undecided}
+        {
+            \Return{"No majority"}
+        } \uElseIf {from == LEFT}
+        {
+            \Return{"Node not flipped"}
+        } \Else
+        {
+            \Return{"Node flipped"}
+        }
+    }
+    {
+        \If{distance==N}
+        {
+            \eIf{vote $>0$}
+            {
+                send(RIGHT, [stop])\\
+                \Return{"Node not flipped"}
+            }{
+                send(RIGHT, [stop, undecided])\\
+                \Return{"No majority"}
+            }
+        }
+        \If{from == LEFT}
+        {
+            send(RIGHT, [msg.vote+1, msg.distance+1])\\
+        }
+        \If{from == RIGHT \textbf{and} msg.vote $>0$}
+        {
+            send(LEFT, [msg.vote-1, msg.distance+1])\\
+        }
+    } 
+}
+\end{algorithm}
+
+\newpage
+\section{Dowód poprawności}
+Dla ciągu zer i jedynek $s$, oznaczy $\#_0 s$ i $\#_1 s$ jako liczbę zer i jedynek w tym ciągu.
+Ciąg $s$ nazwiem dominującym, gdy $\#_1 t > \#_0 t$ dla każdego prefixu $t$ w $s$.\\
+Podobnie, ciąg $s$ jest słabo dominujący, gdy zachodzi warunek $\#_1 t \ge \#_0 t$.\\
+Bez straty ogólności, niech poprawna orientacja będzie według wskazówek zegara.\\
+Zdefiniujmy $s_i = 1$ jeśli prawy kanał $i$-tego procesu wysyła wg. wskazówek zegara oraz $s_i=0$ wpp.
+Skoro $\#_1 s \ge \#_0 s$, conajmniej jedna cykliczna permutacja $s_k s_{k+1} ... s_{k-1}$ jest słabo dominująca.\\
+A zatem $k$-ty proces otrzyma wiadomość [vote, N], gdzie wartość vote jest równa  $\#_1 s \ge \#_0 s$.
+
+\section{Złożoność}
+W przypadku, gdy wszystkie procesy są jednakowo zorientowane, każdy z nich wysyła wiadomość, która pokona cały cykl. Mamy zatem $\Omega(N^2)$ wiadomości.
+Ponadto, każdy deterministyczny algorytm orientacji cyklu, wykonuje w pesimistycznym przypadku $\Omega(N^2)$.\\
+Ciekawszym problemem wydaje się \textit{średnia} liczba wiadomości wysyłanych w trakcie trwania algorytmu.
+Wynosi ona $\Theta(N^{3/2})$.
+
+\section{Dowód złożoności}
+\begin{lemma}
+Niech $p$ i $q$ będą liczbami naturalnymi $p \ge q \ge 0$.
+Wśród $p+q \choose q$ ciągów $s$ takich, że $\#_1 s = p$ oraz $\#_0 s = 1$ dokładnie ${p+q \choose q} \frac{p+1-q}{p+1}$ z nich jest słabo dominujących.
+\end{lemma}
+\begin{proof}
+\[
+{p+q \choose q} \frac{p+1-q}{p+1} = {p+q \choose p} - {p+q \choose p+1}
+\]
+Dowód analogiczny jak dla \href{https://www.youtube.com/watch?v=kaInaIUABzY}{liczb Catalana}.
+\end{proof}
+
+Niech $L(N)$ będzie zbiorem ciągów zer i jedynek, o długości N.
+Niech $Pref(N)$ bęzie zbiorem niepustych prefixów cyklicznych permutacji zbioru $1,2,...N$.\\
+Dla $s=s_1 s_2 ... s_N \in L(N)$ oraz $\alpha=\alpha_1 \alpha_2 ... \alpha_k \in Pref(N)$, definiujemy
+\[
+s[\alpha] = s_{\alpha_1} s_{\alpha_2} ... s_{\alpha_1}
+\]
+Dla $s \in L(N)$ definiujemy również $D(s)$ jako moc zbioru 
+\[
+\{\alpha \in Pref(N) \mid s[\alpha] - \text{słabo domnujące} \}
+\]
+\newpage
+\begin{lemma}
+\[
+ \sum_{s \in L(N)} D(s) = 2^N \left ( 2\sqrt{2/\pi} \cdot N^{3/2} + O(N) \right )
+ \]
+\end{lemma}
+\begin{proof}
+Dla $s \in L(N)$ oraz $p+q \le N$, zdefiniujmy $D_{p,q}(s)$ jako moc zbioru
+\[
+\{\alpha \in Pref(N) \mid \#_1 s[\alpha]=p, \#_0 s[\alpha]=q, s[\alpha] - \text{słabo domnujące} \}
+\]
+Dla ustalonego $p,q$, że $p+q \le N$ mamy $p+q \choose q$ ciągów $t$ o długości $p+q$, że $\#_1=p$ oraz $\#_0=q$.
+Dla każdego takiego ciągu, mamy $N \cdot 2^{N-(p+q)}$ par $(s, \alpha)$ takich, że $s \in L(N), \alpha \in Pref(N)$ oraz $t=s[\alpha]$.\\
+\[
+    \begin{aligned}
+    \sum_{s \in L(N)} D(s) 
+    &= \sum_{k=0}^N \sum_{q=0}^{k} D_{k-q,q}(s) \\
+    &$\overset{\mathrm{lem.1}}{=}$ \sum_{k=0}^N \sum_{q=0}^{\lfloor k/2 \rfloor} N \cdot 2^{N-(p+q)} \cdot {p+q \choose q} \frac{p+1-q}{p+1} \\
+    &= ... \\
+    &= N \cdot 2^n \left(\left( \sum_{i=1}^2 \frac{2N_i+1}{2^{2N_i}}{2N_i \choose N_i} \right)-1 \right)
+    \end{aligned}
+\]
+gdzie $N_1 = \lfloor \frac{N+1}{2} \rfloor$ i $N_2 = \lfloor \frac{N}{2} \rfloor$
+\\
+
+Korzystając z wzoru Sterlinga:
+\[{2n \choose n} = \frac{2^2n}{\sqrt{\pi n}} \left( 1+O \left( \frac{1}{n} \right) \right)\]
+oraz z faktu, że $N_1,N_2 = \frac{N}{2} +O(1)$, dostajemy
+\[
+\sum_{s \in L(N)} D(s)
+= 2^N \left( 2\sqrt{2/\pi} \cdot N^{3/2} + O(N) \right)
+\]
+Co chcieliśmy pokazać.
+\end{proof}
+\\
+Wartość, którą policzyliśmy jest sumą wiadomości wysłanych wg. wskazówek zegara dla wszystkich $2^N$ możliwych ciągów zer i jedynek.\\
+Średnia liczba wiadomości wysłana podczas algorytmu, jest więc równa
+\begin{equation*}
+\begin{aligned}
+avg(N)
+&= \frac{1}{2^N} \cdot 2 \sum_{s \in L(N)} D(s) \\
+&$\overset{\mathrm{lem.2}}{=}$ 4\sqrt{2/\pi} \cdot N^{3/2} + O(N)
+\end{aligned}
+\end{equation*}
+\end{document}

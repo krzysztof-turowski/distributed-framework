@@ -17,11 +17,14 @@ leader_directed_ring_example:
 leader_undirected_ring_example:
 	go run example/leader_undirected_ring_sync_hirschberg_sinclair.go 10
 	go run example/leader_undirected_ring_sync_franklin.go 10
+	go run example/leader_undirected_ring_sync_franklin_2.go 10
 	go run example/leader_undirected_ring_sync_prob_as_far.go 10
 	go run example/leader_undirected_ring_sync_higham_przytycka.go 10
 	go run example/leader_undirected_ring_async_hirschberg_sinclair.go 10
+	go run example/leader_undirected_ring_async_hirschberg_sinclair_2.go 10
 	go run example/leader_undirected_ring_async_stages_with_feedback.go 10
 	go run example/leader_undirected_ring_async_franklin.go 10
+	go run example/leader_undirected_ring_async_chang_roberts.go 10
 	go run example/leader_undirected_ring_async_probabilistic_franklin.go 10 3
 	go run example/leader_undirected_ring_async_higham_przytycka.go 10
 
@@ -44,6 +47,7 @@ leader_undirected_graph_example:
 
 orientation_example:
 	go run example/orientation_async_syrotiuk_pachl.go 10
+	go run example/orientation_async_syrotiuk_pachl_2.go 10
 	go run example/orientation_sync_torus_mans.go 25
 
 size_estimation_example:
@@ -67,6 +71,7 @@ graphs_mst_example:
 graphs_mis_example:
 	go run example/graphs_mis_sync_luby.go 20 0.25
 	go run example/graphs_mis_sync_metivier_c.go 20 0.25
+	go run example/graphs_mis_sync_karp_widgerson.go 20 0.25
 
 graphs_ds_example:
 	go run example/graphs_ds_sync_lrg.go 10 0.70
