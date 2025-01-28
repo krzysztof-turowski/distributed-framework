@@ -50,6 +50,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 1. Stages with feedback (Korach-Rotem-Santoro) algorithm
 1. Probabilistic Franklin algorithm
 1. Itai-Rodeh algorithm
+1. Higham-Przytycka algorithm
 
 #### Asynchronous clique
 1. Korach-Moran-Zaks algorithm

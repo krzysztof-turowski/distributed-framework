@@ -26,6 +26,7 @@ leader_undirected_ring_example:
 	go run example/leader_undirected_ring_async_franklin.go 10
 	go run example/leader_undirected_ring_async_chang_roberts.go 10
 	go run example/leader_undirected_ring_async_probabilistic_franklin.go 10 3
+	go run example/leader_undirected_ring_async_higham_przytycka.go 10
 
 leader_directed_clique_example:
 	go run example/leader_clique_async_loui_matsushita_west.go 10
