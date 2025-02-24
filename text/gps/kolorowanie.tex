@@ -1,0 +1,117 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\title{Graph Coloring with $\Delta + 1$ Colors: Algorithms, Proofs, and Complexity}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+An overview of a graph coloring algorithm for a graph with a maximum degree $\Delta$ can color using at most $\Delta + 1$ colors, assuming the EREW PRAM model.
+
+\section{Algorithms}
+\subsection{Coloring Rooted Trees}
+The 6-Color-Rooted-Tree algorithm reduces the number of colors in a rooted tree iteratively:
+
+\begin{enumerate}
+    \item \textbf{Initialization}:
+    \begin{itemize}
+        \item Assign each node in the tree a unique initial color equal to their IDs. It is essential for the IDs to be distinct numbers from $0$ to $N - 1$, where $N$ is the size of the graph.
+        \item Each node knows the size of the graph, its ID, and $\Delta$.
+    \end{itemize}
+    \item \textbf{Color Refinement}:
+    \begin{itemize}
+        \item Repeat until each node has at most $6$ distinct colors:
+        \begin{itemize}
+            \item Each node communicates with its parent.
+            \item The node compares its color with its parent’s color bit by bit to find the smallest bit position where they differ.
+            \item It creates a new color by concatenating this bit position and the value of the differing bit.
+        \end{itemize}
+    \end{itemize}
+    \item \textbf{Termination}:
+    \begin{itemize}
+        \item When the number of colors is reduced to $6$, stop the iterative process.
+        \item The tree is now 6-colored.
+    \end{itemize}
+\end{enumerate}
+
+The above can be refined further into a 3-Color-Rooted-Tree algorithm:
+\begin{enumerate}
+    \item \textbf{Reduce to Three Colors}:
+    \begin{itemize}
+        \item Take the 6-colored tree and perform three sequential steps to reduce the number of colors to 3.
+        \item In each step, recolor each node by checking the colors of its parent and children and choosing a new color that avoids conflict.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Coloring Constant-Degree Graphs}
+The Color-Constant-Degree-Graph algorithm extends tree-coloring to general graphs with degree $\Delta$:
+
+\begin{enumerate}
+    \item \textbf{Partition into Pseudoforests}:
+    \begin{itemize}
+        \item Identify a maximal pseudoforest within the graph.
+        \item Remove the edges of the pseudoforest from the graph.
+        \item Repeat this process until all edges are removed, partitioning the graph into $\Delta$ or fewer pseudoforests.
+    \end{itemize}
+    \item \textbf{Color the Pseudoforests}:
+    \begin{itemize}
+        \item Use the 3-Color-Rooted-Tree algorithm to color each pseudoforest in parallel.
+    \end{itemize}
+    \item \textbf{Combine Colors}:
+    \begin{itemize}
+        \item Reintroduce the edges of each pseudoforest one at a time.
+        \item Recolor nodes to ensure consistency with adjacent nodes.
+    \end{itemize}
+\end{enumerate}
+
+\section{Theorems}
+\textbf{Theorem 1:} 6-Color-Rooted-Tree Algorithm Correctness
+
+The 6-Color-Rooted-Tree algorithm produces a valid 6-coloring of a tree in $O(\log^* n)$ time on a CREW PRAM using a linear number of processors.
+
+\textbf{Proof:}
+\begin{itemize}
+    \item If node $i$ after one step of reassigning colors had the same color as its parent, then that would mean they differed on the same $i$-th bit previously.
+    \item Since the last bit of the new color is the value of the differing bit, they must still be different in at least one bit.
+    \item The time complexity is $O(\log^* n)$.
+\end{itemize}
+
+\textbf{Theorem 2:} 3-Color-Rooted-Tree Algorithm Correctness
+
+\textbf{Proof:}
+\begin{itemize}
+    \item The number of colors is reduced to 3 by successive stages.
+    \item Each stage shifts colors downward, eliminating one color.
+    \item Each stage takes constant time.
+\end{itemize}
+
+\textbf{Theorem 3:} Coloring Constant-Degree Graphs
+
+The Color-Constant-Degree-Graph algorithm colors a constant-degree graph with $\Delta + 1$ colors in $O((\log \Delta)(\Delta^2 + \log^* n))$ time on an EREW PRAM using $O(n)$ processors.
+
+\textbf{Proof:}
+\begin{itemize}
+    \item The graph is partitioned into $\Delta$ or fewer pseudoforests in $O(\Delta)$ time.
+    \item Each pseudoforest is 3-colored in $O(\log^* n)$ time.
+    \item Combining colors requires $O(\Delta^2)$ iterations.
+    \item Total complexity: $O((\log \Delta)(\Delta^2 + \log^* n))$.
+\end{itemize}
+
+\section{Complexity Analysis}
+\begin{itemize}
+    \item Rooted Tree Coloring: $O(\log^* n)$ time using $O(n)$ processors.
+    \item Constant-Degree Graphs: $O((\log \Delta)(\Delta^2 + \log^* n))$ time using $O(n)$ processors.
+\end{itemize}
+
+\section{References}
+\begin{itemize}
+    \item Goldberg, Plotkin, Shannon - Parallel symmetry-breaking in sparse graphs.
+\end{itemize}
+
+\end{document}
