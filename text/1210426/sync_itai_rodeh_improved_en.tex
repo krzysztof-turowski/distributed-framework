@@ -1,0 +1,127 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[top=2cm,bottom=2cm,left=2.5cm,right=2.5cm]{geometry}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+\title{Improved Synchronous Leader Election\\on an Anonymous Ring}
+\author{Mateusz Wojaczek}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+We consider a directed ring of $n$ anonymous processors: they run the same program, have no
+identifiers, and processor $v_i$ can send messages only to $v_{i+1}$ (indices modulo $n$). The
+network is synchronous, every processor knows $n$ and has its own random number generator. The
+goal is to elect a leader, i.e.\ exactly one processor, so that at the end every processor knows
+whether it is the leader. We present the improved algorithm of Itai and Rodeh~\cite{ir}
+(Section~2.4).
+
+\section{The algorithm}
+
+The algorithm proceeds in phases of $n$ rounds, and all processors know a parameter $q$, $0<q<n$.
+A \emph{pebble} is a message without content; it travels around the ring and is dropped by its
+sender after exactly $n$ rounds. In every phase:
+\begin{enumerate}
+  \item each processor sends a pebble with probability $q/n$ at the beginning of the phase;
+  \item each processor $v$ records an $n$-bit word $W(v)$, where $W_i(v)=1$ if and only if
+        a pebble (possibly its own) passed through $v$ in round $i$ of the phase;
+  \item if all words $W(v)$ are distinct, the processor with the lexicographically smallest word
+        becomes the leader; otherwise a new phase starts.
+\end{enumerate}
+
+\noindent The algorithm relies on two invariants:
+\begin{enumerate}
+  \item every pebble disappears at the end of its phase, so the words depend only on the
+        current phase;
+  \item the words $W(v)$ are cyclic shifts of one word, since a pebble that passes $v_j$ in round
+        $i$ passes $v_{j+k}$ in round $(i+k) \bmod n$. Hence every processor can compute all the
+        words by shifting its own.
+\end{enumerate}
+
+\section{Correctness}
+
+\begin{theorem}
+If the algorithm terminates, exactly one processor is the leader.
+\end{theorem}
+\begin{proof}
+At the end of a phase all processors see the same set of words, so either all of them start a new
+phase or all of them stop. They stop only when the words are distinct, and then the smallest word
+belongs to exactly one processor.
+\end{proof}
+
+\begin{theorem}
+The algorithm terminates with probability $1$.
+\end{theorem}
+\begin{proof}
+If exactly one pebble is sent, all words contain a single 1 at different positions, so the phase
+succeeds. This happens with probability $q(1-q/n)^{n-1}>0$. Phases are independent, hence the
+probability of $k$ consecutive failures tends to $0$.
+\end{proof}
+
+\section{Complexity}
+
+\begin{theorem}[Itai, Rodeh, Theorem 2.2]
+As $n\to\infty$, the expected number of phases tends to $(1-e^{-q})^{-1}$ and the expected number
+of bits sent per processor tends to $q(1-e^{-q})^{-1}$.
+\end{theorem}
+
+The paper states this theorem without proof; below is our proof.
+
+Each processor sends a pebble independently with probability $q/n$, and the pebble of $v_j$ passes
+$v_0$ in round $(n-j) \bmod n$. Hence $W=W(v_0)$ consists of $n$ independent bits, each equal to $1$
+with probability $q/n$. A phase fails if and only if $W$ equals its cyclic shift by some
+$1\le k<n$; let $P_n$ be the probability of this event.
+
+\begin{lemma}
+If $W$ equals its shift by some $1\le k<n$, then for some divisor $r>1$ of $n$ the word $W$
+consists of $r$ identical blocks.
+\end{lemma}
+\begin{proof}
+Let $k$ be the smallest positive shift that does not change $W$. If $k$ did not divide $n$, then
+$n=ak+b$ with $0<b<k$; shifts by $n$ and by $ak$ do not change $W$, so neither does the shift by
+$b$, contradicting the choice of $k$. Thus $W$ consists of $r=n/k>1$ copies of a block of
+length $k$.
+\end{proof}
+
+\begin{theorem}
+For $n>q$
+\[
+\Bigl(1-\frac qn\Bigr)^{n}\ \le\ P_n\ \le\ \Bigl(1-\frac qn\Bigr)^{n}+\frac{2q^2}{\sqrt n},
+\qquad\text{hence}\qquad P_n\to e^{-q}.
+\]
+\end{theorem}
+\begin{proof}
+The all-zero word, which occurs with probability $(1-q/n)^n$, equals all its shifts; this gives the
+lower bound. If a failing word contains a $1$, then by the lemma it consists of $r$ identical blocks,
+so this $1$ appears at the same position in all $r$ blocks. For a fixed $r$ there are $n/r$
+positions, each giving $r$ ones with probability $(q/n)^r$, so by the union bound this case has
+probability at most $\frac nr(q/n)^r\le q^2/n$. Since $n$ has at most $2\sqrt n$ divisors, summing
+over $r$ gives at most $2q^2/\sqrt n$. Both bounds tend to $e^{-q}$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem 2.2]
+Phases are independent and each succeeds with probability $1-P_n$, so the number of phases is
+geometric with expectation $1/(1-P_n)\to 1/(1-e^{-q})$. In every phase $n$ processors send a
+pebble with probability $q/n$ each, so on average $q$ pebbles are sent. Each pebble makes $n$
+steps, i.e.\ costs one bit per processor. Hence the expected number of bits per processor is
+\[
+q\cdot\mathbb E[\text{number of phases}]\ =\ \frac q{1-P_n}\ \longrightarrow\ \frac q{1-e^{-q}}.
+\qedhere
+\]
+\end{proof}
+
+\begin{thebibliography}{9}
+\bibitem{ir} A.~Itai, M.~Rodeh, \emph{Symmetry breaking in distributed networks}, Information and
+  Computation 88(1), 60--87 (1990).
+\end{thebibliography}
+
+\end{document}

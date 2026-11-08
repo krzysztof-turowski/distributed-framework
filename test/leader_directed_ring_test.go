@@ -12,6 +12,7 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_chang_roberts"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_dolev_klawe_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_itai_rodeh"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_itai_rodeh_improved"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_peterson"
 )
 
@@ -23,6 +24,14 @@ func TestDirectedRingChangRoberts(t *testing.T) {
 func TestDirectedRingItaiRodeh(t *testing.T) {
 	checkLogOutput()
 	sync_itai_rodeh.Run(1000)
+}
+
+func TestDirectedRingItaiRodehImproved(t *testing.T) {
+	checkLogOutput()
+	sync_itai_rodeh_improved.Run(1000)
+	for _, q := range []float64{0.5, 1, 2} {
+		sync_itai_rodeh_improved.RunWithParameter(100, q)
+	}
 }
 
 // Fails with little probability
@@ -69,6 +78,18 @@ func BenchmarkDirectedRingItaiRodeh(b *testing.B) {
 	for iteration := 0; iteration < b.N; iteration++ {
 		sync_itai_rodeh.Run(1000)
 	}
+}
+
+func BenchmarkDirectedRingItaiRodehImproved(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+	n, messages, rounds := 64, 0, 0
+	for iteration := 0; iteration < b.N; iteration++ {
+		m, r := sync_itai_rodeh_improved.RunWithParameter(n, 1)
+		messages, rounds = messages+m, rounds+r
+	}
+
+	b.ReportMetric(float64(rounds)/float64(b.N*n), "phases/op")
+	b.ReportMetric(float64(messages)/float64(b.N*n), "messages/node/op")
 }
 
 func BenchmarkDirectedRingRunDolevKlaweRodehA(b *testing.B) {

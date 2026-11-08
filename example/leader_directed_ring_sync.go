@@ -9,6 +9,7 @@ import (
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_chang_roberts"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_dolev_klawe_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_itai_rodeh"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_itai_rodeh_improved"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_peterson"
 )
 
@@ -28,6 +29,8 @@ func main() {
 		sync_dolev_klawe_rodeh.RunB(n)
 	case "itai_rodeh":
 		sync_itai_rodeh.Run(n)
+	case "itai_rodeh_improved":
+		sync_itai_rodeh_improved.Run(n)
 	case "peterson":
 		sync_peterson.Run(n)
 	}

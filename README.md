@@ -12,6 +12,7 @@ A collection of algorithms for _Distributed Systems_ course (winter semesters 20
 1. Dolev-Klawe-Rodeh algorithm B
 1. Simplified Itai-Rodeh algorithm
 1. Itai-Rodeh algorithm
+1. Improved Itai-Rodeh algorithm
 1. Higham-Przytycka algorithm
 
 #### Synchronized undirected ring
