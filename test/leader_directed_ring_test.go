@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/sync_chang_roberts"
@@ -55,6 +56,11 @@ func TestDirectedRingPeterson(t *testing.T) {
 func TestDirectedRingHighamPrzytycka(b *testing.T) {
 	checkLogOutput()
 	async_higham_przytycka.Run(1000)
+}
+
+func TestAsyncDirectedRingHighamPrzytycka2(t *testing.T) {
+	checkLogOutput()
+	async_higham_przytycka_2.Run(1000)
 }
 
 func BenchmarkDirectedRingChangRoberts(b *testing.B) {
@@ -110,5 +116,12 @@ func BenchmarkAsyncDirectedRingHighamPrzytycka(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 	for iteration := 0; iteration < b.N; iteration++ {
 		async_higham_przytycka.Run(1000)
+	}
+}
+
+func BenchmarkAsyncDirectedRingHighamPrzytycka2(b *testing.B) {
+	log.SetOutput(io.Discard)
+	for iteration := 0; iteration < b.N; iteration++ {
+		async_higham_przytycka_2.Run(1000)
 	}
 }
