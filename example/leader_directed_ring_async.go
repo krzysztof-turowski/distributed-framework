@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka"
+	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_higham_przytycka_2"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itah_rodeh"
 	"github.com/krzysztof-turowski/distributed-framework/leader/directed_ring/async_itai_rodeh_2"
 )
@@ -21,6 +22,12 @@ func main() {
 	switch algorithm := strings.ToLower(os.Args[2]); algorithm {
 	case "higham_przytycka":
 		async_higham_przytycka.Run(n)
+	case "higham_przytycka_2":
+		async_higham_przytycka_2.Run(n)
+	case "higham_przytycka_2_basic":
+		async_higham_przytycka_2.RunBasic(n)
+	case "higham_przytycka_2_full_elect":
+		async_higham_przytycka_2.RunFullElect(n)
 	case "itai_rodeh":
 		async_itah_rodeh.Run(n)
 	case "itai_rodeh_2":
